@@ -306,18 +306,25 @@ function switchToSection(sectionName) {
 }
 
 function updateNavigationIndicator() {
-    const activeTab = document.querySelector('.nav-tab.active');
-    const indicator = document.querySelector('.nav-indicator');
-    
-    if (activeTab && indicator) {
-        const rect = activeTab.getBoundingClientRect();
-        const containerRect = activeTab.parentElement.getBoundingClientRect();
-        
-        indicator.style.width = `${rect.width}px`;
-        indicator.style.left = `${rect.left - containerRect.left}px`;
-        indicator.style.opacity = '1';
-    }
+const activeTab = document.querySelector('.nav-tab.active');
+const indicator = document.querySelector('.nav-indicator');
+if (!activeTab || !indicator) return;
+
+const container = activeTab.parentElement; // .nav-tabs
+// Ensure the container is the positioning context
+if (getComputedStyle(container).position === 'static') {
+container.style.position = 'relative';
 }
+
+const left = activeTab.offsetLeft;
+const width = activeTab.offsetWidth;
+
+indicator.style.width = width + 'px';
+indicator.style.transform = 'translateX(' + left + 'px)';
+indicator.style.opacity = '1';
+}
+
+
 
 // Loading Screen Handler
 class LoadingScreen {
@@ -489,8 +496,6 @@ class Marketplace {
                 // Ensure dropdown is clickable
                 filter.style.pointerEvents = 'auto';
                 filter.style.cursor = 'pointer';
-                filter.style.webkitAppearance = 'menulist';
-                filter.style.appearance = 'menulist';
                 
                 filter.addEventListener('change', (e) => {
                     console.log('Filter changed:', e.target.id, e.target.value);

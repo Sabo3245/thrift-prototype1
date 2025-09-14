@@ -557,7 +557,6 @@ select.form-control {
   border-bottom: 1px solid var(--color-card-border-inner);
 }
 
-/* Status indicators - simplified with CSS variables */
 .status {
   display: inline-flex;
   align-items: center;
@@ -958,7 +957,7 @@ body {
 /* Navigation */
 .nav-container {
   position: sticky;
-  top: 41px; /* Adjusted to align beneath status bar */
+  top: 0px; /* Adjusted to align beneath status bar */
   z-index: 100;
   background: rgba(10, 10, 35, 0.8);
   backdrop-filter: blur(var(--blur-amount));
@@ -1049,12 +1048,14 @@ body {
 }
 
 .nav-indicator {
-  position: absolute;
-  bottom: -1px;
-  height: 3px;
-  background: linear-gradient(90deg, var(--neon-purple), var(--neon-cyan));
-  border-radius: var(--radius-full);
-  transition: all 0.3s var(--spring-easing);
+position: absolute;
+left: 0; 
+bottom: 0; 
+height: 3px;
+background: linear-gradient(90deg, var(--neon-purple), var(--neon-cyan));
+border-radius: var(--radius-full);
+transition: transform 0.3s var(--spring-easing), width 0.3s var(--spring-easing), opacity 0.2s ease;
+will-change: transform, width;
 }
 
 .nav-icon {
@@ -1198,6 +1199,9 @@ body {
 }
 
 /* Filters - Fixed font colors */
+
+
+
 .filters-container {
   display: flex;
   gap: var(--space-16);
@@ -1233,6 +1237,7 @@ body {
   background-position: right var(--space-12) center;
   background-size: 16px;
   padding-right: var(--space-32);
+  -webkit-appearance: none; -moz-appearance: none; appearance: none;
 }
 
 .filter-select option {
@@ -1278,7 +1283,7 @@ body {
 }
 
 .item-card.boosted::before {
-  content: '🚀 BOOSTED';
+  content: 'ðŸš€ BOOSTED';
   position: absolute;
   top: 10px;
   right: 10px;
@@ -1902,9 +1907,72 @@ input:checked + .toggle-label::before {
 }
 
 /* Form Styles */
+
+
+.post-form select,
+.post-form select.animated-input {
+background-color: rgba(255, 255, 255, 0.06);
+color: var(--color-gray-200) !important;
+border: 2px solid var(--glass-border);
+-webkit-appearance: none;
+-moz-appearance: none;
+appearance: none;
+}
+
+.post-form select:focus {
+outline: none;
+border-color: var(--neon-cyan);
+box-shadow: 0 0 25px rgba(0, 229, 255, 0.2);
+background-color: rgba(255, 255, 255, 0.09);
+}
+
+.post-form select option {
+color: var(--color-white) !important;
+background-color: var(--charcoal-800) !important;
+}
+
+
+
 .post-form {
   padding: var(--space-32);
   animation-delay: 0.2s;
+}
+
+
+.post-form select,
+.post-form .animated-input.select {
+background-color: rgba(255, 255, 255, 0.05);
+color: var(--color-gray-200);
+border: 2px solid var(--glass-border);
+-webkit-appearance: none;
+-moz-appearance: none;
+appearance: none;
+}
+
+
+.post-form select:focus {
+outline: none;
+border-color: var(--neon-cyan);
+box-shadow: 0 0 25px rgba(0, 229, 255, 0.2);
+background-color: rgba(255, 255, 255, 0.08);
+}
+
+.post-form select option {
+color: var(--color-white);
+background-color: var(--charcoal-800);
+}
+
+.post-form select.animated-input {
+background: rgba(255, 255, 255, 0.05);
+color: var(--color-gray-200);
+-webkit-appearance: none;
+-moz-appearance: none;
+appearance: none;
+}
+
+.post-form select.animated-input option {
+color: var(--color-white);
+background-color: var(--charcoal-800);
 }
 
 .form-row {
