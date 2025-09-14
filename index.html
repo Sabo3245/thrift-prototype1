@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Campus Thrift - College Marketplace</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+      <div class="loading-container">
+        <div class="animated-logo">
+          <div class="logo-shape"></div>
+          <div class="logo-text">Campus Thrift</div>
+        </div>
+        <div class="particle-system">
+          <div class="particle"></div>
+          <div class="particle"></div>
+          <div class="particle"></div>
+          <div class="particle"></div>
+          <div class="particle"></div>
+        </div>
+        <div class="progress-container">
+          <div class="progress-bar">
+            <div class="progress-fill"></div>
+          </div>
+          <div class="loading-text">Loading your marketplace...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp" class="main-app hidden">
+      <!-- Status Bar -->
+      <div class="status-bar">
+        <div class="status-indicator active">
+          <span class="status-dot"></span>
+          <span class="status-text">Online</span>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="nav-container">
+        <div class="nav-brand">
+          <div class="brand-logo">CT</div>
+          <span class="brand-text">Campus Thrift</span>
+        </div>
+        <div class="nav-tabs">
+          <button class="nav-tab active" data-section="marketplace">
+            <span class="nav-icon">🏪</span>
+            <span>Marketplace</span>
+          </button>
+          <button class="nav-tab" data-section="post">
+            <span class="nav-icon">➕</span>
+            <span>Post Item</span>
+          </button>
+          <button class="nav-tab" data-section="chat">
+            <span class="nav-icon">💬</span>
+            <span>Chat</span>
+          </button>
+          <button class="nav-tab" data-section="profile">
+            <span class="nav-icon">👤</span>
+            <span>Profile</span>
+          </button>
+        </div>
+        <div class="nav-indicator"></div>
+      </nav>
+
+      <!-- Marketplace Section -->
+      <section id="marketplace" class="section active">
+        <div class="container">
+          <div class="section-header">
+            <h1 class="page-title">Discover Amazing Deals</h1>
+            <p class="page-subtitle">
+              Find everything you need from fellow students
+            </p>
+          </div>
+
+          <!-- Search and Filters -->
+          <div class="search-container glass-card">
+            <div class="search-input-wrapper">
+              <input
+                type="text"
+                id="searchInput"
+                placeholder="Search for items..."
+                class="search-input"
+              />
+              <button class="search-btn">🔍</button>
+            </div>
+            <div class="search-suggestions hidden" id="searchSuggestions"></div>
+          </div>
+
+          <div class="filters-container">
+            <div class="filter-group">
+              <label class="filter-label">Category</label>
+              <select id="categoryFilter" class="filter-select">
+                <option value="">All Categories</option>
+                <option value="Clothes">Clothes</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Books">Books</option>
+                <option value="Cosmetics">Cosmetics</option>
+                <option value="Miscellaneous">Miscellaneous</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label class="filter-label">Condition</label>
+              <select id="conditionFilter" class="filter-select">
+                <option value="">Any Condition</option>
+                <option value="New">New</option>
+                <option value="Used">Used</option>
+                <option value="Unused">Unused</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label class="filter-label">Hostel</label>
+              <select id="hostelFilter" class="filter-select">
+                <option value="">All Hostels</option>
+                <option value="Boys">Boys</option>
+                <option value="Girls">Girls</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Items Grid -->
+          <div class="items-grid" id="itemsGrid">
+            <!-- Items will be dynamically loaded -->
+          </div>
+
+          <div class="loading-more hidden" id="loadingMore">
+            <div class="skeleton-cards">
+              <div class="skeleton-card"></div>
+              <div class="skeleton-card"></div>
+              <div class="skeleton-card"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Post Item Section -->
+      <section id="post" class="section">
+        <div class="container">
+          <div class="section-header">
+            <h1 class="page-title">Post Your Item</h1>
+            <p class="page-subtitle">
+              Share what you're selling with the community
+            </p>
+          </div>
+
+          <form class="post-form glass-card" id="postForm">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Item Title</label>
+                <input
+                  type="text"
+                  class="form-control animated-input"
+                  id="itemTitle"
+                  placeholder="What are you selling?"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Category</label>
+                <select
+                  class="form-control animated-input"
+                  id="itemCategory"
+                  required
+                >
+                  <option value="">Select category...</option>
+                  <option value="Clothes">Clothes</option>
+                  <option value="Electronics">Electronics</option>
+                  <option value="Books">Books</option>
+                  <option value="Cosmetics">Cosmetics</option>
+                  <option value="Miscellaneous">Miscellaneous</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Condition</label>
+                <select
+                  class="form-control animated-input"
+                  id="itemCondition"
+                  required
+                >
+                  <option value="">Select condition...</option>
+                  <option value="New">New</option>
+                  <option value="Used">Used</option>
+                  <option value="Unused">Unused</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Current Price (₹)</label>
+                <input
+                  type="number"
+                  class="form-control animated-input"
+                  id="itemPrice"
+                  placeholder="Current selling price"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Original Price (₹)</label>
+                <input
+                  type="number"
+                  class="form-control animated-input"
+                  id="itemOriginalPrice"
+                  placeholder="Original purchase price"
+                />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Hostel</label>
+                <select
+                  class="form-control animated-input"
+                  id="itemHostel"
+                  required
+                >
+                  <option value="">Select hostel...</option>
+                  <option value="Boys">Boys</option>
+                  <option value="Girls">Girls</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Clothing Checklist (Hidden by default) -->
+            <div class="clothing-checklist hidden" id="clothingChecklist">
+              <h4 class="checklist-title">Clothing Details</h4>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Quality</label>
+                  <select class="form-control" id="clothingQuality">
+                    <option value="">Select quality...</option>
+                    <option value="Excellent">Excellent</option>
+                    <option value="Good">Good</option>
+                    <option value="Fair">Fair</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Age</label>
+                  <select class="form-control" id="clothingAge">
+                    <option value="">Select age...</option>
+                    <option value="< 6 months">< 6 months</option>
+                    <option value="6-12 months">6-12 months</option>
+                    <option value="1-2 years">1-2 years</option>
+                    <option value="2+ years">2+ years</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Detailed Condition</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="clothingCondition"
+                  placeholder="e.g., Minimal wear, no stains"
+                />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Description</label>
+              <textarea
+                class="form-control animated-input"
+                id="itemDescription"
+                rows="4"
+                placeholder="Describe your item in detail"
+                required
+              ></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Upload Photos</label>
+              <div class="upload-area" id="uploadArea">
+                <div class="upload-content">
+                  <span class="upload-icon">📸</span>
+                  <span class="upload-text">Click or drag photos here</span>
+                  <input
+                    type="file"
+                    id="itemPhotos"
+                    multiple
+                    accept="image/*"
+                    class="upload-input"
+                  />
+                </div>
+              </div>
+              <div class="uploaded-images" id="uploadedImages"></div>
+            </div>
+
+            <button
+              type="submit"
+              class="btn btn--primary btn--full-width animated-btn"
+            >
+              <span class="btn-text">Post Item</span>
+              <span class="btn-loader hidden">🔄</span>
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <!-- Chat Section -->
+      <section id="chat" class="section">
+        <div class="container">
+          <div class="section-header">
+            <h1 class="page-title">Messages</h1>
+            <p class="page-subtitle">Chat with buyers and sellers</p>
+          </div>
+
+          <div class="chat-container">
+            <div class="chat-sidebar glass-card">
+              <h3 class="sidebar-title">Conversations</h3>
+              <div class="conversation-list" id="conversationList">
+                <!-- Conversations will be loaded here -->
+              </div>
+            </div>
+
+            <div class="chat-window glass-card" id="chatWindow">
+              <div class="chat-header">
+                <div class="chat-user-info">
+                  <div class="chat-avatar">👤</div>
+                  <div class="chat-user-details">
+                    <h4 id="chatUserName">Select a conversation</h4>
+                    <p id="chatUserStatus">Choose from the conversation list</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="chat-messages" id="chatMessages">
+                <div class="welcome-message">
+                  <p>👋 Welcome to Campus Thrift Chat!</p>
+                  <p>Select a conversation to start messaging</p>
+                </div>
+              </div>
+
+              <div class="chat-input-container hidden" id="chatInputContainer">
+                <input
+                  type="text"
+                  id="chatInput"
+                  placeholder="Type your message..."
+                  class="chat-input"
+                />
+                <button class="chat-send-btn" id="chatSendBtn">📤</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Profile Section -->
+      <section id="profile" class="section">
+        <div class="container">
+          <div class="section-header">
+            <h1 class="page-title">Your Profile</h1>
+            <p class="page-subtitle">Manage your account and listings</p>
+          </div>
+
+          <div class="profile-grid">
+            <div class="profile-card glass-card">
+              <div class="profile-avatar">
+                <div class="avatar-circle">👤</div>
+                <button class="avatar-edit">✏️</button>
+              </div>
+              <div class="profile-info">
+                <h3 class="profile-name">student123</h3>
+                <p class="profile-email">student@gmail.com</p>
+                <div class="profile-stats">
+                  <div class="stat">
+                    <span class="stat-number" id="userPoints">15</span>
+                    <span class="stat-label">Points</span>
+                  </div>
+                  <div class="stat">
+                    <span class="stat-number" id="totalTransactions">3</span>
+                    <span class="stat-label">Transactions</span>
+                  </div>
+                  <div class="stat">
+                    <span class="stat-number" id="moneySaved">₹0</span>
+                    <span class="stat-label">Money Saved</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-card glass-card">
+              <h3 class="card-title">Settings</h3>
+              <div class="settings-list">
+                <div class="setting-item">
+                  <span class="setting-label">Push Notifications</span>
+                  <div class="toggle-switch">
+                    <input type="checkbox" id="pushNotifs" checked />
+                    <label for="pushNotifs" class="toggle-label"></label>
+                  </div>
+                </div>
+                <div class="setting-item">
+                  <span class="setting-label">Email Updates</span>
+                  <div class="toggle-switch">
+                    <input type="checkbox" id="emailUpdates" />
+                    <label for="emailUpdates" class="toggle-label"></label>
+                  </div>
+                </div>
+                <div class="setting-item">
+                  <span class="setting-label">Show Profile to Others</span>
+                  <div class="toggle-switch">
+                    <input type="checkbox" id="publicProfile" checked />
+                    <label for="publicProfile" class="toggle-label"></label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="profile-sections">
+            <div class="my-listings glass-card">
+              <div class="section-title-row">
+                <h3 class="card-title">My Recent Listings</h3>
+                <span class="empty-notice">No recent listings yet</span>
+              </div>
+              <div class="listings-grid" id="myListings">
+                <div class="empty-state">
+                  <p>
+                    🛍️ You haven't posted anything yet. Start selling to see
+                    your items here!
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="hearted-posts glass-card">
+              <h3 class="card-title">Hearted Posts ❤️</h3>
+              <div class="hearted-grid" id="heartedPosts">
+                <div class="empty-state">
+                  <p>💖 Items you heart will appear here</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="points-section glass-card">
+              <h3 class="card-title">Points & Rewards</h3>
+              <div class="points-info">
+                <p>
+                  Earn 5 points for each transaction. Use 25 points to boost
+                  your posts!
+                </p>
+                <div class="points-progress">
+                  <div class="progress-bar">
+                    <div
+                      class="progress-fill"
+                      id="pointsProgress"
+                      style="width: 60%"
+                    ></div>
+                  </div>
+                  <span class="progress-text">15/25 points to next boost</span>
+                </div>
+              </div>
+              <div class="transaction-history">
+                <h4>Recent Transactions</h4>
+                <div id="transactionList">
+                  <!-- Transaction history will be loaded here -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Success Modal -->
+      <div class="modal hidden" id="successModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content glass-card">
+          <div class="modal-header">
+            <div class="success-icon">✨</div>
+            <h3 class="modal-title">Success!</h3>
+            <p class="modal-message">Your item has been posted successfully!</p>
+          </div>
+          <div class="celebration-particles">
+            <div class="confetti"></div>
+            <div class="confetti"></div>
+            <div class="confetti"></div>
+            <div class="confetti"></div>
+            <div class="confetti"></div>
+          </div>
+          <button class="btn btn--primary" id="closeModal">Awesome!</button>
+        </div>
+      </div>
+
+      <!-- Remove Post Modal -->
+      <div class="modal hidden" id="removeModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content glass-card">
+          <div class="modal-header">
+            <div class="warning-icon">⚠️</div>
+            <h3 class="modal-title">Remove Post</h3>
+            <p class="modal-message">
+              Are you sure you want to remove this item? This action cannot be
+              undone.
+            </p>
+          </div>
+          <div class="modal-actions">
+            <button class="btn btn--outline" id="cancelRemove">Cancel</button>
+            <button class="btn btn--primary" id="confirmRemove">Remove</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Boost Modal -->
+      <div class="modal hidden" id="boostModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content glass-card">
+          <div class="modal-header">
+            <div class="boost-icon">🚀</div>
+            <h3 class="modal-title">Boost Your Post</h3>
+            <p class="modal-message">
+              Use 25 points to boost this post and pin it to the top for 7 days!
+            </p>
+            <p class="points-remaining">
+              Your Points: <span id="currentPoints">15</span>
+            </p>
+          </div>
+          <div class="modal-actions">
+            <button class="btn btn--outline" id="cancelBoost">Cancel</button>
+            <button class="btn btn--primary" id="confirmBoost" disabled>
+              Boost Post (25 points)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sticky Floating Action Button -->
+      <button class="fab" id="fabButton">
+        <span class="fab-icon">➕</span>
+        <div class="fab-ripple"></div>
+      </button>
+    </div>
+
+    <script src="app.js"></script>
+    <script type="module">
+      // Import the functions you need from the SDKs you need
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+      import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-analytics.js";
+      // TODO: Add SDKs for Firebase products that you want to use
+      // https://firebase.google.com/docs/web/setup#available-libraries
+
+      // Your web app's Firebase configuration
+      // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+      const firebaseConfig = {
+        apiKey: "AIzaSyBrVVik7_oVaPXpyI20jcyq9nqXUKcwcOM",
+        authDomain: "thrift-6bd6d.firebaseapp.com",
+        projectId: "thrift-6bd6d",
+        storageBucket: "thrift-6bd6d.firebasestorage.app",
+        messagingSenderId: "595724600327",
+        appId: "1:595724600327:web:e1a9d65d6e6ee68e0456a2",
+        measurementId: "G-7PGCTDYP38",
+      };
+
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const analytics = getAnalytics(app);
+    </script>
+  </body>
+</html>
