@@ -1908,113 +1908,83 @@ input:checked + .toggle-label::before {
 
 /* Form Styles */
 
-
-.post-form select,
-.post-form select.animated-input {
-background-color: rgba(255, 255, 255, 0.06);
-color: var(--color-gray-200) !important;
-border: 2px solid var(--glass-border);
--webkit-appearance: none;
--moz-appearance: none;
-appearance: none;
-}
-
-.post-form select:focus {
-outline: none;
-border-color: var(--neon-cyan);
-box-shadow: 0 0 25px rgba(0, 229, 255, 0.2);
-background-color: rgba(255, 255, 255, 0.09);
-}
-
-.post-form select option {
-color: var(--color-white) !important;
-background-color: var(--charcoal-800) !important;
-}
-
-
-
 .post-form {
-  padding: var(--space-32);
-  animation-delay: 0.2s;
-}
-
-
-.post-form select,
-.post-form .animated-input.select {
-background-color: rgba(255, 255, 255, 0.05);
-color: var(--color-gray-200);
-border: 2px solid var(--glass-border);
--webkit-appearance: none;
--moz-appearance: none;
-appearance: none;
-}
-
-
-.post-form select:focus {
-outline: none;
-border-color: var(--neon-cyan);
-box-shadow: 0 0 25px rgba(0, 229, 255, 0.2);
-background-color: rgba(255, 255, 255, 0.08);
-}
-
-.post-form select option {
-color: var(--color-white);
-background-color: var(--charcoal-800);
-}
-
-.post-form select.animated-input {
-background: rgba(255, 255, 255, 0.05);
-color: var(--color-gray-200);
--webkit-appearance: none;
--moz-appearance: none;
-appearance: none;
-}
-
-.post-form select.animated-input option {
-color: var(--color-white);
-background-color: var(--charcoal-800);
+    padding: var(--space-32);
+    animation-delay: 0.2s;
 }
 
 .form-row {
-  display: flex;
-  gap: var(--space-16);
-  margin-bottom: var(--space-20);
+    display: flex;
+    gap: var(--space-16);
+    margin-bottom: var(--space-20);
 }
 
 .form-group {
-  flex: 1;
+    flex: 1;
 }
 
 .form-label {
-  display: block;
-  margin-bottom: var(--space-8);
-  color: var(--color-gray-300);
-  font-weight: var(--font-weight-medium);
-  font-size: var(--font-size-sm);
+    display: block;
+    margin-bottom: var(--space-8);
+    color: var(--color-gray-300);
+    font-weight: var(--font-weight-medium);
+    font-size: var(--font-size-sm);
 }
 
 .animated-input {
-  width: 100%;
-  padding: var(--space-16);
-  background: rgba(255, 255, 255, 0.05);
-  border: 2px solid var(--glass-border);
-  border-radius: var(--radius-base);
-  color: var(--color-gray-200);
-  font-size: var(--font-size-base);
-  transition: all 0.3s var(--spring-easing);
+    width: 100%;
+    padding: var(--space-16);
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid var(--glass-border);
+    border-radius: var(--radius-base);
+    color: var(--color-gray-200);
+    font-size: var(--font-size-base);
+    transition: all 0.3s var(--spring-easing);
 }
 
 .animated-input:focus {
-  outline: none;
-  border-color: var(--neon-cyan);
-  box-shadow: 0 0 25px rgba(0, 229, 255, 0.2);
-  background: rgba(255, 255, 255, 0.08);
-  transform: translateY(-2px);
+    outline: none;
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 25px rgba(0, 229, 255, 0.2);
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-2px);
 }
 
 .animated-input::placeholder {
-  color: var(--color-gray-400);
+    color: var(--color-gray-400);
 }
+
+
+/* === FIX FOR DROPDOWNS STARTS HERE === */
+
+/* Target all select elements in the form and override conflicting styles */
+.post-form select.form-control {
+    /* Change background to a semi-transparent DARK color for better contrast */
+    background: rgba(10, 10, 35, 0.6) !important;
+    backdrop-filter: blur(5px);
+
+    /* The existing light text color is now readable */
+    color: var(--color-gray-200) !important;
+    
+    /* Remove default browser appearance for custom styling */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    
+    /* Add a custom dropdown arrow */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2300E5FF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right var(--space-16) center !important;
+}
+
+/* Style for the dropdown options list */
+.post-form select.form-control option {
+    color: var(--color-gray-200);
+    background-color: var(--deep-navy);
+}
+
+/* === FIX FOR DROPDOWNS ENDS HERE === */
+
 
 /* Upload Area */
 .upload-area {

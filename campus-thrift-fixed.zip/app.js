@@ -1,6 +1,6 @@
 // API Configuration
-const API_BASE_URL = 'https://backend-k4dg.onrender.com/api';
-const SOCKET_URL = 'https://backend-k4dg.onrender.com';
+const API_BASE_URL = 'http://localhost:3001/api';
+const SOCKET_URL = 'http://localhost:3001';
 const CONNECTION_TIMEOUT = 3000;
 
 // Global State
