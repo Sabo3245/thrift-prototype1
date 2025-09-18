@@ -1110,7 +1110,6 @@ body {
   transform: translateY(50px);
 }
 
-
 /* Sections */
 .section {
   padding: var(--space-32) 0;
@@ -1364,7 +1363,6 @@ body {
   position: relative;
   overflow: hidden;
 }
-
 
 .item-title {
   font-size: var(--font-size-lg);
@@ -2714,4 +2712,123 @@ input:checked + .toggle-label::before {
     opacity: 0;
     transform: translate(-50%, -100px) scale(0.8);
   }
+}
+/* style.css */
+
+/* =================================== */
+/* === NEW ACCOUNT SETTINGS STYLES === */
+/* =================================== */
+
+.account-settings {
+  padding: var(--space-32);
+  animation-delay: 0.4s; /* Stagger the animation */
+}
+
+.settings-actions-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.setting-action-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-16);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-base);
+  color: var(--color-gray-300);
+  text-decoration: none;
+  transition: all 0.3s var(--smooth-easing);
+  font-weight: var(--font-weight-medium);
+}
+
+.setting-action-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--neon-cyan);
+  color: var(--neon-cyan);
+  transform: translateX(5px);
+}
+
+.setting-action-item.delete-account {
+  color: var(--neon-pink);
+  border-color: rgba(255, 51, 102, 0.2);
+}
+
+.setting-action-item.delete-account:hover {
+  background: rgba(255, 51, 102, 0.1);
+  border-color: var(--neon-pink);
+  color: var(--neon-pink);
+}
+/*
+  File: style.css
+  Action: Add this entire CSS block to the end of the file.
+*/
+
+/* ======================== */
+/* === NEW HELP STYLES === */
+/* ======================== */
+
+.help-content-grid {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.help-card {
+  padding: var(--space-32);
+  text-align: center;
+}
+
+.help-description {
+  color: var(--color-gray-400);
+  margin-bottom: var(--space-32);
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.6;
+}
+
+.contact-info-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-20);
+  text-align: left;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-20);
+  padding: var(--space-16);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-base);
+  transition: all 0.3s var(--smooth-easing);
+}
+
+.contact-item:hover {
+  border-color: var(--neon-cyan);
+  background: rgba(0, 229, 255, 0.05);
+  transform: scale(1.02);
+}
+
+.contact-icon {
+  font-size: var(--font-size-2xl);
+}
+
+.contact-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.contact-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-400);
+  font-weight: var(--font-weight-medium);
+}
+
+.contact-value {
+  font-size: var(--font-size-base);
+  color: var(--color-gray-200);
 }

@@ -37,7 +37,7 @@
         </div>
       </div>
 
-    <nav class="nav-container">
+      <nav class="nav-container">
         <div class="nav-brand">
           <div class="brand-logo">CK</div>
           <span class="brand-text">CampusKart</span>
@@ -55,13 +55,63 @@
             <span class="nav-icon">💬</span>
             <span>Chat</span>
           </button>
+          <button class="nav-tab" data-section="help">
+            <span class="nav-icon">🆘</span>
+            <span>Help</span>
+          </button>
           <button class="nav-tab" data-section="profile">
             <span class="nav-icon">👤</span>
             <span>Profile</span>
           </button>
           <div class="nav-indicator"></div>
         </div>
-    </nav>
+      </nav>
+      <section id="help" class="section">
+        <div class="container">
+          <div class="section-header">
+            <h1 class="page-title">Help & Support</h1>
+            <p class="page-subtitle">
+              Get in touch with the CampusKart admin team
+            </p>
+          </div>
+          <div class="help-content-grid">
+            <div class="glass-card help-card">
+              <h3 class="card-title">Admin Contact Information</h3>
+              <p class="help-description">
+                If you encounter any issues, have questions, or need assistance
+                with a transaction, please don't hesitate to reach out to us.
+              </p>
+              <div class="contact-info-list">
+                <div class="contact-item">
+                  <span class="contact-icon">📧</span>
+                  <div class="contact-details">
+                    <span class="contact-label">Email Support</span>
+                    <span class="contact-value"
+                      >admin@campuskart.example.com</span
+                    >
+                  </div>
+                </div>
+                <div class="contact-item">
+                  <span class="contact-icon">📞</span>
+                  <div class="contact-details">
+                    <span class="contact-label">Phone Support</span>
+                    <span class="contact-value">+91 123-456-7890</span>
+                  </div>
+                </div>
+                <div class="contact-item">
+                  <span class="contact-icon">🕒</span>
+                  <div class="contact-details">
+                    <span class="contact-label">Office Hours</span>
+                    <span class="contact-value"
+                      >Mon-Fri, 10:00 AM - 5:00 PM</span
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section id="marketplace" class="section active">
         <div class="container">
@@ -116,8 +166,7 @@
             </div>
           </div>
 
-          <div class="items-grid" id="itemsGrid">
-            </div>
+          <div class="items-grid" id="itemsGrid"></div>
 
           <div class="loading-more hidden" id="loadingMore">
             <div class="skeleton-cards">
@@ -282,6 +331,28 @@
               </div>
               <div class="uploaded-images" id="uploadedImages"></div>
             </div>
+            <div class="form-tips-card">
+              <h4 class="tips-title">💡 Safety Tips & Disclaimer</h4>
+              <ul class="tips-list">
+                <li>
+                  <strong>Be Cautious:</strong> Don't share OTPs or personal
+                  details like bank account numbers.
+                </li>
+                <li>
+                  <strong>No Advance Payments:</strong> Never give money or the
+                  product to someone in advance.
+                </li>
+                <li>
+                  <strong>Meet Safely:</strong> Always be cautious while meeting
+                  a buyer or seller. Prefer public places on campus.
+                </li>
+                <li>
+                  <strong>Report Suspicious Users:</strong> Help keep the
+                  community safe by reporting any suspicious behavior to the
+                  admins.
+                </li>
+              </ul>
+            </div>
 
             <button
               type="submit"
@@ -304,8 +375,7 @@
           <div class="chat-container">
             <div class="chat-sidebar glass-card">
               <h3 class="sidebar-title">Conversations</h3>
-              <div class="conversation-list" id="conversationList">
-                </div>
+              <div class="conversation-list" id="conversationList"></div>
             </div>
 
             <div class="chat-window glass-card" id="chatWindow">
@@ -446,8 +516,36 @@
               </div>
               <div class="transaction-history">
                 <h4>Recent Transactions</h4>
-                <div id="transactionList">
-                  </div>
+                <div id="transactionList"></div>
+              </div>
+            </div>
+            <div class="account-settings glass-card">
+              <h3 class="card-title">Settings</h3>
+              <div class="settings-actions-list">
+                <a href="#" id="logoutBtn" class="setting-action-item">
+                  <span>🚪 Logout</span>
+                  <span>&gt;</span>
+                </a>
+                <a href="#" id="changePasswordBtn" class="setting-action-item">
+                  <span>🔒 Privacy - Change Password</span>
+                  <span>&gt;</span>
+                </a>
+                <a
+                  href="#"
+                  id="notificationSettingsBtn"
+                  class="setting-action-item"
+                >
+                  <span>🔔 Notification</span>
+                  <span>&gt;</span>
+                </a>
+                <a
+                  href="#"
+                  id="deleteAccountBtn"
+                  class="setting-action-item delete-account"
+                >
+                  <span>🗑️ Delete Account</span>
+                  <span>&gt;</span>
+                </a>
               </div>
             </div>
           </div>
@@ -458,6 +556,7 @@
         <div class="modal-overlay"></div>
         <div class="modal-content glass-card">
           <div class="modal-header">
+            
             <div class="success-icon">✨</div>
             <h3 class="modal-title">Success!</h3>
             <p class="modal-message">Your item has been posted successfully!</p>
@@ -477,7 +576,22 @@
         <div class="modal-overlay"></div>
         <div class="modal-content glass-card">
           <div class="modal-header">
-            <div class="warning-icon">⚠️</div>
+            <div class="disclaimer-modal-icon">🛡️</div>
+            <h3 class="modal-title">Safety First!</h3>
+          </div>
+          <div class="modal-body">
+            <ul class="disclaimer-list">
+              <li>Don't share your OTP with anyone.</li>
+              <li>Never give your money or product in advance.</li>
+              <li>Report all suspicious users.</li>
+              <li>Don't share personal details.</li>
+              <li>
+                Be cautious during Buying and Selling and while meeting the
+                buyer/seller.
+              </li>
+            </ul>
+          </div>
+          <div class="warning-icon">⚠️</div>
             <h3 class="modal-title">Remove Post</h3>
             <p class="modal-message">
               Are you sure you want to remove this item? This action cannot be
@@ -512,7 +626,6 @@
           </div>
         </div>
       </div>
-
       <button class="fab" id="fabButton">
         <span class="fab-icon">➕</span>
         <div class="fab-ripple"></div>

@@ -1086,9 +1086,95 @@ class Chat {
 }
 
 // Profile Handler
+// app.js
+
+// (Replace the entire existing Profile class with this one)
 class Profile {
   init() {
     this.loadData();
+    this.bindEvents(); // Call the new method to attach event listeners
+  }
+
+  bindEvents() {
+    // Get the buttons using their new IDs
+    const logoutBtn = document.getElementById("logoutBtn");
+    const changePasswordBtn = document.getElementById("changePasswordBtn");
+    const notificationSettingsBtn = document.getElementById(
+      "notificationSettingsBtn"
+    );
+    const deleteAccountBtn = document.getElementById("deleteAccountBtn");
+
+    // Add click event listeners
+    if (logoutBtn) {
+      logoutBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        this.logout();
+      });
+    }
+
+    if (changePasswordBtn) {
+      changePasswordBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        this.changePassword();
+      });
+    }
+
+    if (notificationSettingsBtn) {
+      notificationSettingsBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        // For now, this just shows a notification. Could lead to a settings page.
+        utils.showNotification(
+          "Notification settings are managed here.",
+          "info"
+        );
+      });
+    }
+
+    if (deleteAccountBtn) {
+      deleteAccountBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        this.deleteAccount();
+      });
+    }
+  }
+
+  logout() {
+    utils.showNotification("Logging you out...", "info");
+
+    // After a short delay, clear user data and reload the page
+    setTimeout(() => {
+      localStorage.removeItem("user_profile");
+      localStorage.removeItem("marketplace_items");
+      window.location.reload();
+    }, 1500);
+  }
+
+  // In app.js -> inside the Profile class
+  changePassword() {
+    // This function now simply opens the modal window
+    const modal = document.getElementById("changePasswordModal");
+    if (modal) {
+      modal.classList.remove("hidden");
+      // Clear previous input values when opening
+      document.getElementById("passwordChangeForm").reset();
+    }
+  }
+
+  deleteAccount() {
+    // A confirmation step is crucial for destructive actions
+    const confirmation = confirm(
+      "Are you absolutely sure you want to delete your account?\nAll your data will be lost forever. This action cannot be undone."
+    );
+
+    if (confirmation) {
+      utils.showNotification("Deleting your account...", "warning");
+
+      // Similar to logout, clear all data and reload
+      setTimeout(() => {
+        localStorage.clear(); // Clears everything
+        window.location.reload();
+      }, 2000);
+    }
   }
 
   loadData() {
@@ -1212,12 +1298,24 @@ class Profile {
     });
   }
 }
+class Help {
+  init() {
+    // This is where you could add event listeners for the help page,
+    // like a "copy email" button.
+    console.log("Help section initialized.");
+  }
+}
 
 // Initialize modal handlers
 function initModals() {
-  // Modal event handlers
+  // --- START: ADD THIS NEW CODE ---
+
   document.addEventListener("click", (e) => {
-    if (e.target.id === "cancelBoost" || e.target.id === "cancelRemove" || e.target.id === "closeModal") {
+    if (
+      e.target.id === "cancelBoost" ||
+      e.target.id === "cancelRemove" ||
+      e.target.id === "closeModal"
+    ) {
       e.target.closest(".modal").classList.add("hidden");
     }
 
@@ -1250,6 +1348,7 @@ class App {
     this.postItem = new PostItem();
     this.chat = new Chat();
     this.profile = new Profile();
+    this.help = new Help();
   }
 
   init() {
@@ -1261,7 +1360,7 @@ class App {
     this.postItem.init();
     this.chat.init();
     this.profile.init();
-
+    this.help.init();
     initModals();
 
     // Make components globally available
@@ -1270,7 +1369,7 @@ class App {
     window.postItem = this.postItem;
     window.chat = this.chat;
     window.profile = this.profile;
-
+    window.help = this.help;
     this.addGlobalAnimations();
 
     console.log("Enhanced app initialized successfully");
