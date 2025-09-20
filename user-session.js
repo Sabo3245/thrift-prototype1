@@ -522,10 +522,10 @@ class UserSessionManager {
     if (!listingsContainer || !this.currentUser) return;
 
     try {
-      // Query items posted by this user
+      // Query items posted by this user (match schema: sellerId)
       const listingsQuery = this.modules.query(
         this.modules.collection(this.db, 'items'),
-        this.modules.where('userId', '==', this.currentUser.uid)
+        this.modules.where('sellerId', '==', this.currentUser.uid)
       );
       
       const querySnapshot = await this.modules.getDocs(listingsQuery);
@@ -533,7 +533,7 @@ class UserSessionManager {
       if (querySnapshot.empty) {
         listingsContainer.innerHTML = `
           <div class="empty-state">
-            <p>🛍️ You haven't posted anything yet. Start selling to see your items here!</p>
+            <p>🧺 You haven't posted anything yet. Start selling to see your items here!</p>
           </div>
         `;
       } else {
@@ -546,6 +546,12 @@ class UserSessionManager {
       }
     } catch (error) {
       console.error('❌ Failed to load user listings:', error);
+      const reason = error?.code || error?.message || 'Unknown error';
+      listingsContainer.innerHTML = `
+        <div class="empty-state">
+          <p>⚠️ Can't load your listings (${reason}).</p>
+        </div>
+      `;
     }
   }
 
