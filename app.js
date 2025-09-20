@@ -303,8 +303,6 @@ const utils = {
   },
 };
 
-// In app.js, find and replace the existing switchToSection function with this one.
-
 function switchToSection(sectionName) {
   console.log("Global switchToSection called:", sectionName);
 
