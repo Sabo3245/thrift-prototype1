@@ -554,19 +554,16 @@ class UserSessionManager {
     }, 10000);
   }
 
-// In user-session.js
-// In user-session.js
-
   async loadUserListings() {
     // Load user's posted items
     const listingsContainer = document.getElementById("myListings");
     if (!listingsContainer || !this.currentUser) return;
 
     try {
-      // CORRECTED: Query items using 'sellerId' to match how items are saved
+      // Query items posted by this user
       const listingsQuery = this.modules.query(
-        this.modules.collection(this.db, 'items'),
-        this.modules.where('sellerId', '==', this.currentUser.uid)
+        this.modules.collection(this.db, "items"),
+        this.modules.where("userId", "==", this.currentUser.uid)
       );
 
       const querySnapshot = await this.modules.getDocs(listingsQuery);
@@ -574,27 +571,19 @@ class UserSessionManager {
       if (querySnapshot.empty) {
         listingsContainer.innerHTML = `
           <div class="empty-state">
-            <p>🧺 You haven't posted anything yet. Start selling to see your items here!</p>
+            <p>🛍️ You haven't posted anything yet. Start selling to see your items here!</p>
           </div>
         `;
       } else {
         let listingsHTML = "";
         querySnapshot.forEach((doc) => {
           const item = doc.data();
-          // We pass 'true' to indicate the user is the owner of this item
           listingsHTML += this.createItemCard(item, doc.id, true);
         });
-        listingsContainer.innerHTML = `<div class="listings-grid">${listingsHTML}</div>`;
+        listingsContainer.innerHTML = listingsHTML;
       }
     } catch (error) {
-      // CORRECTED: Kept the more detailed error message for better debugging
-      console.error('❌ Failed to load user listings:', error);
-      const reason = error?.code || error?.message || 'Unknown error';
-      listingsContainer.innerHTML = `
-        <div class="empty-state">
-          <p>⚠️ Can't load your listings (${reason}).</p>
-        </div>
-      `;
+      console.error("❌ Failed to load user listings:", error);
     }
   }
 

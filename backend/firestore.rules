@@ -5,61 +5,97 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Users collection — owner can read/write own profile
+    // Users collection
     match /users/{userId} {
+      // Users can read and write their own profile
       allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // Users can read other users' public profile info (for chat, etc.)
+      allow read: if request.auth != null && 
+        resource.data.settings.showProfileToOthers == true;
     }
 
-    // Items collection — public read of available items, owner-only writes
+    // Items collection
     match /items/{itemId} {
-      // Allow public reads for available items, or legacy isActive true
-      allow read: if resource.data.status == 'available' || resource.data.isActive == true;
+      // Anyone can read active items
+      allow read: if request.auth != null && resource.data.isActive == true;
 
-      // Authenticated users can create items for themselves (minimal validation)
-      allow create: if request.auth != null
-                    && request.auth.uid == request.resource.data.sellerId
-                    && (request.resource.data.title is string && request.resource.data.title.size() > 0)
-                    && (request.resource.data.price is number && request.resource.data.price > 0)
-                    && (request.resource.data.category in ['Clothes','Electronics','Books','Cosmetics','Miscellaneous'])
-                    && (request.resource.data.condition in ['New','Used','Unused']);
+      // Only authenticated users can create items
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.sellerId &&
+        request.resource.data.keys().hasAll(['title', 'category', 'condition', 'price', 'description', 'hostel']) &&
+        request.resource.data.sellerId is string &&
+        request.resource.data.sellerEmail == request.auth.token.email &&
+        request.resource.data.price is number &&
+        request.resource.data.price > 0 &&
+        request.resource.data.title is string &&
+        request.resource.data.title.size() > 0 &&
+        request.resource.data.category in ['Clothes', 'Electronics', 'Books', 'Cosmetics'] &&
+        request.resource.data.condition in ['New', 'Used', 'Unused'] &&
+        request.resource.data.hostel in ['Boys', 'Girls'];
 
-      // Only the owner can update/delete
-      allow update, delete: if request.auth != null && request.auth.uid == resource.data.sellerId;
+      // Only item owners can update their items
+      allow update: if request.auth != null && 
+        request.auth.uid == resource.data.sellerId &&
+        request.auth.uid == request.resource.data.sellerId;
+
+      // Only item owners can delete (soft delete by setting isActive: false)
+      allow delete: if request.auth != null && 
+        request.auth.uid == resource.data.sellerId;
     }
 
-    // Conversations collection — unchanged
+    // Conversations collection
     match /conversations/{conversationId} {
+      // Only participants can read/write conversations
       allow read, write: if request.auth != null && 
         request.auth.uid in resource.data.participants;
+
+      // Allow creation if user is one of the participants
       allow create: if request.auth != null && 
         request.auth.uid in request.resource.data.participants &&
         request.resource.data.participants.size() == 2;
     }
 
-    // Messages collection — unchanged
+    // Messages collection
     match /messages/{messageId} {
+      // Users can read messages from conversations they're part of
       allow read: if request.auth != null && 
         request.auth.uid in get(/databases/$(database)/documents/conversations/$(resource.data.conversationId)).data.participants;
+
+      // Users can create messages in conversations they're part of
       allow create: if request.auth != null && 
         request.auth.uid == request.resource.data.senderId &&
         request.auth.uid in get(/databases/$(database)/documents/conversations/$(request.resource.data.conversationId)).data.participants &&
         request.resource.data.message is string &&
         request.resource.data.message.size() > 0;
-      allow delete: if request.auth != null && request.auth.uid == resource.data.senderId;
+
+      // Users can delete their own messages
+      allow delete: if request.auth != null && 
+        request.auth.uid == resource.data.senderId;
+
+      // Users can update their own messages (for read receipts, etc.)
       allow update: if request.auth != null && (
         request.auth.uid == resource.data.senderId ||
         (request.auth.uid in get(/databases/$(database)/documents/conversations/$(resource.data.conversationId)).data.participants)
       );
     }
 
-    // Transactions — minimal owner-only access
+    // Transactions collection
     match /transactions/{transactionId} {
-      allow read: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      // Users can read their own transactions
+      allow read: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+
+      // Users can create transactions for themselves
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.userId &&
+        request.resource.data.userId is string;
+
+      // No updates or deletes allowed for audit purposes
       allow update, delete: if false;
     }
 
-    // Block other access
+    // General security: Block all other access
     match /{document=**} {
       allow read, write: if false;
     }

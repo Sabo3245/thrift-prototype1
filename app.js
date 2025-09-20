@@ -1340,15 +1340,6 @@ class Profile {
         e.preventDefault();
         this.openEditNameModal();
       });
-    } else {
-      // Fallback: delegate on document in case the element is rendered later
-      document.addEventListener('click', (e) => {
-        const link = e.target.closest('#editNameBtn');
-        if (link) {
-          e.preventDefault();
-          this.openEditNameModal();
-        }
-      });
     }
 
     // Save the new name when "Save" is clicked in the modal
