@@ -303,7 +303,8 @@ const utils = {
   },
 };
 
-// Global navigation function
+// In app.js, find and replace the existing switchToSection function with this one.
+
 function switchToSection(sectionName) {
   console.log("Global switchToSection called:", sectionName);
 
@@ -327,6 +328,18 @@ function switchToSection(sectionName) {
       section.style.display = "none";
     }
   });
+
+  // --- START: NEW CODE TO FIX FAB VISIBILITY ---
+  // This code shows or hides the floating plus button based on the current section.
+  const fabButton = document.getElementById("fabButton");
+  if (fabButton) {
+    if (sectionName === "marketplace") {
+      fabButton.classList.remove("hidden"); // Show the button on the marketplace
+    } else {
+      fabButton.classList.add("hidden"); // Hide the button on all other sections
+    }
+  }
+  // --- END: NEW CODE TO FIX FAB VISIBILITY ---
 
   AppState.currentSection = sectionName;
 
@@ -502,32 +515,37 @@ class Marketplace {
 
     try {
       if (window.firebaseDb && window.firebaseModules) {
-        const { collection, query, where, orderBy, getDocs } = window.firebaseModules;
-        const itemsRef = collection(window.firebaseDb, 'items');
+        const { collection, query, where, orderBy, getDocs } =
+          window.firebaseModules;
+        const itemsRef = collection(window.firebaseDb, "items");
         let items = [];
         try {
           // Primary query: requires composite index (status + createdAt)
           const q = query(
             itemsRef,
-            where('status', '==', 'available'),
-            orderBy('createdAt', 'desc')
+            where("status", "==", "available"),
+            orderBy("createdAt", "desc")
           );
           const snapshot = await getDocs(q);
-          snapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
+          snapshot.forEach((doc) => items.push({ id: doc.id, ...doc.data() }));
         } catch (e) {
           // Fallback: query without orderBy if index is missing or any 400 occurs
-          const msg = (e?.message || '').toLowerCase();
-          if (e?.code === 'failed-precondition' || msg.includes('index')) {
-            console.warn('Index not ready; retrying items fetch without orderBy');
-            const q2 = query(itemsRef, where('status', '==', 'available'));
+          const msg = (e?.message || "").toLowerCase();
+          if (e?.code === "failed-precondition" || msg.includes("index")) {
+            console.warn(
+              "Index not ready; retrying items fetch without orderBy"
+            );
+            const q2 = query(itemsRef, where("status", "==", "available"));
             const snapshot2 = await getDocs(q2);
             items = [];
-            snapshot2.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
+            snapshot2.forEach((doc) =>
+              items.push({ id: doc.id, ...doc.data() })
+            );
           } else {
             throw e;
           }
         }
-        
+
         AppState.items = [...items];
         AppState.originalItems = [...items];
         AppState.filteredItems = [...items];
@@ -535,7 +553,10 @@ class Marketplace {
         return;
       }
     } catch (err) {
-      console.warn('Failed to fetch items from Firestore, using local storage fallback:', err);
+      console.warn(
+        "Failed to fetch items from Firestore, using local storage fallback:",
+        err
+      );
     }
 
     // Fallback to local storage or sample data
@@ -678,14 +699,26 @@ class Marketplace {
     const savings = item.originalPrice
       ? utils.calculateSavings(item.originalPrice, item.price)
       : null;
-    const isUserItem = !!item.sellerId && (item.sellerId === ((window.userSession?.getCurrentUser?.()?.uid) || (window.firebaseAuth?.currentUser?.uid) || "user1"));
+    const isUserItem =
+      !!item.sellerId &&
+      item.sellerId ===
+        (window.userSession?.getCurrentUser?.()?.uid ||
+          window.firebaseAuth?.currentUser?.uid ||
+          "user1");
     const isHearted = AppState.userProfile.heartedPosts.includes(item.id);
 
-    const primaryImage = Array.isArray(item.images) && item.images.length > 0 ? item.images[0] : null;
+    const primaryImage =
+      Array.isArray(item.images) && item.images.length > 0
+        ? item.images[0]
+        : null;
 
     card.innerHTML = `
             <div class="item-image">
-                ${primaryImage ? `<img src="${primaryImage}" alt="${item.title}" class="item-img" style="width:100%;height:160px;object-fit:cover;border-radius:12px;"/>` : `<span class="item-emoji">${item.icon || "📦"}</span>`}
+                ${
+                  primaryImage
+                    ? `<img src="${primaryImage}" alt="${item.title}" class="item-img" style="width:100%;height:160px;object-fit:cover;border-radius:12px;"/>`
+                    : `<span class="item-emoji">${item.icon || "📦"}</span>`
+                }
             </div>
             <h3 class="item-title">${item.title}</h3>
             <div class="item-prices">
@@ -935,12 +968,13 @@ class PostItem {
         uploadedImagesContainer.innerHTML = "";
         const files = Array.from(e.target.files || []);
         files.slice(0, 5).forEach((file) => {
-          if (!file.type.startsWith('image/')) return;
+          if (!file.type.startsWith("image/")) return;
           const reader = new FileReader();
           reader.onload = () => {
-            const div = document.createElement('div');
-            div.className = 'uploaded-image-thumb';
-            div.style.cssText = 'display:inline-block;margin:6px;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,0.15)';
+            const div = document.createElement("div");
+            div.className = "uploaded-image-thumb";
+            div.style.cssText =
+              "display:inline-block;margin:6px;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,0.15)";
             div.innerHTML = `<img src="${reader.result}" alt="preview" style="width:96px;height:96px;object-fit:cover;" />`;
             uploadedImagesContainer.appendChild(div);
           };
@@ -953,14 +987,18 @@ class PostItem {
   async uploadImagesToStorage(uid) {
     const fileInput = document.getElementById("itemPhotos");
     const files = Array.from(fileInput?.files || []);
-    if (!files.length || !(window.firebaseStorage && window.firebaseModules)) return [];
+    if (!files.length || !(window.firebaseStorage && window.firebaseModules))
+      return [];
 
     const { ref, uploadBytes, getDownloadURL } = window.firebaseModules;
     const urls = [];
     for (let i = 0; i < Math.min(files.length, 5); i++) {
       const f = files[i];
-      if (!f.type.startsWith('image/')) continue;
-      const path = `items/${uid}/${Date.now()}_${i}_${f.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+      if (!f.type.startsWith("image/")) continue;
+      const path = `items/${uid}/${Date.now()}_${i}_${f.name.replace(
+        /[^a-zA-Z0-9._-]/g,
+        "_"
+      )}`;
       const storageRef = ref(window.firebaseStorage, path);
       const snap = await uploadBytes(storageRef, f);
       const url = await getDownloadURL(snap.ref);
@@ -980,7 +1018,10 @@ class PostItem {
     submitBtn.disabled = true;
 
     try {
-      const currentUser = window.userSession?.getCurrentUser?.() || window.firebaseAuth?.currentUser || null;
+      const currentUser =
+        window.userSession?.getCurrentUser?.() ||
+        window.firebaseAuth?.currentUser ||
+        null;
       if (!currentUser) {
         utils.showNotification("Please sign in to post an item", "error");
         submitBtn.disabled = false;
@@ -996,7 +1037,8 @@ class PostItem {
         condition: document.getElementById("itemCondition").value,
         price: parseInt(document.getElementById("itemPrice").value, 10),
         originalPrice:
-          parseInt(document.getElementById("itemOriginalPrice").value, 10) || null,
+          parseInt(document.getElementById("itemOriginalPrice").value, 10) ||
+          null,
         description: document.getElementById("itemDescription").value.trim(),
         hostel: document.getElementById("itemHostel").value,
         icon: this.getCategoryIcon(categoryVal),
@@ -1005,11 +1047,14 @@ class PostItem {
         heartedBy: [],
         images: [],
         sellerId: currentUser.uid,
-        sellerEmail: currentUser.email || '',
-        sellerName: (window.userSession?.getUserData?.()?.firstName || '') + ' ' + (window.userSession?.getUserData?.()?.lastName || ''),
-        status: 'available',
+        sellerEmail: currentUser.email || "",
+        sellerName:
+          (window.userSession?.getUserData?.()?.firstName || "") +
+          " " +
+          (window.userSession?.getUserData?.()?.lastName || ""),
+        status: "available",
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       };
 
       if (newItem.category === "Clothes") {
@@ -1025,21 +1070,32 @@ class PostItem {
       try {
         imageUrls = await this.uploadImagesToStorage(currentUser.uid);
       } catch (e) {
-        console.warn('Image upload failed, proceeding without images:', e);
+        console.warn("Image upload failed, proceeding without images:", e);
       }
       newItem.images = imageUrls;
 
       // Attempt to save to Firestore if available
       if (window.firebaseDb && window.firebaseModules) {
         const { collection, addDoc, serverTimestamp } = window.firebaseModules;
-        const itemsRef = collection(window.firebaseDb, 'items');
-        const docToSave = { ...newItem, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+        const itemsRef = collection(window.firebaseDb, "items");
+        const docToSave = {
+          ...newItem,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        };
 
         // Guard against hanging network by enforcing a timeout
-        const withTimeout = (p, ms) => new Promise((resolve, reject) => {
-          const t = setTimeout(() => reject(new Error('timeout')), ms);
-          p.then((v) => { clearTimeout(t); resolve(v); }).catch((e) => { clearTimeout(t); reject(e); });
-        });
+        const withTimeout = (p, ms) =>
+          new Promise((resolve, reject) => {
+            const t = setTimeout(() => reject(new Error("timeout")), ms);
+            p.then((v) => {
+              clearTimeout(t);
+              resolve(v);
+            }).catch((e) => {
+              clearTimeout(t);
+              reject(e);
+            });
+          });
 
         // Try to write, but don't hang UI if the network is blocked
         let savedItem;
@@ -1047,13 +1103,18 @@ class PostItem {
           const docRef = await withTimeout(addDoc(itemsRef, docToSave), 10000);
           savedItem = { ...newItem, id: docRef.id };
         } catch (err) {
-          if (err && err.message === 'timeout') {
+          if (err && err.message === "timeout") {
             // Offline or blocked network: show locally and sync later
-            const tempId = 'temp_' + Date.now();
+            const tempId = "temp_" + Date.now();
             savedItem = { ...newItem, id: tempId };
             // Background attempt (non-blocking)
-            addDoc(itemsRef, docToSave).catch(e => console.warn('Background sync failed:', e));
-            utils.showNotification("Saved locally. Will sync when online.", "info");
+            addDoc(itemsRef, docToSave).catch((e) =>
+              console.warn("Background sync failed:", e)
+            );
+            utils.showNotification(
+              "Saved locally. Will sync when online.",
+              "info"
+            );
           } else {
             throw err;
           }
@@ -1088,14 +1149,15 @@ class PostItem {
       setTimeout(() => {
         switchToSection("marketplace");
       }, 500);
-
     } catch (err) {
-      console.error('Failed to post item:', err);
-      if (err && err.message === 'timeout') {
+      console.error("Failed to post item:", err);
+      if (err && err.message === "timeout") {
         // Already handled by local fallback above; just switch view
         switchToSection("marketplace");
       } else {
-        const msg = err?.code ? `${err.code}: ${err.message || 'Failed to post item'}` : 'Failed to post item. Please try again.';
+        const msg = err?.code
+          ? `${err.code}: ${err.message || "Failed to post item"}`
+          : "Failed to post item. Please try again.";
         utils.showNotification(msg, "error");
       }
     } finally {
@@ -1248,30 +1310,33 @@ class Chat {
 // app.js
 
 // (Replace the entire existing Profile class with this one)
+// In app.js, replace the entire existing Profile class with this one.
+
+// In app.js, replace the entire existing Profile class with this one.
+
 class Profile {
   init() {
     this.loadData();
-    this.bindEvents(); // Call the new method to attach event listeners
+    this.bindEvents(); // Attaches all necessary event listeners
   }
 
+  // Binds clicks to all the interactive elements in the profile section
   bindEvents() {
-    // Get the buttons using their new IDs
+    const avatarEditBtn = document.querySelector(".avatar-edit"); // The pencil icon
+    const editNameBtn = document.getElementById("editNameBtn"); // The settings link
+    const saveEditNameBtn = document.getElementById("saveEditName");
+    const cancelEditNameBtn = document.getElementById("cancelEditName");
     const logoutBtn = document.getElementById("logoutBtn");
-    const editNameBtn = document.getElementById("editNameBtn");
-    const changePasswordBtn = document.getElementById("changePasswordBtn");
-    const notificationSettingsBtn = document.getElementById(
-      "notificationSettingsBtn"
-    );
-    const deleteAccountBtn = document.getElementById("deleteAccountBtn");
 
-    // Add click event listeners
-    if (logoutBtn) {
-      logoutBtn.addEventListener("click", (e) => {
+    // NEW: Make the pencil icon open the Edit Name modal
+    if (avatarEditBtn) {
+      avatarEditBtn.addEventListener("click", (e) => {
         e.preventDefault();
-        this.logout();
+        this.openEditNameModal();
       });
     }
 
+    // Make the "Edit Name" link in settings open the modal
     if (editNameBtn) {
       editNameBtn.addEventListener("click", (e) => {
         e.preventDefault();
@@ -1288,128 +1353,100 @@ class Profile {
       });
     }
 
-    if (changePasswordBtn) {
-      changePasswordBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        this.changePassword();
-      });
-    }
-
-    if (notificationSettingsBtn) {
-      notificationSettingsBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        // For now, this just shows a notification. Could lead to a settings page.
-        utils.showNotification(
-          "Notification settings are managed here.",
-          "info"
-        );
-      });
-    }
-
-    if (deleteAccountBtn) {
-      deleteAccountBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        this.deleteAccount();
-      });
-    }
-
-    // Modal actions
-    const cancelEditName = document.getElementById("cancelEditName");
-    const saveEditName = document.getElementById("saveEditName");
-    if (cancelEditName) {
-      cancelEditName.addEventListener("click", (e) => {
-        e.preventDefault();
-        document.getElementById("editNameModal")?.classList.add("hidden");
-      });
-    }
-    if (saveEditName) {
-      saveEditName.addEventListener("click", async (e) => {
+    // Save the new name when "Save" is clicked in the modal
+    if (saveEditNameBtn) {
+      saveEditNameBtn.addEventListener("click", async (e) => {
         e.preventDefault();
         await this.saveEditedName();
       });
     }
-  }
 
-  logout() {
-    utils.showNotification("Logging you out...", "info");
+    // Close the modal when "Cancel" is clicked
+    if (cancelEditNameBtn) {
+      cancelEditNameBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        document.getElementById("editNameModal")?.classList.add("hidden");
+      });
+    }
 
-    // Delegate to Firebase auth signOut via user session manager
-    if (window.userSession && typeof window.userSession.logout === 'function') {
-      window.userSession.logout();
-    } else {
-      // Fallback: clear local caches and go to auth page
-      localStorage.removeItem("user_profile");
-      localStorage.removeItem("marketplace_items");
-      window.location.href = 'auth.html';
+    // Handle logout
+    if (logoutBtn) {
+      logoutBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        this.logout();
+      });
     }
   }
 
-  // In app.js -> inside the Profile class
-  changePassword() {
-    // This function now simply opens the modal window
-    const modal = document.getElementById("changePasswordModal");
-    if (modal) {
-      modal.classList.remove("hidden");
-      // Clear previous input values when opening
-      document.getElementById("passwordChangeForm").reset();
-    }
+  // Opens the modal and pre-fills it with the user's current name
+  openEditNameModal() {
+    const modal = document.getElementById("editNameModal");
+    if (!modal) return;
+
+    // Get current user data from the session manager
+    const userData = window.userSession?.getUserData?.() || {};
+    const firstNameInput = document.getElementById("editFirstName");
+    const lastNameInput = document.getElementById("editLastName");
+
+    if (firstNameInput) firstNameInput.value = userData.firstName || "";
+    if (lastNameInput) lastNameInput.value = userData.lastName || "";
+
+    modal.classList.remove("hidden");
   }
 
+  // Saves the new name and updates the UI
   async saveEditedName() {
-    try {
-      const firstName = (document.getElementById('editFirstName')?.value || '').trim();
-      const lastName = (document.getElementById('editLastName')?.value || '').trim();
-      if (!firstName && !lastName) {
-        utils.showNotification('Please enter at least a first or last name', 'warning');
-        return;
-      }
+    const firstName = document.getElementById("editFirstName").value.trim();
+    const lastName = document.getElementById("editLastName").value.trim();
+    const fullName = `${firstName} ${lastName}`.trim();
 
-      // Update Firestore user document
-      if (window.userSession && typeof window.userSession.updateUserData === 'function') {
+    if (!fullName) {
+      utils.showNotification("Please enter a name.", "warning");
+      return;
+    }
+
+    try {
+      // 1. Update the backend via the user session manager
+      if (window.userSession?.updateUserData) {
         await window.userSession.updateUserData({ firstName, lastName });
       }
 
-      // Update Firebase Auth displayName for consistency
+      // 2. Update the Firebase Auth profile
       const user = window.firebaseAuth?.currentUser;
-      const fullName = `${firstName} ${lastName}`.trim();
-      if (user && window.firebaseModules?.updateProfile && fullName) {
-        await window.firebaseModules.updateProfile(user, { displayName: fullName });
+      if (user && window.firebaseModules?.updateProfile) {
+        await window.firebaseModules.updateProfile(user, {
+          displayName: fullName,
+        });
       }
 
-      utils.showNotification('Name updated successfully', 'success');
-      document.getElementById('editNameModal')?.classList.add('hidden');
-    } catch (err) {
-      console.error('Failed to update name:', err);
-      utils.showNotification('Failed to update name. Please try again.', 'error');
+      // 3. **Update the UI immediately**
+      const profileNameElement = document.getElementById("profileDisplayName");
+      if (profileNameElement) {
+        profileNameElement.textContent = fullName;
+      }
+
+      // 4. Show success and close the modal
+      utils.showNotification("Name updated successfully!", "success");
+      document.getElementById("editNameModal").classList.add("hidden");
+    } catch (error) {
+      console.error("Error updating name:", error);
+      utils.showNotification(
+        "Could not update name. Please try again.",
+        "error"
+      );
     }
   }
 
-  openEditNameModal() {
-    const modal = document.getElementById('editNameModal');
-    const data = window.userSession?.getUserData?.() || {};
-    const firstNameEl = document.getElementById('editFirstName');
-    const lastNameEl = document.getElementById('editLastName');
-    if (firstNameEl) firstNameEl.value = data.firstName || '';
-    if (lastNameEl) lastNameEl.value = data.lastName || '';
-    modal?.classList.remove('hidden');
-  }
-
-  deleteAccount() {
-    // A confirmation step is crucial for destructive actions
-    const confirmation = confirm(
-      "Are you absolutely sure you want to delete your account?\nAll your data will be lost forever. This action cannot be undone."
-    );
-
-    if (confirmation) {
-      utils.showNotification("Deleting your account...", "warning");
-
-      // Similar to logout, clear all data and reload
-      setTimeout(() => {
-        localStorage.clear(); // Clears everything
-        window.location.reload();
-      }, 2000);
+  // Logs the user out
+  logout() {
+    if (window.userSession?.logout) {
+      utils.showNotification("Logging you out...", "info");
+      window.userSession.logout();
     }
   }
+
+  // --- All other methods from the original Profile class remain the same ---
+  // (loadData, updateStats, loadMyListings, etc.)
 
   loadData() {
     this.updateStats();
