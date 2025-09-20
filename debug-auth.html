@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Auth - CampusKart</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a2e;
+            color: white;
+        }
+        .debug-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        button {
+            background: linear-gradient(45deg, #8b5fff, #00e5ff);
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+            width: 100%;
+        }
+        button:hover {
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        #console {
+            background: #000;
+            color: #0f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            margin-top: 20px;
+        }
+        .btn-text { display: inline; }
+        .btn-loader { display: none; }
+        .btn-loader.show { display: inline; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <h1>🐛 Firebase Auth Debug</h1>
+    
+    <div class="debug-section">
+        <h2>Google Authentication Test</h2>
+        <button id="googleTestBtn">
+            <span class="btn-text">🔍 Test Google Sign In</span>
+            <span class="btn-loader hidden">🔄 Loading...</span>
+        </button>
+        
+        <button id="emailTestBtn">
+            <span class="btn-text">📧 Test Email Sign Up</span>
+            <span class="btn-loader hidden">🔄 Loading...</span>
+        </button>
+        
+        <button onclick="clearDebugConsole()">Clear Console</button>
+    </div>
+
+    <div class="debug-section">
+        <h2>Firebase Status</h2>
+        <div id="firebaseStatus">Initializing...</div>
+    </div>
+
+    <div id="console"></div>
+
+    <!-- Message container for errors -->
+    <div id="messageContainer" style="position: fixed; top: 20px; right: 20px; z-index: 1000; max-width: 400px;"></div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+        import { 
+            getAuth, 
+            createUserWithEmailAndPassword,
+            signInWithPopup,
+            GoogleAuthProvider,
+            onAuthStateChanged
+        } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+        import { 
+            getFirestore, 
+            doc, 
+            setDoc
+        } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+        const consoleDiv = document.getElementById('console');
+        const statusDiv = document.getElementById('firebaseStatus');
+
+        // Console override
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+
+        function addToConsole(message, type = 'log') {
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#ff4444' : type === 'warn' ? '#ffaa00' : '#00ff00';
+            consoleDiv.innerHTML += `<span style="color: ${color}">[${timestamp}] ${message}</span>\n`;
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+
+        console.log = (...args) => {
+            originalLog(...args);
+            addToConsole(args.join(' '), 'log');
+        };
+
+        console.error = (...args) => {
+            originalError(...args);
+            addToConsole(args.join(' '), 'error');
+        };
+
+        console.warn = (...args) => {
+            originalWarn(...args);
+            addToConsole(args.join(' '), 'warn');
+        };
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBrVVik7_oVaPXpyI20jcyq9nqXUKcwcOM",
+            authDomain: "thrift-6bd6d.firebaseapp.com",
+            projectId: "thrift-6bd6d",
+            storageBucket: "thrift-6bd6d.firebasestorage.app",
+            messagingSenderId: "595724600327",
+            appId: "1:595724600327:web:e1a9d65d6e6ee68e0456a2",
+            measurementId: "G-7PGCTDYP38",
+        };
+
+        let app, auth, db, googleProvider;
+
+        // Initialize Firebase
+        try {
+            console.log('🔥 Initializing Firebase...');
+            app = initializeApp(firebaseConfig);
+            console.log('✅ Firebase app initialized');
+            
+            auth = getAuth(app);
+            console.log('✅ Auth initialized');
+            
+            db = getFirestore(app);
+            console.log('✅ Firestore initialized');
+            
+            googleProvider = new GoogleAuthProvider();
+            googleProvider.addScope('email');
+            googleProvider.addScope('profile');
+            googleProvider.setCustomParameters({
+                prompt: 'select_account'
+            });
+            console.log('✅ Google provider configured');
+
+            statusDiv.innerHTML = '✅ Firebase Ready';
+            statusDiv.style.color = '#00ff88';
+
+        } catch (error) {
+            console.error('❌ Firebase initialization failed:', error);
+            statusDiv.innerHTML = '❌ Firebase Failed: ' + error.message;
+            statusDiv.style.color = '#ff4444';
+        }
+
+        // Simple loading state handler
+        function setLoadingState(button, isLoading) {
+            const btnText = button.querySelector('.btn-text');
+            const btnLoader = button.querySelector('.btn-loader');
+            
+            console.log('Setting loading state:', { isLoading, btnText: !!btnText, btnLoader: !!btnLoader });
+            
+            if (isLoading) {
+                if (btnText) btnText.style.display = 'none';
+                if (btnLoader) btnLoader.classList.remove('hidden');
+                button.disabled = true;
+            } else {
+                if (btnText) btnText.style.display = 'inline';
+                if (btnLoader) btnLoader.classList.add('hidden');
+                button.disabled = false;
+            }
+        }
+
+        // Test Google Authentication
+        window.testGoogleAuth = async function() {
+            const btn = document.getElementById('googleTestBtn');
+            console.log('🧪 Testing Google Authentication...');
+            console.log('Button found:', !!btn);
+            console.log('Auth object:', !!auth);
+            console.log('Google provider:', !!googleProvider);
+            
+            try {
+                setLoadingState(btn, true);
+                
+                if (!auth || !googleProvider) {
+                    throw new Error('Firebase Auth or Google Provider not initialized');
+                }
+                
+                console.log('🚀 Starting Google sign in popup...');
+                const result = await signInWithPopup(auth, googleProvider);
+                
+                console.log('✅ Google sign in successful!');
+                console.log('User:', {
+                    uid: result.user.uid,
+                    email: result.user.email,
+                    displayName: result.user.displayName
+                });
+                
+                // Sign out immediately for testing
+                await auth.signOut();
+                console.log('✅ Signed out for testing');
+                
+            } catch (error) {
+                console.error('❌ Google auth failed:', error);
+                console.error('Error code:', error.code);
+                console.error('Error message:', error.message);
+            } finally {
+                setLoadingState(btn, false);
+            }
+        };
+
+        // Test Email Authentication
+        window.testEmailAuth = async function() {
+            const btn = document.getElementById('emailTestBtn');
+            const testEmail = 'test-' + Date.now() + '@example.com';
+            const testPassword = 'testpass123';
+            
+            console.log('🧪 Testing Email Authentication...');
+            console.log('Test email:', testEmail);
+            
+            try {
+                setLoadingState(btn, true);
+                
+                if (!auth) {
+                    throw new Error('Firebase Auth not initialized');
+                }
+                
+                console.log('🚀 Creating test user...');
+                const result = await createUserWithEmailAndPassword(auth, testEmail, testPassword);
+                
+                console.log('✅ Email sign up successful!');
+                console.log('User:', {
+                    uid: result.user.uid,
+                    email: result.user.email
+                });
+                
+                // Create test document
+                console.log('💾 Creating user document...');
+                await setDoc(doc(db, 'users', result.user.uid), {
+                    firstName: 'Test',
+                    lastName: 'User',
+                    email: testEmail,
+                    createdAt: new Date().toISOString(),
+                    authProvider: 'email-test'
+                });
+                
+                console.log('✅ User document created');
+                
+                // Sign out
+                await auth.signOut();
+                console.log('✅ Signed out for testing');
+                
+            } catch (error) {
+                console.error('❌ Email auth failed:', error);
+                console.error('Error code:', error.code);
+                console.error('Error message:', error.message);
+            } finally {
+                setLoadingState(btn, false);
+            }
+        };
+
+        // Clear console function
+        window.clearDebugConsole = function() {
+            consoleDiv.innerHTML = '';
+        };
+
+        // Setup button handlers
+        document.addEventListener('DOMContentLoaded', () => {
+            const googleBtn = document.getElementById('googleTestBtn');
+            const emailBtn = document.getElementById('emailTestBtn');
+            
+            if (googleBtn) {
+                googleBtn.addEventListener('click', testGoogleAuth);
+                console.log('✅ Google button event listener added');
+            }
+            
+            if (emailBtn) {
+                emailBtn.addEventListener('click', testEmailAuth);
+                console.log('✅ Email button event listener added');
+            }
+        });
+
+        // Auth state listener
+        if (auth) {
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    console.log('👤 User signed in:', user.email);
+                } else {
+                    console.log('👤 User signed out');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

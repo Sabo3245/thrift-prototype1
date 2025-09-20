@@ -485,25 +485,64 @@ class Navigation {
 
 // Marketplace Handler
 class Marketplace {
-  init() {
-    this.loadData();
+  async init() {
+    await this.loadData();
     this.bindEvents();
     this.renderItems();
     this.initScrollLoading();
   }
 
-  loadData() {
-    const savedItems = utils.loadFromStorage("marketplace_items", sampleItems);
+  async loadData() {
+    // Try to load from Firestore first; fall back to local storage/sample data
     const savedProfile = utils.loadFromStorage(
       "user_profile",
       AppState.userProfile
     );
+    AppState.userProfile = { ...AppState.userProfile, ...savedProfile };
 
+    try {
+      if (window.firebaseDb && window.firebaseModules) {
+        const { collection, query, where, orderBy, getDocs } = window.firebaseModules;
+        const itemsRef = collection(window.firebaseDb, 'items');
+        let items = [];
+        try {
+          // Primary query: requires composite index (status + createdAt)
+          const q = query(
+            itemsRef,
+            where('status', '==', 'available'),
+            orderBy('createdAt', 'desc')
+          );
+          const snapshot = await getDocs(q);
+          snapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
+        } catch (e) {
+          // Fallback: query without orderBy if index is missing or any 400 occurs
+          const msg = (e?.message || '').toLowerCase();
+          if (e?.code === 'failed-precondition' || msg.includes('index')) {
+            console.warn('Index not ready; retrying items fetch without orderBy');
+            const q2 = query(itemsRef, where('status', '==', 'available'));
+            const snapshot2 = await getDocs(q2);
+            items = [];
+            snapshot2.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
+          } else {
+            throw e;
+          }
+        }
+        
+        AppState.items = [...items];
+        AppState.originalItems = [...items];
+        AppState.filteredItems = [...items];
+        this.calculateMoneySaved();
+        return;
+      }
+    } catch (err) {
+      console.warn('Failed to fetch items from Firestore, using local storage fallback:', err);
+    }
+
+    // Fallback to local storage or sample data
+    const savedItems = utils.loadFromStorage("marketplace_items", sampleItems);
     AppState.items = [...savedItems];
     AppState.originalItems = [...savedItems];
     AppState.filteredItems = [...savedItems];
-    AppState.userProfile = { ...AppState.userProfile, ...savedProfile };
-
     this.calculateMoneySaved();
   }
 
@@ -639,12 +678,14 @@ class Marketplace {
     const savings = item.originalPrice
       ? utils.calculateSavings(item.originalPrice, item.price)
       : null;
-    const isUserItem = item.sellerId === "user1";
+    const isUserItem = !!item.sellerId && (item.sellerId === ((window.userSession?.getCurrentUser?.()?.uid) || (window.firebaseAuth?.currentUser?.uid) || "user1"));
     const isHearted = AppState.userProfile.heartedPosts.includes(item.id);
+
+    const primaryImage = Array.isArray(item.images) && item.images.length > 0 ? item.images[0] : null;
 
     card.innerHTML = `
             <div class="item-image">
-                <span class="item-emoji">${item.icon}</span>
+                ${primaryImage ? `<img src="${primaryImage}" alt="${item.title}" class="item-img" style="width:100%;height:160px;object-fit:cover;border-radius:12px;"/>` : `<span class="item-emoji">${item.icon || "📦"}</span>`}
             </div>
             <h3 class="item-title">${item.title}</h3>
             <div class="item-prices">
@@ -882,15 +923,53 @@ class PostItem {
   initUploadArea() {
     const uploadArea = document.getElementById("uploadArea");
     const fileInput = document.getElementById("itemPhotos");
+    const uploadedImagesContainer = document.getElementById("uploadedImages");
 
     if (uploadArea && fileInput) {
       uploadArea.addEventListener("click", () => {
         fileInput.click();
       });
+      // Basic preview for selected images
+      fileInput.addEventListener("change", (e) => {
+        if (!uploadedImagesContainer) return;
+        uploadedImagesContainer.innerHTML = "";
+        const files = Array.from(e.target.files || []);
+        files.slice(0, 5).forEach((file) => {
+          if (!file.type.startsWith('image/')) return;
+          const reader = new FileReader();
+          reader.onload = () => {
+            const div = document.createElement('div');
+            div.className = 'uploaded-image-thumb';
+            div.style.cssText = 'display:inline-block;margin:6px;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,0.15)';
+            div.innerHTML = `<img src="${reader.result}" alt="preview" style="width:96px;height:96px;object-fit:cover;" />`;
+            uploadedImagesContainer.appendChild(div);
+          };
+          reader.readAsDataURL(file);
+        });
+      });
     }
   }
 
-  submitForm() {
+  async uploadImagesToStorage(uid) {
+    const fileInput = document.getElementById("itemPhotos");
+    const files = Array.from(fileInput?.files || []);
+    if (!files.length || !(window.firebaseStorage && window.firebaseModules)) return [];
+
+    const { ref, uploadBytes, getDownloadURL } = window.firebaseModules;
+    const urls = [];
+    for (let i = 0; i < Math.min(files.length, 5); i++) {
+      const f = files[i];
+      if (!f.type.startsWith('image/')) continue;
+      const path = `items/${uid}/${Date.now()}_${i}_${f.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+      const storageRef = ref(window.firebaseStorage, path);
+      const snap = await uploadBytes(storageRef, f);
+      const url = await getDownloadURL(snap.ref);
+      urls.push(url);
+    }
+    return urls;
+  }
+
+  async submitForm() {
     const form = document.getElementById("postForm");
     const submitBtn = form.querySelector('button[type="submit"]');
     const btnText = submitBtn.querySelector(".btn-text");
@@ -900,23 +979,37 @@ class PostItem {
     btnLoader.classList.remove("hidden");
     submitBtn.disabled = true;
 
-    setTimeout(() => {
+    try {
+      const currentUser = window.userSession?.getCurrentUser?.() || window.firebaseAuth?.currentUser || null;
+      if (!currentUser) {
+        utils.showNotification("Please sign in to post an item", "error");
+        submitBtn.disabled = false;
+        btnText.classList.remove("hidden");
+        btnLoader.classList.add("hidden");
+        return;
+      }
+
+      const categoryVal = document.getElementById("itemCategory").value;
       const newItem = {
-        id: Date.now(),
-        title: document.getElementById("itemTitle").value,
-        category: document.getElementById("itemCategory").value,
+        title: document.getElementById("itemTitle").value.trim(),
+        category: categoryVal,
         condition: document.getElementById("itemCondition").value,
-        price: parseInt(document.getElementById("itemPrice").value),
+        price: parseInt(document.getElementById("itemPrice").value, 10),
         originalPrice:
-          parseInt(document.getElementById("itemOriginalPrice").value) || null,
-        description: document.getElementById("itemDescription").value,
+          parseInt(document.getElementById("itemOriginalPrice").value, 10) || null,
+        description: document.getElementById("itemDescription").value.trim(),
         hostel: document.getElementById("itemHostel").value,
-        icon: this.getCategoryIcon(
-          document.getElementById("itemCategory").value
-        ),
+        icon: this.getCategoryIcon(categoryVal),
         isBoosted: false,
         hearts: 0,
-        sellerId: "user1",
+        heartedBy: [],
+        images: [],
+        sellerId: currentUser.uid,
+        sellerEmail: currentUser.email || '',
+        sellerName: (window.userSession?.getUserData?.()?.firstName || '') + ' ' + (window.userSession?.getUserData?.()?.lastName || ''),
+        status: 'available',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       };
 
       if (newItem.category === "Clothes") {
@@ -927,23 +1020,89 @@ class PostItem {
         };
       }
 
-      AppState.originalItems.unshift(newItem);
-      AppState.userProfile.points += 5;
+      // Upload images if possible
+      let imageUrls = [];
+      try {
+        imageUrls = await this.uploadImagesToStorage(currentUser.uid);
+      } catch (e) {
+        console.warn('Image upload failed, proceeding without images:', e);
+      }
+      newItem.images = imageUrls;
 
-      utils.saveToStorage("marketplace_items", AppState.originalItems);
+      // Attempt to save to Firestore if available
+      if (window.firebaseDb && window.firebaseModules) {
+        const { collection, addDoc, serverTimestamp } = window.firebaseModules;
+        const itemsRef = collection(window.firebaseDb, 'items');
+        const docToSave = { ...newItem, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+
+        // Guard against hanging network by enforcing a timeout
+        const withTimeout = (p, ms) => new Promise((resolve, reject) => {
+          const t = setTimeout(() => reject(new Error('timeout')), ms);
+          p.then((v) => { clearTimeout(t); resolve(v); }).catch((e) => { clearTimeout(t); reject(e); });
+        });
+
+        // Try to write, but don't hang UI if the network is blocked
+        let savedItem;
+        try {
+          const docRef = await withTimeout(addDoc(itemsRef, docToSave), 10000);
+          savedItem = { ...newItem, id: docRef.id };
+        } catch (err) {
+          if (err && err.message === 'timeout') {
+            // Offline or blocked network: show locally and sync later
+            const tempId = 'temp_' + Date.now();
+            savedItem = { ...newItem, id: tempId };
+            // Background attempt (non-blocking)
+            addDoc(itemsRef, docToSave).catch(e => console.warn('Background sync failed:', e));
+            utils.showNotification("Saved locally. Will sync when online.", "info");
+          } else {
+            throw err;
+          }
+        }
+
+        // Reflect in local state for immediate UI update
+        AppState.originalItems.unshift(savedItem);
+        AppState.items = [...AppState.originalItems];
+        AppState.filteredItems = [...AppState.originalItems];
+        utils.showNotification("Item posted successfully! ✨", "success");
+        form.reset();
+        // Re-render marketplace
+        if (window.marketplace) {
+          window.marketplace.filterItems();
+        }
+      } else {
+        // Fallback: local storage
+        const localItem = { id: Date.now(), ...newItem };
+        AppState.originalItems.unshift(localItem);
+        AppState.items = [...AppState.originalItems];
+        AppState.filteredItems = [...AppState.originalItems];
+        utils.saveToStorage("marketplace_items", AppState.originalItems);
+        utils.showNotification("Item posted locally (offline)", "info");
+        form.reset();
+      }
+
+      // Reward points locally (optional)
+      AppState.userProfile.points = (AppState.userProfile.points || 0) + 5;
       utils.saveToStorage("user_profile", AppState.userProfile);
 
-      utils.showNotification("Item posted successfully! ✨", "success");
-      form.reset();
+      // Switch to marketplace view
+      setTimeout(() => {
+        switchToSection("marketplace");
+      }, 500);
 
+    } catch (err) {
+      console.error('Failed to post item:', err);
+      if (err && err.message === 'timeout') {
+        // Already handled by local fallback above; just switch view
+        switchToSection("marketplace");
+      } else {
+        const msg = err?.code ? `${err.code}: ${err.message || 'Failed to post item'}` : 'Failed to post item. Please try again.';
+        utils.showNotification(msg, "error");
+      }
+    } finally {
       btnText.classList.remove("hidden");
       btnLoader.classList.add("hidden");
       submitBtn.disabled = false;
-
-      setTimeout(() => {
-        switchToSection("marketplace");
-      }, 1500);
-    }, 2000);
+    }
   }
 
   getCategoryIcon(category) {
@@ -1098,6 +1257,7 @@ class Profile {
   bindEvents() {
     // Get the buttons using their new IDs
     const logoutBtn = document.getElementById("logoutBtn");
+    const editNameBtn = document.getElementById("editNameBtn");
     const changePasswordBtn = document.getElementById("changePasswordBtn");
     const notificationSettingsBtn = document.getElementById(
       "notificationSettingsBtn"
@@ -1109,6 +1269,13 @@ class Profile {
       logoutBtn.addEventListener("click", (e) => {
         e.preventDefault();
         this.logout();
+      });
+    }
+
+    if (editNameBtn) {
+      editNameBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        this.openEditNameModal();
       });
     }
 
@@ -1136,17 +1303,36 @@ class Profile {
         this.deleteAccount();
       });
     }
+
+    // Modal actions
+    const cancelEditName = document.getElementById("cancelEditName");
+    const saveEditName = document.getElementById("saveEditName");
+    if (cancelEditName) {
+      cancelEditName.addEventListener("click", (e) => {
+        e.preventDefault();
+        document.getElementById("editNameModal")?.classList.add("hidden");
+      });
+    }
+    if (saveEditName) {
+      saveEditName.addEventListener("click", async (e) => {
+        e.preventDefault();
+        await this.saveEditedName();
+      });
+    }
   }
 
   logout() {
     utils.showNotification("Logging you out...", "info");
 
-    // After a short delay, clear user data and reload the page
-    setTimeout(() => {
+    // Delegate to Firebase auth signOut via user session manager
+    if (window.userSession && typeof window.userSession.logout === 'function') {
+      window.userSession.logout();
+    } else {
+      // Fallback: clear local caches and go to auth page
       localStorage.removeItem("user_profile");
       localStorage.removeItem("marketplace_items");
-      window.location.reload();
-    }, 1500);
+      window.location.href = 'auth.html';
+    }
   }
 
   // In app.js -> inside the Profile class
@@ -1158,6 +1344,45 @@ class Profile {
       // Clear previous input values when opening
       document.getElementById("passwordChangeForm").reset();
     }
+  }
+
+  async saveEditedName() {
+    try {
+      const firstName = (document.getElementById('editFirstName')?.value || '').trim();
+      const lastName = (document.getElementById('editLastName')?.value || '').trim();
+      if (!firstName && !lastName) {
+        utils.showNotification('Please enter at least a first or last name', 'warning');
+        return;
+      }
+
+      // Update Firestore user document
+      if (window.userSession && typeof window.userSession.updateUserData === 'function') {
+        await window.userSession.updateUserData({ firstName, lastName });
+      }
+
+      // Update Firebase Auth displayName for consistency
+      const user = window.firebaseAuth?.currentUser;
+      const fullName = `${firstName} ${lastName}`.trim();
+      if (user && window.firebaseModules?.updateProfile && fullName) {
+        await window.firebaseModules.updateProfile(user, { displayName: fullName });
+      }
+
+      utils.showNotification('Name updated successfully', 'success');
+      document.getElementById('editNameModal')?.classList.add('hidden');
+    } catch (err) {
+      console.error('Failed to update name:', err);
+      utils.showNotification('Failed to update name. Please try again.', 'error');
+    }
+  }
+
+  openEditNameModal() {
+    const modal = document.getElementById('editNameModal');
+    const data = window.userSession?.getUserData?.() || {};
+    const firstNameEl = document.getElementById('editFirstName');
+    const lastNameEl = document.getElementById('editLastName');
+    if (firstNameEl) firstNameEl.value = data.firstName || '';
+    if (lastNameEl) lastNameEl.value = data.lastName || '';
+    modal?.classList.remove('hidden');
   }
 
   deleteAccount() {
@@ -1314,6 +1539,7 @@ function initModals() {
     if (
       e.target.id === "cancelBoost" ||
       e.target.id === "cancelRemove" ||
+      e.target.id === "cancelEditName" ||
       e.target.id === "closeModal"
     ) {
       e.target.closest(".modal").classList.add("hidden");
