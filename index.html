@@ -603,21 +603,6 @@
         <div class="modal-overlay"></div>
         <div class="modal-content glass-card">
           <div class="modal-header">
-            <div class="disclaimer-modal-icon">🛡️</div>
-            <h3 class="modal-title">Safety First!</h3>
-          </div>
-          <div class="modal-body">
-            <ul class="disclaimer-list">
-              <li>Don't share your OTP with anyone.</li>
-              <li>Never give your money or product in advance.</li>
-              <li>Report all suspicious users.</li>
-              <li>Don't share personal details.</li>
-              <li>
-                Be cautious during Buying and Selling and while meeting the
-                buyer/seller.
-              </li>
-            </ul>
-          </div>
           <div class="warning-icon">⚠️</div>
             <h3 class="modal-title">Remove Post</h3>
             <p class="modal-message">
@@ -683,6 +668,7 @@
         where,
         getDocs,
         addDoc,
+        deleteDoc,
         orderBy,
         serverTimestamp
       } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -734,6 +720,7 @@
           where,
           getDocs,
           addDoc,
+          deleteDoc,
           orderBy,
           serverTimestamp,
           // Storage helpers

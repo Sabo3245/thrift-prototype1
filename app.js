@@ -899,16 +899,46 @@ class Marketplace {
     }
   }
 
-  removePost(itemId) {
-    AppState.originalItems = AppState.originalItems.filter(
-      (i) => i.id !== itemId
-    );
+  async removePost(itemId) {
+    const currentUser =
+      window.userSession?.getCurrentUser?.() || window.firebaseAuth?.currentUser || null;
+
+    let removedInCloud = false;
+    if (window.firebaseDb && window.firebaseModules && currentUser) {
+      const { doc, deleteDoc, updateDoc } = window.firebaseModules;
+      const itemRef = doc(window.firebaseDb, 'items', String(itemId));
+
+      const withTimeout = (p, ms) => new Promise((resolve, reject) => {
+        const t = setTimeout(() => reject(new Error('timeout')), ms);
+        p.then(v => { clearTimeout(t); resolve(v); }).catch(e => { clearTimeout(t); reject(e); });
+      });
+
+      try {
+        await withTimeout(deleteDoc(itemRef), 8000);
+        removedInCloud = true;
+      } catch (err) {
+        // Fallback to soft-delete if hard delete is blocked
+        try {
+          await withTimeout(updateDoc(itemRef, { status: 'removed', updatedAt: new Date().toISOString() }), 8000);
+          removedInCloud = true;
+        } catch (e2) {
+          // Fire-and-forget background attempts
+          deleteDoc(itemRef).catch(() => {});
+          updateDoc(itemRef, { status: 'removed', updatedAt: new Date().toISOString() }).catch(() => {});
+        }
+      }
+    }
+
+    // Update UI and local cache regardless
+    AppState.originalItems = AppState.originalItems.filter((i) => i.id !== itemId);
     AppState.items = [...AppState.originalItems];
-
     utils.saveToStorage("marketplace_items", AppState.originalItems);
-
     this.filterItems();
-    utils.showNotification("Post removed successfully", "info");
+
+    utils.showNotification(
+      removedInCloud ? "Post removed successfully" : "Post removed locally. Will sync when online.",
+      removedInCloud ? "success" : "info"
+    );
   }
 
   performSearch() {
