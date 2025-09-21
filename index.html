@@ -55,10 +55,7 @@
             <span class="nav-icon">💬</span>
             <span>Chat</span>
           </button>
-          <button class="nav-tab" data-section="help">
-            <span class="nav-icon">🆘</span>
-            <span>Help</span>
-          </button>
+
           <button class="nav-tab" data-section="profile">
             <span class="nav-icon">👤</span>
             <span>Profile</span>
@@ -522,6 +519,10 @@
             <div class="account-settings glass-card">
               <h3 class="card-title">Settings</h3>
               <div class="settings-actions-list">
+               <button class="nav-tab" data-section="help">
+                <span class="nav-icon">🆘</span>
+                <span>Help</span>
+              </button>
                 <a href="#" id="logoutBtn" class="setting-action-item">
                    <span>&#x1F6AA; Logout</span>
       <span>&gt;</span>
@@ -599,6 +600,11 @@
         </div>
       </div>
 
+
+
+
+
+    </div>
       <div class="modal hidden" id="removeModal">
         <div class="modal-overlay"></div>
         <div class="modal-content glass-card">
@@ -616,7 +622,6 @@
           </div>
         </div>
       </div>
-
       <div class="modal hidden" id="boostModal">
         <div class="modal-overlay"></div>
         <div class="modal-content glass-card">
@@ -638,12 +643,24 @@
           </div>
         </div>
       </div>
+      <div class="modal hidden" id="deleteAccountModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content glass-card">
+          <div class="modal-header">
+            <div class="warning-icon">⚠️</div>
+            <h3 class="modal-title">Delete Account</h3>
+            <p class="modal-message">This will permanently remove your account and listings. This action cannot be undone.</p>
+          </div>
+          <div class="modal-actions">
+            <button class="btn btn--outline" id="cancelDeleteAccount">Cancel</button>
+            <button class="btn btn--primary" id="confirmDeleteAccount">Delete</button>
+          </div>
+        </div>
+      </div>
       <button class="fab" id="fabButton">
         <span class="fab-icon">➕</span>
         <div class="fab-ripple"></div>
       </button>
-    </div>
-
     <!-- User Session Management -->
     <script src="user-session.js"></script>
     <script src="app.js"></script>
@@ -653,7 +670,8 @@
         getAuth, 
         onAuthStateChanged,
         signOut,
-        updateProfile
+        updateProfile,
+        deleteUser
       } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
       import { 
         getFirestore, 
@@ -711,6 +729,7 @@
           onAuthStateChanged,
           signOut,
           updateProfile,
+          deleteUser,
           doc,
           setDoc,
           getDoc,

@@ -874,6 +874,7 @@ class Marketplace {
     const modal = document.getElementById("boostModal");
     if (modal) {
       modal.classList.remove("hidden");
+      document.body.classList.add('modal-open');
     }
   }
 
@@ -1355,6 +1356,7 @@ class Profile {
     const saveEditNameBtn = document.getElementById("saveEditName");
     const cancelEditNameBtn = document.getElementById("cancelEditName");
     const logoutBtn = document.getElementById("logoutBtn");
+    const deleteAccountBtn = document.getElementById("deleteAccountBtn");
 
     // NEW: Make the pencil icon open the Edit Name modal
     if (avatarEditBtn) {
@@ -1393,6 +1395,15 @@ class Profile {
       logoutBtn.addEventListener("click", (e) => {
         e.preventDefault();
         this.logout();
+      });
+    }
+
+    // Handle delete account (open confirm modal)
+    if (deleteAccountBtn) {
+      deleteAccountBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const modal = document.getElementById("deleteAccountModal");
+        modal?.classList.remove("hidden");
       });
     }
   }
@@ -1461,6 +1472,74 @@ class Profile {
     if (window.userSession?.logout) {
       utils.showNotification("Logging you out...", "info");
       window.userSession.logout();
+    }
+  }
+
+  // Permanently delete the user's account and their listings
+  async deleteAccount() {
+    try {
+      const user = window.firebaseAuth?.currentUser;
+      if (!user) {
+        utils.showNotification('No user signed in.', 'error');
+        return;
+      }
+
+      utils.showNotification('Deleting your account...', 'warning');
+
+      const { collection, query, where, getDocs, doc, updateDoc, deleteDoc } = window.firebaseModules || {};
+      const db = window.firebaseDb;
+
+      // 1) Soft-delete all items owned by the user (so they disappear from public listings)
+      if (db && collection && query && where && getDocs && doc && updateDoc) {
+        try {
+          const itemsRef = collection(db, 'items');
+          const q = query(itemsRef, where('sellerId', '==', user.uid));
+          const snap = await getDocs(q);
+          const updates = [];
+          snap.forEach((d) => {
+            const itemRef = doc(db, 'items', d.id);
+            updates.push(updateDoc(itemRef, { status: 'removed', updatedAt: new Date().toISOString() }));
+          });
+          await Promise.allSettled(updates);
+        } catch (e) {
+          console.warn('Failed to soft-delete items during account deletion:', e);
+        }
+      }
+
+      // 2) Delete the user profile document
+      if (db && doc && deleteDoc) {
+        try {
+          await deleteDoc(doc(db, 'users', user.uid));
+        } catch (e) {
+          console.warn('Failed to delete user profile document:', e);
+        }
+      }
+
+      // 3) Delete the Auth user
+      if (window.firebaseModules?.deleteUser) {
+        try {
+          await window.firebaseModules.deleteUser(user);
+        } catch (e) {
+          // Requires recent login
+          console.error('Failed to delete auth user:', e);
+          utils.showNotification('Please re-login and try deleting again (recent sign-in required).', 'error');
+          return;
+        }
+      }
+
+      // 4) Clear local storage and redirect
+      try {
+        localStorage.removeItem('user_profile');
+        localStorage.removeItem('marketplace_items');
+      } catch {}
+
+      utils.showNotification('Account deleted. Goodbye!', 'success');
+      setTimeout(() => {
+        window.location.href = 'auth.html';
+      }, 800);
+    } catch (err) {
+      console.error('Account deletion failed:', err);
+      utils.showNotification('Failed to delete account. Please try again.', 'error');
     }
   }
 
@@ -1608,12 +1687,14 @@ function initModals() {
       e.target.id === "closeModal"
     ) {
       e.target.closest(".modal").classList.add("hidden");
+      document.body.classList.remove('modal-open');
     }
 
     if (e.target.id === "confirmBoost") {
       if (AppState.currentBoostItemId && window.marketplace) {
         window.marketplace.boostPost(AppState.currentBoostItemId);
         e.target.closest(".modal").classList.add("hidden");
+        document.body.classList.remove('modal-open');
       }
     }
 
@@ -1624,9 +1705,24 @@ function initModals() {
       }
     }
 
+    if (e.target.id === "cancelDeleteAccount") {
+      e.preventDefault();
+      e.target.closest(".modal")?.classList.add("hidden");
+    }
+
+    if (e.target.id === "confirmDeleteAccount") {
+      e.preventDefault();
+      if (window.profile && typeof window.profile.deleteAccount === 'function') {
+        window.profile.deleteAccount();
+      }
+      e.target.closest(".modal")?.classList.add("hidden");
+    }
+    
     if (e.target.classList.contains("modal-overlay")) {
       e.target.closest(".modal").classList.add("hidden");
+      document.body.classList.remove('modal-open');
     }
+
   });
 }
 
@@ -1731,5 +1827,6 @@ style.textContent = `
         margin-bottom: 8px;
     }
 `;
+
 
 document.head.appendChild(style);

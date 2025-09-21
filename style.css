@@ -2109,8 +2109,8 @@ body {
   align-items: center;
   gap: var(--space-8);
   padding: var(--space-12) var(--space-16);
-  background: none;
-  border: none;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
   color: var(--color-gray-300);
   font-size: var(--font-size-base);
   cursor: pointer;
@@ -2637,6 +2637,12 @@ body {
 .chat-header {
   padding: var(--space-20);
   border-bottom: 1px solid var(--glass-border);
+  display: flex;
+  align-items: center;
+  gap: var(--space-16);
+}
+
+.chat-user-info {
   display: flex;
   align-items: center;
   gap: var(--space-16);
@@ -3216,31 +3222,35 @@ input:checked + .toggle-label::before {
 
 /* Modal Styles */
 .modal {
-  position: fixed;
+  position: fixed; /* stick to viewport, not document */
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  display: flex;
+  display: flex; 
   align-items: center;
   justify-content: center;
-  z-index: 1000;
-  animation: modalFadeIn 0.3s ease-out;
+  z-index: 100;
 }
 
 .modal-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.7);
+  position: fixed;
+
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.7);
   backdrop-filter: blur(5px);
+  z-index: 9;
+}
+
+body.modal-open {
+  overflow: hidden;
+  height:100vh;
 }
 
 /* Find this rule in your style.css file */
 .modal-content {
-  position: relative;
+  position: fixed;
   z-index: 10;
   padding: var(--space-32);
   max-width: 400px;
