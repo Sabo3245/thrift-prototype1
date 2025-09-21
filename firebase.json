@@ -1,0 +1,11 @@
+{
+  "hosting": {
+    "site": "campuskart007",
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  }
+}
