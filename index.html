@@ -372,6 +372,13 @@
           <div class="chat-container">
             <div class="chat-sidebar glass-card">
               <h3 class="sidebar-title">Conversations</h3>
+              <div class="chat-filters">
+                <button class="chat-filter-btn active" data-filter="all">All</button>
+                  <button class="chat-filter-btn" data-filter="selling">
+                    Selling
+                      </button>
+                      <button class="chat-filter-btn" data-filter="buying">Buying</button>
+                          </div>
               <div class="conversation-list" id="conversationList"></div>
             </div>
 
@@ -524,7 +531,7 @@
                 <span>Help</span>
               </button>
                 <a href="#" id="logoutBtn" class="setting-action-item">
-                   <span>&#x1F6AA; Logout</span>
+                    <span>&#x1F6AA; Logout</span>
       <span>&gt;</span>
     </a>
     </a>
@@ -579,7 +586,36 @@
           </div>
         </div>
       </div>
-
+      
+      <div class="modal hidden" id="changePasswordModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content glass-card">
+          <div class="modal-header">
+            <h3 class="modal-title">Change Your Password</h3>
+            <p class="modal-message">For security, please enter your current password first.</p>
+          </div>
+          <div class="modal-body">
+            <form id="changePasswordForm">
+              <div class="form-group">
+                <label class="form-label">Current Password</label>
+                <input type="password" id="currentPassword" class="form-control" placeholder="Enter your current password" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">New Password</label>
+                <input type="password" id="newPassword" class="form-control" placeholder="Enter a new password" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Confirm New Password</label>
+                <input type="password" id="confirmNewPassword" class="form-control" placeholder="Confirm your new password" required />
+              </div>
+            </form>
+          </div>
+          <div class="modal-actions">
+            <button class="btn btn--outline" id="cancelChangePassword">Cancel</button>
+            <button class="btn btn--primary" id="saveChangePassword">Update Password</button>
+          </div>
+        </div>
+      </div>
       <div class="modal hidden" id="successModal">
         <div class="modal-overlay"></div>
         <div class="modal-content glass-card">
@@ -599,11 +635,6 @@
           <button class="btn btn--primary" id="closeModal">Awesome!</button>
         </div>
       </div>
-
-
-
-
-
     </div>
       <div class="modal hidden" id="removeModal">
         <div class="modal-overlay"></div>
@@ -661,7 +692,7 @@
         <span class="fab-icon">➕</span>
         <div class="fab-ripple"></div>
       </button>
-    <!-- User Session Management -->
+
     <script src="user-session.js"></script>
     <script src="app.js"></script>
     <script type="module">
@@ -671,6 +702,9 @@
         onAuthStateChanged,
         signOut,
         updateProfile,
+        EmailAuthProvider,
+        reauthenticateWithCredential,
+        updatePassword,
         deleteUser
       } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
       import { 
@@ -729,6 +763,9 @@
           onAuthStateChanged,
           signOut,
           updateProfile,
+          EmailAuthProvider,
+          reauthenticateWithCredential,
+          updatePassword,
           deleteUser,
           doc,
           setDoc,
@@ -748,13 +785,12 @@
           getDownloadURL
         };
         
-        console.log('âœ… Firebase services initialized and made globally available');
+        console.log('✅ Firebase services initialized and made globally available');
       } catch (error) {
         console.error('❌ Firebase initialization failed:', error);
       }
     </script>
     
-    <!-- Authentication Handlers -->
     <script>
       // Handle logout functionality
       async function handleLogout(event) {
