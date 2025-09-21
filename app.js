@@ -272,18 +272,18 @@ const utils = {
     const y = event.clientY - rect.top - size / 2;
 
     ripple.style.cssText = `
-            position: absolute;
-            width: ${size}px;
-            height: ${size}px;
-            left: ${x}px;
-            top: ${y}px;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            transform: scale(0);
-            animation: rippleEffect 0.6s ease-out;
-            pointer-events: none;
-            z-index: 10;
-        `;
+              position: absolute;
+              width: ${size}px;
+              height: ${size}px;
+              left: ${x}px;
+              top: ${y}px;
+              background: rgba(255, 255, 255, 0.3);
+              border-radius: 50%;
+              transform: scale(0);
+              animation: rippleEffect 0.6s ease-out;
+              pointer-events: none;
+              z-index: 10;
+          `;
     const computedStyle = getComputedStyle(element);
     if (computedStyle.position === "static") {
       element.style.position = "relative";
@@ -347,26 +347,26 @@ const utils = {
     const style = colors[type] || colors.info;
 
     notification.innerHTML = `
-            <div class="notification-content">
-                <span class="notification-icon">${style.icon}</span>
-                <span>${message}</span>
-            </div>
-        `;
+                <div class="notification-content">
+                    <span class="notification-icon">${style.icon}</span>
+                    <span>${message}</span>
+                </div>
+            `;
 
     notification.style.cssText = `
-            position: fixed;
-            top: 100px;
-            right: 20px;
-            background: ${style.bg};
-            border: 1px solid ${style.border};
-            color: ${style.color};
-            padding: 16px 20px;
-            border-radius: 12px;
-            backdrop-filter: blur(10px);
-            animation: slideInRight 0.5s ease-out;
-            z-index: 1000;
-            max-width: 300px;
-        `;
+              position: fixed;
+              top: 100px;
+              right: 20px;
+              background: ${style.bg};
+              border: 1px solid ${style.border};
+              color: ${style.color};
+              padding: 16px 20px;
+              border-radius: 12px;
+              backdrop-filter: blur(10px);
+              animation: slideInRight 0.5s ease-out;
+              z-index: 1000;
+              max-width: 300px;
+          `;
 
     document.body.appendChild(notification);
 
@@ -701,7 +701,11 @@ class Marketplace {
 
   showBoostModal(itemId) {
     AppState.currentBoostItemId = itemId;
-    document.getElementById("boostModal")?.classList.remove("hidden");
+    const modal = document.getElementById("boostModal");
+    if (modal) {
+      modal.classList.remove("hidden");
+      document.body.classList.add('modal-open');
+    }
   }
 
   showRemoveModal(itemId) {
@@ -710,10 +714,55 @@ class Marketplace {
   }
 
   boostPost(itemId) {
-    // Logic remains the same
+    // Logic can be implemented here, for now, it's a placeholder
+    const item = AppState.originalItems.find(i => i.id === itemId);
+    if(item) {
+        item.isBoosted = true;
+        this.filterItems(); // Re-render to show boosted status
+        utils.showNotification("Post boosted successfully! 🚀", "success");
+    }
   }
-  removePost(itemId) {
-    // Logic remains the same
+
+  async removePost(itemId) {
+    const currentUser =
+      window.userSession?.getCurrentUser?.() || window.firebaseAuth?.currentUser || null;
+
+    let removedInCloud = false;
+    if (window.firebaseDb && window.firebaseModules && currentUser) {
+      const { doc, deleteDoc, updateDoc } = window.firebaseModules;
+      const itemRef = doc(window.firebaseDb, 'items', String(itemId));
+
+      const withTimeout = (p, ms) => new Promise((resolve, reject) => {
+        const t = setTimeout(() => reject(new Error('timeout')), ms);
+        p.then(v => { clearTimeout(t); resolve(v); }).catch(e => { clearTimeout(t); reject(e); });
+      });
+
+      try {
+        await withTimeout(deleteDoc(itemRef), 8000);
+        removedInCloud = true;
+      } catch (err) {
+        // Fallback to soft-delete if hard delete is blocked
+        try {
+          await withTimeout(updateDoc(itemRef, { status: 'removed', updatedAt: new Date().toISOString() }), 8000);
+          removedInCloud = true;
+        } catch (e2) {
+          // Fire-and-forget background attempts
+          deleteDoc(itemRef).catch(() => {});
+          updateDoc(itemRef, { status: 'removed', updatedAt: new Date().toISOString() }).catch(() => {});
+        }
+      }
+    }
+
+    // Update UI and local cache regardless
+    AppState.originalItems = AppState.originalItems.filter((i) => i.id !== itemId);
+    AppState.items = [...AppState.originalItems];
+    utils.saveToStorage("marketplace_items", AppState.originalItems);
+    this.filterItems();
+
+    utils.showNotification(
+      removedInCloud ? "Post removed successfully" : "Post removed locally. Will sync when online.",
+      removedInCloud ? "success" : "info"
+    );
   }
 }
 
@@ -1048,6 +1097,66 @@ class Chat {
 class Profile {
   init() {
     this.loadData();
+    this.bindEvents(); // Attaches all necessary event listeners
+  }
+
+  // Binds clicks to all the interactive elements in the profile section
+  bindEvents() {
+    const avatarEditBtn = document.querySelector(".avatar-edit"); // The pencil icon
+    const editNameBtn = document.getElementById("editNameBtn"); // The settings link
+    const saveEditNameBtn = document.getElementById("saveEditName");
+    const cancelEditNameBtn = document.getElementById("cancelEditName");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const deleteAccountBtn = document.getElementById("deleteAccountBtn");
+
+    // NEW: Make the pencil icon open the Edit Name modal
+    if (avatarEditBtn) {
+      avatarEditBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        this.openEditNameModal();
+      });
+    }
+
+    // Make the "Edit Name" link in settings open the modal
+    if (editNameBtn) {
+      editNameBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        this.openEditNameModal();
+      });
+    }
+
+    // Save the new name when "Save" is clicked in the modal
+    if (saveEditNameBtn) {
+      saveEditNameBtn.addEventListener("click", async (e) => {
+        e.preventDefault();
+        await this.saveEditedName();
+      });
+    }
+
+    // Close the modal when "Cancel" is clicked
+    if (cancelEditNameBtn) {
+      cancelEditNameBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        document.getElementById("editNameModal")?.classList.add("hidden");
+      });
+    }
+
+    // Handle logout
+    if (logoutBtn) {
+      logoutBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        this.logout();
+      });
+    }
+
+    // Handle delete account (open confirm modal)
+    if (deleteAccountBtn) {
+      deleteAccountBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const modal = document.getElementById("deleteAccountModal");
+        modal?.classList.remove("hidden");
+      });
+    }
   }
 
   openEditNameModal() {
@@ -1187,6 +1296,74 @@ class Profile {
     }
   }
 
+  // Permanently delete the user's account and their listings
+  async deleteAccount() {
+    try {
+      const user = window.firebaseAuth?.currentUser;
+      if (!user) {
+        utils.showNotification('No user signed in.', 'error');
+        return;
+      }
+
+      utils.showNotification('Deleting your account...', 'warning');
+
+      const { collection, query, where, getDocs, doc, updateDoc, deleteDoc } = window.firebaseModules || {};
+      const db = window.firebaseDb;
+
+      // 1) Soft-delete all items owned by the user (so they disappear from public listings)
+      if (db && collection && query && where && getDocs && doc && updateDoc) {
+        try {
+          const itemsRef = collection(db, 'items');
+          const q = query(itemsRef, where('sellerId', '==', user.uid));
+          const snap = await getDocs(q);
+          const updates = [];
+          snap.forEach((d) => {
+            const itemRef = doc(db, 'items', d.id);
+            updates.push(updateDoc(itemRef, { status: 'removed', updatedAt: new Date().toISOString() }));
+          });
+          await Promise.allSettled(updates);
+        } catch (e) {
+          console.warn('Failed to soft-delete items during account deletion:', e);
+        }
+      }
+
+      // 2) Delete the user profile document
+      if (db && doc && deleteDoc) {
+        try {
+          await deleteDoc(doc(db, 'users', user.uid));
+        } catch (e) {
+          console.warn('Failed to delete user profile document:', e);
+        }
+      }
+
+      // 3) Delete the Auth user
+      if (window.firebaseModules?.deleteUser) {
+        try {
+          await window.firebaseModules.deleteUser(user);
+        } catch (e) {
+          // Requires recent login
+          console.error('Failed to delete auth user:', e);
+          utils.showNotification('Please re-login and try deleting again (recent sign-in required).', 'error');
+          return;
+        }
+      }
+
+      // 4) Clear local storage and redirect
+      try {
+        localStorage.removeItem('user_profile');
+        localStorage.removeItem('marketplace_items');
+      } catch {}
+
+      utils.showNotification('Account deleted. Goodbye!', 'success');
+      setTimeout(() => {
+        window.location.href = 'auth.html';
+      }, 800);
+    } catch (err) {
+      console.error('Account deletion failed:', err);
+      utils.showNotification('Failed to delete account. Please try again.', 'error');
+    }
+  }
+
   loadData() {
     this.updateStats();
     this.loadMyListings();
@@ -1216,14 +1393,6 @@ class Profile {
     );
   }
 
-  // ===================================
-  // === START: FIXED PROFILE METHODS ===
-  // ===================================
-
-  // Find and replace this method in the Profile class
-  // Find and replace this method in the Profile class
-
-  // Find and replace this method in the Profile class
   loadMyListings() {
     const myListingsContainer = document.getElementById("myListings");
     const emptyNotice = document.querySelector(".my-listings .empty-notice");
@@ -1276,7 +1445,6 @@ class Profile {
     }
   }
 
-  // Find and replace this method in the Profile class as well
   loadHeartedPosts() {
     const heartedPostsContainer = document.getElementById("heartedPosts");
     if (!heartedPostsContainer) return;
@@ -1303,23 +1471,19 @@ class Profile {
         item.images && item.images.length > 0 ? item.images[0] : null;
 
       heartedCard.innerHTML = `
-          <div class="compact-item-visual">
-            ${
-              firstImage
-                ? `<img src="${firstImage}" alt="${item.title}" class="compact-item-image">`
-                : `<div class="compact-item-icon">${item.icon || "📦"}</div>`
-            }
-          </div>
-          <h4 class="compact-item-title">${item.title}</h4>
-          <p class="compact-item-price">${utils.formatPrice(item.price)}</p>
+        <div class="compact-item-visual">
+          ${
+            firstImage
+              ? `<img src="${firstImage}" alt="${item.title}" class="compact-item-image">`
+              : `<div class="compact-item-icon">${item.icon || "📦"}</div>`
+          }
+        </div>
+        <h4 class="compact-item-title">${item.title}</h4>
+        <p class="compact-item-price">${utils.formatPrice(item.price)}</p>
       `;
       heartedPostsContainer.appendChild(heartedCard);
     });
   }
-
-  // ===================================
-  // === END: FIXED PROFILE METHODS ===
-  // ===================================
 
   loadTransactionHistory() {
     /* Omitted for brevity, no changes needed */
@@ -1344,13 +1508,17 @@ function initializeGlobalEventListeners() {
       target.id === "closeModal" ||
       target.id === "cancelRemove" ||
       target.id === "cancelBoost" ||
+      target.id === "cancelDeleteAccount" || // Merged
       target.classList.contains("modal-overlay")
     ) {
-      if (modal) modal.classList.add("hidden");
+      if (modal) {
+        modal.classList.add("hidden");
+        document.body.classList.remove('modal-open');
+      }
     }
 
-    // --- Profile Page Actions ---
-    if (target.closest(".avatar-edit")) {
+    // --- Profile Page Actions (Merged from master) ---
+    if (target.closest(".avatar-edit") || target.closest("#editNameBtn")) {
       e.preventDefault();
       window.profile.openEditNameModal();
     }
@@ -1371,18 +1539,28 @@ function initializeGlobalEventListeners() {
       window.profile.logout();
     }
 
-    // --- Other Modal Confirmations ---
+    // --- Modal Confirmations (Combined) ---
     if (target.closest("#confirmRemove")) {
       if (AppState.currentRemoveItemId && window.marketplace) {
-        window.marketplace.removePost(AppState.currentRemoveItemId);
+        await window.marketplace.removePost(AppState.currentRemoveItemId);
         if (modal) modal.classList.add("hidden");
       }
     }
     if (target.closest("#confirmBoost")) {
       if (AppState.currentBoostItemId && window.marketplace) {
         window.marketplace.boostPost(AppState.currentBoostItemId);
-        if (modal) modal.classList.add("hidden");
+        if (modal) {
+            modal.classList.add("hidden");
+            document.body.classList.remove('modal-open');
+        }
       }
+    }
+    if (target.closest("#confirmDeleteAccount")) { // Merged
+      e.preventDefault();
+      if (window.profile?.deleteAccount) {
+        await window.profile.deleteAccount();
+      }
+      if (modal) modal.classList.add("hidden");
     }
   });
 }
