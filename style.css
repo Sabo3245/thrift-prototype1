@@ -2561,6 +2561,12 @@ body {
 }
 
 /* Chat Styles */
+/* Ensure chat messages are visible; override generic .message transition rules */
+.chat-messages .message {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
 .chat-container {
   display: grid;
   grid-template-columns: 300px 1fr;

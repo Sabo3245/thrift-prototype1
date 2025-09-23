@@ -503,19 +503,49 @@ class Marketplace {
 
     try {
       if (window.firebaseDb && window.firebaseModules) {
-        const { collection, query, where, orderBy, getDocs } =
-          window.firebaseModules;
+        const { collection, query, where, orderBy, getDocs } = window.firebaseModules;
         const itemsRef = collection(window.firebaseDb, "items");
-        const q = query(
-          itemsRef,
-          where("status", "==", "available"),
-          orderBy("createdAt", "desc")
-        );
-        const snapshot = await getDocs(q);
-        const items = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        let items = [];
+
+        // 1) Try status == 'available' ordered by createdAt desc (may need index)
+        try {
+          const q = query(itemsRef, where("status", "==", "available"), orderBy("createdAt", "desc"));
+          const snapshot = await getDocs(q);
+          snapshot.forEach((doc) => items.push({ id: doc.id, ...doc.data() }));
+        } catch (e) {
+          const msg = (e?.message || "").toLowerCase();
+          if (e?.code === "failed-precondition" || msg.includes("index")) {
+            console.warn("Index not ready; retrying items fetch without orderBy");
+            const q2 = query(itemsRef, where("status", "==", "available"));
+            const snapshot2 = await getDocs(q2);
+            snapshot2.forEach((doc) => items.push({ id: doc.id, ...doc.data() }));
+          } else {
+            throw e;
+          }
+        }
+
+        // 2) Backward-compat: legacy field isActive == true
+        if (items.length === 0) {
+          try {
+            const qLegacy = query(itemsRef, where("isActive", "==", true));
+            const snapLegacy = await getDocs(qLegacy);
+            snapLegacy.forEach((doc) => items.push({ id: doc.id, ...doc.data() }));
+          } catch (e) {
+            console.warn("Legacy isActive query failed:", e?.message || e);
+          }
+        }
+
+        // 3) If still empty, fall back to local cache/sample
+        if (items.length === 0) {
+          const savedItems = utils.loadFromStorage("marketplace_items", sampleItems);
+          AppState.items = [...savedItems];
+          AppState.originalItems = [...savedItems];
+          AppState.filteredItems = [...savedItems];
+          this.calculateMoneySaved();
+          return;
+        }
+
+        // Success
         AppState.items = [...items];
         AppState.originalItems = [...items];
         AppState.filteredItems = [...items];
@@ -523,11 +553,10 @@ class Marketplace {
         return;
       }
     } catch (err) {
-      console.warn(
-        "Failed to fetch items from Firestore, using fallback:",
-        err
-      );
+      console.warn("Failed to fetch items from Firestore, using fallback:", err);
     }
+
+    // No Firebase: use local stored/sample data
     const savedItems = utils.loadFromStorage("marketplace_items", sampleItems);
     AppState.items = [...savedItems];
     AppState.originalItems = [...savedItems];
@@ -678,25 +707,58 @@ class Marketplace {
     else if (target.closest(".remove-btn")) this.showRemoveModal(itemId);
   }
 
-  contactSeller(itemId) {
-    utils.showNotification("Chat request sent! 💬", "success");
-    setTimeout(() => switchToSection("chat"), 1000);
+  async contactSeller(itemId) {
+    const currentUser = window.userSession?.getCurrentUser?.() || window.firebaseAuth?.currentUser || null;
+    if (!currentUser) {
+      utils.showNotification('Please sign in to contact sellers', 'error');
+      return;
+    }
+    const item = AppState.originalItems.find((i) => String(i.id) === String(itemId));
+    if (!item) {
+      utils.showNotification('Item not found', 'error');
+      return;
+    }
+    if (item.sellerId === currentUser.uid) {
+      utils.showNotification("You can't contact yourself", 'warning');
+      return;
+    }
+    try {
+      await window.chat.startConversationForItem(item);
+      switchToSection('chat');
+    } catch (e) {
+      console.error('Failed to start conversation:', e);
+      utils.showNotification('Could not start chat. Please try again.', 'error');
+    }
   }
 
   toggleHeart(itemId, button) {
     const isHearted = AppState.userProfile.heartedPosts.includes(itemId);
+
     if (isHearted) {
       AppState.userProfile.heartedPosts =
         AppState.userProfile.heartedPosts.filter((id) => id !== itemId);
-      button.textContent = "🤍";
+      if (button) {
+        button.classList.remove("hearted");
+        button.textContent = "🤍";
+      }
       utils.showNotification("Removed from favorites", "info");
     } else {
       AppState.userProfile.heartedPosts.push(itemId);
-      button.textContent = "❤️";
+      if (button) {
+        button.classList.add("hearted");
+        button.textContent = "❤️";
+      }
       utils.showNotification("Added to favorites! ❤️", "success");
     }
+
+    const item = AppState.originalItems.find((i) => i.id === itemId);
+    if (item) {
+      item.hearts = (item.hearts || 0) + (isHearted ? -1 : 1);
+    }
+
     this.calculateMoneySaved();
     utils.saveToStorage("user_profile", AppState.userProfile);
+    utils.saveToStorage("marketplace_items", AppState.originalItems);
   }
 
   showBoostModal(itemId) {
@@ -989,108 +1051,249 @@ class PostItem {
 // Replace the entire Chat class with this functional version
 class Chat {
   init() {
-    if (!AppState.chatData.activeFilter) {
-      AppState.chatData.activeFilter = "all";
-    }
-    this.updateFilterButtons();
-    this.loadConversations();
+    this.db = window.firebaseDb;
+    this.modules = window.firebaseModules || {};
+    this.auth = window.firebaseAuth;
+    this.conversations = [];
+    this.activeConversation = null;
+    this.unsubConversations = null;
+    this.unsubMessages = null;
+
     this.bindEvents();
+    // Try to subscribe now (if user is already available)
+    this.subscribeConversations();
+    // And resubscribe on auth state changes
+    if (this.modules.onAuthStateChanged && this.auth) {
+      this.modules.onAuthStateChanged(this.auth, (user) => {
+        if (user) {
+          this.subscribeConversations();
+        } else {
+          // Cleanup when signed out
+          if (this.unsubConversations) { this.unsubConversations(); this.unsubConversations = null; }
+          if (this.unsubMessages) { this.unsubMessages(); this.unsubMessages = null; }
+          this.conversations = [];
+          this.renderConversationList();
+          const chatMessages = document.getElementById('chatMessages');
+          if (chatMessages) chatMessages.innerHTML = '';
+        }
+      });
+    }
   }
 
-  updateFilterButtons() {
-    const filterBtns = document.querySelectorAll(".chat-filter-btn");
-    const currentFilter = AppState.chatData.activeFilter;
-    filterBtns.forEach((btn) => {
-      btn.classList.toggle("active", btn.dataset.filter === currentFilter);
+  // Backward-compat: keep old API so switchToSection can safely call it
+  loadConversations() {
+    this.renderConversationList();
+  }
+
+  // Subscribe to conversations for the current user
+  subscribeConversations() {
+    const conversationList = document.getElementById('conversationList');
+    if (!conversationList || !this.db || !this.modules?.onSnapshot) return;
+
+    const user = this.auth?.currentUser;
+    if (!user) return;
+
+    const { collection, query, where, onSnapshot } = this.modules;
+    const convRef = collection(this.db, 'conversations');
+    const q = query(convRef, where('participants', 'array-contains', user.uid));
+
+    if (this.unsubConversations) this.unsubConversations();
+
+    this.unsubConversations = onSnapshot(q, (snapshot) => {
+      const list = [];
+      snapshot.forEach((doc) => list.push({ id: doc.id, ...doc.data() }));
+      // client-side sort by lastMessageAt desc
+      list.sort((a, b) => (b.lastMessageAt?.toMillis?.() || 0) - (a.lastMessageAt?.toMillis?.() || 0));
+      this.conversations = list;
+      this.renderConversationList();
+    }, (error) => {
+      console.error('Failed to subscribe to conversations:', error);
     });
   }
 
-  loadConversations() {
-    const conversationList = document.getElementById("conversationList");
+  renderConversationList() {
+    const conversationList = document.getElementById('conversationList');
     if (!conversationList) return;
+    conversationList.innerHTML = '';
 
-    const currentFilter = AppState.chatData.activeFilter;
-    const conversations = AppState.chatData.conversations;
+    const me = this.auth?.currentUser;
+    this.conversations.forEach((c) => {
+      const otherUid = (c.participants || []).find((p) => p !== me?.uid) || '';
+      const displayName = c.participantEmails?.[otherUid] || c.sellerEmail || 'Conversation';
+      const preview = c.lastMessage || (c.itemTitle ? `About: ${c.itemTitle}` : '');
 
-    const filteredConversations =
-      currentFilter === "all"
-        ? conversations
-        : conversations.filter((conv) => conv.type === currentFilter);
-
-    conversationList.innerHTML = "";
-
-    if (filteredConversations.length === 0) {
-      conversationList.innerHTML = `<div class="empty-state"><p>No conversations in this filter.</p></div>`;
-      return;
-    }
-
-    filteredConversations.forEach((conversation) => {
-      const element = document.createElement("div");
-      element.className = "conversation-item";
-      element.dataset.chatId = conversation.id;
-      element.innerHTML = `
+      const el = document.createElement('div');
+      el.className = 'conversation-item';
+      el.dataset.chatId = c.id;
+      el.innerHTML = `
         <div class="conversation-details">
-            <div class="conversation-name">${conversation.participantName}</div>
-            <div class="conversation-preview">${conversation.lastMessage}</div>
+          <div class="conversation-name">${displayName}</div>
+          <div class="conversation-preview">${preview || ''}</div>
         </div>
         <div class="conversation-meta">
-            <div class="conversation-time">${conversation.timestamp}</div>
-            ${conversation.unread ? '<div class="unread-indicator"></div>' : ""}
+          <div class="conversation-time">${c.lastMessageAt?.toDate?.()?.toLocaleString?.() || ''}</div>
         </div>
       `;
-      conversationList.appendChild(element);
+      el.addEventListener('click', () => this.openChat(c.id));
+      conversationList.appendChild(el);
     });
+  }
+
+  // Start or reuse a conversation for a given item
+  async startConversationForItem(item) {
+    if (!this.db || !this.modules) throw new Error('Firebase not initialized');
+    const user = this.auth?.currentUser;
+    if (!user) throw new Error('Not authenticated');
+
+    const buyerId = user.uid;
+    const sellerId = item.sellerId;
+    const key = [buyerId, sellerId].sort().join('_');
+
+    // Use deterministic conversation ID to avoid permission issues on query
+    const convId = `${key}_${String(item.id)}`;
+    const { doc, setDoc, serverTimestamp } = this.modules;
+
+    await setDoc(doc(this.db, 'conversations', convId), {
+      key,
+      participants: [buyerId, sellerId],
+      participantEmails: {
+        [buyerId]: user.email || '',
+        [sellerId]: item.sellerEmail || ''
+      },
+      buyerId,
+      sellerId,
+      sellerEmail: item.sellerEmail || '',
+      itemId: String(item.id),
+      itemTitle: item.title || '',
+      // keep/update preview fields
+      lastMessage: '',
+      lastMessageAt: serverTimestamp(),
+      createdAt: serverTimestamp()
+    }, { merge: true });
+
+    // Open the chat immediately; conversation list will sync via onSnapshot
+    this.openChat(convId);
   }
 
   openChat(chatId) {
-    const conversation = AppState.chatData.conversations.find(
-      (c) => c.id === chatId
-    );
-    if (!conversation) return;
+    const convo = this.conversations.find((c) => c.id === chatId) || { id: chatId };
+    this.activeConversation = convo;
 
-    document.getElementById("chatUserName").textContent =
-      conversation.participantName;
-    document.getElementById("chatUserStatus").textContent = "Online";
-    document.getElementById("chatInputContainer").classList.remove("hidden");
+    const chatUserName = document.getElementById('chatUserName');
+    const chatUserStatus = document.getElementById('chatUserStatus');
+    const chatInputContainer = document.getElementById('chatInputContainer');
 
-    const chatMessages = document.getElementById("chatMessages");
-    chatMessages.innerHTML = "";
-    conversation.messages.forEach((message) => {
-      const msgEl = document.createElement("div");
-      msgEl.className = `message ${message.sender}`;
-      msgEl.innerHTML = `<div class="message-text">${message.text}</div><div class="message-time">${message.time}</div>`;
-      chatMessages.appendChild(msgEl);
+    if (chatUserName) {
+      const me = this.auth?.currentUser;
+      const otherUid = (convo.participants || []).find((p) => p !== me?.uid);
+      const name = (convo.participantEmails && otherUid) ? convo.participantEmails[otherUid] : (convo.sellerEmail || 'Chat');
+      chatUserName.textContent = name;
+    }
+    if (chatUserStatus) chatUserStatus.textContent = 'Online';
+    if (chatInputContainer) chatInputContainer.classList.remove('hidden');
+
+    this.subscribeMessages(chatId);
+  }
+
+  subscribeMessages(conversationId) {
+    const chatMessages = document.getElementById('chatMessages');
+    if (!chatMessages || !this.db || !this.modules?.onSnapshot) return;
+
+    chatMessages.innerHTML = '';
+
+    if (this.unsubMessages) this.unsubMessages();
+
+    const { collection, onSnapshot, query, orderBy } = this.modules;
+    const msgsRef = collection(this.db, 'conversations', conversationId, 'messages');
+    const q = query(msgsRef, orderBy('createdAt', 'asc'));
+
+    this.unsubMessages = onSnapshot(q, (snapshot) => {
+      chatMessages.innerHTML = '';
+      snapshot.forEach((doc) => {
+        const m = doc.data();
+        const mine = m.senderId === this.auth?.currentUser?.uid;
+        const el = document.createElement('div');
+        el.className = `message ${mine ? 'sent' : 'received'}`;
+        el.innerHTML = `
+          <div class="message-text">${m.text || ''}</div>
+          <div class="message-time">${m.createdAt?.toDate?.()?.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}) || ''}</div>
+        `;
+        chatMessages.appendChild(el);
+      });
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }, (error) => {
+      console.error('Failed to subscribe to messages:', error);
     });
-    chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
   bindEvents() {
-    // Event listener for filter buttons
-    const chatFilters = document.querySelector(".chat-filters");
-    if (chatFilters) {
-      chatFilters.addEventListener("click", (e) => {
-        const filterBtn = e.target.closest(".chat-filter-btn");
-        if (filterBtn && !filterBtn.classList.contains("active")) {
-          const newFilter = filterBtn.dataset.filter;
-          AppState.chatData.activeFilter = newFilter;
-          this.updateFilterButtons();
-          this.loadConversations();
+    const chatSendBtn = document.getElementById('chatSendBtn');
+    const chatInput = document.getElementById('chatInput');
+
+    if (chatSendBtn && chatInput) {
+      chatSendBtn.addEventListener('click', () => {
+        this.sendMessage();
+      });
+
+      chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          this.sendMessage();
         }
       });
     }
+  }
 
-    // Event listener for opening a conversation
-    const conversationList = document.getElementById("conversationList");
-    if (conversationList) {
-      conversationList.addEventListener("click", (e) => {
-        const chatItem = e.target.closest(".conversation-item");
-        if (chatItem) {
-          this.openChat(chatItem.dataset.chatId);
-        }
-      });
+  async sendMessage() {
+    const chatInput = document.getElementById('chatInput');
+    if (!chatInput) return;
+    const text = chatInput.value.trim();
+    if (!text) return;
+
+    if (!this.db || !this.modules) return;
+    const convo = this.activeConversation;
+    if (!convo?.id) return;
+
+    const user = this.auth?.currentUser;
+    if (!user) {
+      utils.showNotification('Please sign in to send messages', 'error');
+      return;
     }
 
-    // Add your message sending logic here if needed
+    const chatMessages = document.getElementById('chatMessages');
+    // Optimistic UI: append the message immediately
+    if (chatMessages) {
+      const welcome = chatMessages.querySelector('.welcome-message');
+      if (welcome) welcome.remove();
+      const el = document.createElement('div');
+      el.className = 'message sent';
+      const now = new Date();
+      el.innerHTML = `
+        <div class="message-text">${text}</div>
+        <div class="message-time">${now.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}</div>
+      `;
+      chatMessages.appendChild(el);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    const { collection, addDoc, serverTimestamp, doc, updateDoc } = this.modules;
+    const msgsRef = collection(this.db, 'conversations', convo.id, 'messages');
+
+    try {
+      await addDoc(msgsRef, {
+        senderId: user.uid,
+        text,
+        createdAt: serverTimestamp()
+      });
+      const convRef = doc(this.db, 'conversations', convo.id);
+      await updateDoc(convRef, {
+        lastMessage: text,
+        lastMessageAt: serverTimestamp()
+      });
+      chatInput.value = '';
+    } catch (e) {
+      console.error('Failed to send message:', e);
+      utils.showNotification('Message failed. Please try again.', 'error');
+    }
   }
 }
 
