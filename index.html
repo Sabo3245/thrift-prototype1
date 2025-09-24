@@ -39,11 +39,7 @@
 
       <nav class="nav-container">
         <div class="nav-brand">
-<<<<<<< HEAD
           <div class="brand-logo">CK</div>
-=======
-          <div class="brand-logo" >CK</div>
->>>>>>> parent of 7182f64 (Merge pull request #6 from Siddharth31415/master)
           <span class="brand-text">CampusKart</span>
         </div>
         <div class="nav-tabs">
@@ -334,7 +330,6 @@
             </div>
             <div class="form-tips-card">
               <h4 class="tips-title">💡 Safety Tips & Disclaimer</h4>
-<<<<<<< HEAD
               <br>
               <div class="tips-textbox">
                 <p><strong>Be Cautious:</strong> Don't share OTPs or personal details like bank account numbers.</p>
@@ -349,29 +344,6 @@
               </div>
             </div>
             <br>
-=======
-              <ul class="tips-list">
-                <li>
-                  <strong>Be Cautious:</strong> Don't share OTPs or personal
-                  details like bank account numbers.
-                </li>
-                <li>
-                  <strong>No Advance Payments:</strong> Never give money or the
-                  product to someone in advance.
-                </li>
-                <li>
-                  <strong>Meet Safely:</strong> Always be cautious while meeting
-                  a buyer or seller. Prefer public places on campus.
-                </li>
-                <li>
-                  <strong>Report Suspicious Users:</strong> Help keep the
-                  community safe by reporting any suspicious behavior to the
-                  admins.
-                </li>
-              </ul>
-            </div>
-
->>>>>>> parent of 7182f64 (Merge pull request #6 from Siddharth31415/master)
             <button
               type="submit"
               class="btn btn--primary btn--full-width animated-btn"
@@ -412,12 +384,6 @@
                     <p id="chatUserStatus">Choose from the conversation list</p>
                   </div>
                 </div>
-<<<<<<< HEAD
-=======
-                <div class="chat-actions">
-                  <button class="btn btn--outline btn--sm" id="markAsSoldBtn" style="display:none;">Mark as Sold</button>
-                </div>
->>>>>>> parent of 7182f64 (Merge pull request #6 from Siddharth31415/master)
               </div>
 
               <div class="chat-messages" id="chatMessages">
@@ -561,10 +527,7 @@
                     <span>&#x1F6AA; Logout</span>
       <span>&gt;</span>
     </a>
-<<<<<<< HEAD
     </a>
-=======
->>>>>>> parent of 7182f64 (Merge pull request #6 from Siddharth31415/master)
     <a href="#" id="changePasswordBtn" class="setting-action-item">
       <span>&#x1F510; Privacy - Change Password</span>
       <span>&gt;</span>
@@ -725,7 +688,6 @@
     
     <script src="user-session.js"></script>
 
-<<<<<<< HEAD
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
       import { 
@@ -773,284 +735,35 @@
         measurementId: "G-7PGCTDYP38",
       };
 
-=======
-      
-      <div class="modal hidden" id="changePasswordModal">
-        <div class="modal-overlay"></div>
-        <div class="modal-content glass-card">
-          <div class="modal-header">
-            <h3 class="modal-title">Change Your Password</h3>
-            <p class="modal-message">For security, please enter your current password first.</p>
-          </div>
-          <div class="modal-body">
-            <form id="changePasswordForm">
-              <div class="form-group">
-                <label class="form-label">Current Password</label>
-                <input type="password" id="currentPassword" class="form-control" placeholder="Enter your current password" required />
-              </div>
-              <div class="form-group">
-                <label class="form-label">New Password</label>
-                <input type="password" id="newPassword" class="form-control" placeholder="Enter a new password" required />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Confirm New Password</label>
-                <input type="password" id="confirmNewPassword" class="form-control" placeholder="Confirm your new password" required />
-              </div>
-            </form>
-          </div>
-          <div class="modal-actions">
-            <button class="btn btn--outline" id="cancelChangePassword">Cancel</button>
-            <button class="btn btn--primary" id="saveChangePassword">Update Password</button>
-          </div>
-        </div>
-      </div>
-      <div class="modal hidden" id="successModal">
-        <div class="modal-overlay"></div>
-        <div class="modal-content glass-card">
-          <div class="modal-header">
-            
-            <div class="success-icon">✨</div>
-            <h3 class="modal-title">Success!</h3>
-            <p class="modal-message">Your item has been posted successfully!</p>
-          </div>
-          <div class="celebration-particles">
-            <div class="confetti"></div>
-            <div class="confetti"></div>
-            <div class="confetti"></div>
-            <div class="confetti"></div>
-            <div class="confetti"></div>
-          </div>
-          <button class="btn btn--primary" id="closeModal">Awesome!</button>
-        </div>
-      </div>
-    </div>
-      <div class="modal hidden" id="removeModal">
-        <div class="modal-overlay"></div>
-        <div class="modal-content glass-card">
-          <div class="modal-header">
-          <div class="warning-icon">⚠️</div>
-            <h3 class="modal-title">Remove Post</h3>
-            <p class="modal-message">
-              Are you sure you want to remove this item? This action cannot be
-              undone.
-            </p>
-          </div>
-          <div class="modal-actions">
-            <button class="btn btn--outline" id="cancelRemove">Cancel</button>
-            <button class="btn btn--primary" id="confirmRemove">Remove</button>
-          </div>
-        </div>
-      </div>
-      <div class="modal hidden" id="boostModal">
-        <div class="modal-overlay"></div>
-        <div class="modal-content glass-card">
-          <div class="modal-header">
-            <div class="boost-icon">🚀</div>
-            <h3 class="modal-title">Boost Your Post</h3>
-            <p class="modal-message">
-              Use 25 points to boost this post and pin it to the top for 7 days!
-            </p>
-            <p class="points-remaining">
-              Your Points: <span id="currentPoints">15</span>
-            </p>
-          </div>
-          <div class="modal-actions">
-            <button class="btn btn--outline" id="cancelBoost">Cancel</button>
-            <button class="btn btn--primary" id="confirmBoost" disabled>
-              Boost Post (25 points)
-            </button>
-          </div>
-        </div>
-      </div>
-      <div class="modal hidden" id="editNameModal">
-        <div class="modal-overlay"></div>
-        <div class="modal-content glass-card">
-          <div class="modal-header">
-            <h3 class="modal-title">Edit Your Name</h3>
-            <p class="modal-message">Update how your name appears across the app.</p>
-          </div>
-          <div class="modal-body">
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">First Name</label>
-                <input type="text" id="editFirstName" class="form-control" placeholder="First name" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Last Name</label>
-                <input type="text" id="editLastName" class="form-control" placeholder="Last name" />
-              </div>
-            </div>
-          </div>
-          <div class="modal-actions">
-            <button class="btn btn--outline" id="cancelEditName">Cancel</button>
-            <button class="btn btn--primary" id="saveEditName">Save</button>
-          </div>
-        </div>
-      </div>
-      <div class="modal hidden" id="deleteAccountModal">
-        <div class="modal-overlay"></div>
-        <div class="modal-content glass-card">
-          <div class="modal-header">
-            <div class="warning-icon">⚠️</div>
-            <h3 class="modal-title">Delete Account</h3>
-            <p class="modal-message">This will permanently remove your account and listings. This action cannot be undone.</p>
-          </div>
-          <div class="modal-actions">
-            <button class="btn btn--outline" id="cancelDeleteAccount">Cancel</button>
-            <button class="btn btn--primary" id="confirmDeleteAccount">Delete</button>
-          </div>
-        </div>
-      </div>
-      <div class="modal hidden" id="markSoldModal">
-        <div class="modal-overlay"></div>
-        <div class="modal-content glass-card">
-          <div class="modal-header">
-            <div class="warning-icon">⚠️</div>
-            <h3 class="modal-title">Confirm Sale</h3>
-            <p class="modal-message">Are you sure you want to mark this item as sold to <span id="soldBuyerEmail">this user</span>? This will remove it from the marketplace.</p>
-          </div>
-          <div class="modal-actions">
-            <button class="btn btn--outline" id="cancelMarkSold">Cancel</button>
-            <button class="btn btn--primary" id="confirmMarkSold">Confirm</button>
-          </div>
-        </div>
-      </div>
-      <button class="fab" id="fabButton">
-        <span class="fab-icon">➕</span>
-        <div class="fab-ripple"></div>
-      </button>
-
-    <script src="user-session.js"></script>
-    <script src="app.js"></script>
-  <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-      import { 
-        getAuth, 
-        onAuthStateChanged,
-        signOut,
-        updateProfile,
-        EmailAuthProvider,
-        reauthenticateWithCredential,
-        updatePassword,
-        deleteUser
-      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-      import { 
-        getFirestore, 
-        initializeFirestore,
-        enableIndexedDbPersistence,
-        doc, 
-        setDoc, 
-        getDoc, 
-        updateDoc,
-        collection,
-        query,
-        where,
-        getDocs,
-        addDoc,
-        deleteDoc,
-        orderBy,
-        serverTimestamp,
-        onSnapshot,
-        increment
-      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-      import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
-      import { 
-        getStorage,
-        ref,
-        uploadBytes,
-        getDownloadURL
-      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-
-      // Your web app's Firebase configuration
-      const firebaseConfig = {
-        apiKey: "AIzaSyBrVVik7_oVaPXpyI20jcyq9nqXUKcwcOM",
-        authDomain: "thrift-6bd6d.firebaseapp.com",
-        projectId: "thrift-6bd6d",
-        storageBucket: "thrift-6bd6d.firebasestorage.app",
-        messagingSenderId: "595724600327",
-        appId: "1:595724600327:web:e1a9d65d6e6ee68e0456a2",
-        measurementId: "G-7PGCTDYP38",
-      };
-
-      // Initialize Firebase
->>>>>>> parent of 7182f64 (Merge pull request #6 from Siddharth31415/master)
       try {
         console.log('🔥 Initializing Firebase for main app...');
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-<<<<<<< HEAD
         const db = initializeFirestore(app, { experimentalForceLongPolling: true, useFetchStreams: false });
-=======
-        // Force long-polling to avoid WebChannel transport issues in restricted networks
-        const db = initializeFirestore(app, { experimentalForceLongPolling: true, useFetchStreams: false });
-        // Enable offline persistence so writes succeed locally and sync later
->>>>>>> parent of 7182f64 (Merge pull request #6 from Siddharth31415/master)
         try { await enableIndexedDbPersistence(db); } catch (e) { console.warn('IndexedDB persistence disabled or failed:', e?.message || e); }
         const analytics = getAnalytics(app);
         const storage = getStorage(app);
         
-<<<<<<< HEAD
-=======
-        // Make Firebase services available globally for user session manager
->>>>>>> parent of 7182f64 (Merge pull request #6 from Siddharth31415/master)
         window.firebaseAuth = auth;
         window.firebaseDb = db;
         window.firebaseStorage = storage;
         window.firebaseModules = {
-<<<<<<< HEAD
           onAuthStateChanged, signOut, updateProfile, EmailAuthProvider,
           reauthenticateWithCredential, updatePassword, deleteUser, doc, setDoc,
           getDoc, updateDoc, collection, query, where, getDocs, addDoc, deleteDoc,
           orderBy, serverTimestamp, ref, uploadBytes, getDownloadURL
         };
-=======
-          onAuthStateChanged,
-          signOut,
-          updateProfile,
-          EmailAuthProvider,
-          reauthenticateWithCredential,
-          updatePassword,
-          deleteUser,
-          doc,
-          setDoc,
-          getDoc,
-          updateDoc,
-          collection,
-          query,
-          where,
-          getDocs,
-          addDoc,
-          deleteDoc,
-          orderBy,
-          serverTimestamp,
-          onSnapshot,
-          increment,
-          // Storage helpers
-          ref,
-          uploadBytes,
-          getDownloadURL
-        };
-        
->>>>>>> parent of 7182f64 (Merge pull request #6 from Siddharth31415/master)
         console.log('✅ Firebase services initialized and made globally available');
       } catch (error) {
         console.error('❌ Firebase initialization failed:', error);
       }
     </script>
     
-<<<<<<< HEAD
     <script src="app.js"></script>
     
     <script>
       async function handleLogout(event) {
         event.preventDefault();
-=======
-    <script>
-      // Handle logout functionality
-      async function handleLogout(event) {
-        event.preventDefault();
-        
->>>>>>> parent of 7182f64 (Merge pull request #6 from Siddharth31415/master)
         if (window.userSession) {
           await window.userSession.logout();
         } else {
@@ -1059,37 +772,11 @@
         }
       }
       
-<<<<<<< HEAD
-=======
-      // Handle profile completion
->>>>>>> parent of 7182f64 (Merge pull request #6 from Siddharth31415/master)
       function completeProfile() {
         if (window.userSession) {
           window.userSession.switchToProfile();
         }
       }
-<<<<<<< HEAD
     </script>
   </body>
 </html>
-=======
-      
-      // Initialize authentication-dependent features
-      document.addEventListener('DOMContentLoaded', () => {
-        // Hide loading screen after a delay
-        setTimeout(() => {
-          const loadingScreen = document.getElementById('loadingScreen');
-          if (loadingScreen) {
-            loadingScreen.classList.add('hidden');
-          }
-          
-          const mainApp = document.getElementById('mainApp');
-          if (mainApp) {
-            mainApp.classList.remove('hidden');
-          }
-        }, 2000);
-      });
-    </script>
-  </body>
-</html>
->>>>>>> parent of 7182f64 (Merge pull request #6 from Siddharth31415/master)
