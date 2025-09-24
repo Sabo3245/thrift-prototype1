@@ -423,39 +423,6 @@ class LoadingScreen {
     this.loadingText = document.querySelector(".loading-text");
   }
 
-<<<<<<< HEAD
-  // This function is now much simpler.
-  init() {
-    // 1. Instantly set the loading text to the only message needed.
-    this.loadingText.textContent = "Loading your marketplace...";
-
-    // 2. Animate the progress bar to 100% over 0.4 seconds.
-    if (this.progressFill) {
-      // We use a CSS transition for a much smoother animation.
-      this.progressFill.style.transition = "transform 0.4s ease-out";
-      this.progressFill.style.transform = "translateX(0%)";
-    }
-
-    // 3. Hide the loading screen right after the animation finishes.
-    setTimeout(() => this.hide(), 1000); // 500ms = 0.5s
-  }
-
-  hide() {
-    if (!this.loadingScreen) return;
-
-    // Fade out the entire loading screen.
-    this.loadingScreen.style.animation = "fadeOut 0.5s ease-out forwards";
-
-    setTimeout(() => {
-      this.loadingScreen.style.display = "none";
-      const mainApp = document.getElementById("mainApp");
-      if (mainApp) {
-        mainApp.classList.remove("hidden");
-      }
-      // This correctly starts the rest of your app.
-      window.app.init();
-    }, 500);
-=======
   init() {
     const messages = [
       "Loading your marketplace...",
@@ -493,7 +460,6 @@ class LoadingScreen {
       document.getElementById("mainApp").classList.remove("hidden");
       window.app.init(); // This will now correctly call the async init
     }, 1000);
->>>>>>> parent of 7182f64 (Merge pull request #6 from Siddharth31415/master)
   }
 }
 
@@ -537,290 +503,6 @@ class Marketplace {
 
     try {
       if (window.firebaseDb && window.firebaseModules) {
-<<<<<<< HEAD
-        const { collection, query, where, orderBy, getDocs } =
-          window.firebaseModules;
-        const itemsRef = collection(window.firebaseDb, "items");
-        const q = query(
-          itemsRef,
-          where("status", "==", "available"),
-          orderBy("createdAt", "desc")
-        );
-        const snapshot = await getDocs(q);
-        const items = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        AppState.items = [...items];
-        AppState.originalItems = [...items];
-        AppState.filteredItems = [...items];
-        this.calculateMoneySaved();
-        return;
-      }
-    } catch (err) {
-      console.warn(
-        "Failed to fetch items from Firestore, using fallback:",
-        err
-      );
-    }
-    const savedItems = utils.loadFromStorage("marketplace_items", sampleItems);
-    AppState.items = [...savedItems];
-    AppState.originalItems = [...savedItems];
-    AppState.filteredItems = [...savedItems];
-    this.calculateMoneySaved();
-  }
-
-  // File: app.js
-
-  calculateMoneySaved() {
-    // This function is updated to prevent incorrect calculations based on hearted items.
-    // "Money Saved" will be correctly calculated from actual transactions in a future update.
-    const totalSaved = 0;
-
-    AppState.userProfile.moneySaved = totalSaved;
-    utils.saveToStorage("user_profile", AppState.userProfile);
-  }
-
-  bindEvents() {
-    document.getElementById("searchInput")?.addEventListener(
-      "input",
-      utils.debounce((e) => {
-        AppState.searchQuery = e.target.value.toLowerCase();
-        this.filterItems();
-      }, 300)
-    );
-
-    ["categoryFilter", "conditionFilter", "hostelFilter"].forEach((id) => {
-      document.getElementById(id)?.addEventListener("change", (e) => {
-        const filterType = id.replace("Filter", "");
-        AppState.filters[filterType] = e.target.value;
-        this.filterItems();
-      });
-    });
-  }
-
-  filterItems() {
-    AppState.filteredItems = AppState.originalItems.filter((item) => {
-      const { searchQuery, filters } = AppState;
-      const matchesSearch =
-        !searchQuery ||
-        item.title.toLowerCase().includes(searchQuery) ||
-        item.description.toLowerCase().includes(searchQuery);
-      const matchesCategory =
-        !filters.category || item.category === filters.category;
-      const matchesCondition =
-        !filters.condition || item.condition === filters.condition;
-      const matchesHostel = !filters.hostel || item.hostel === filters.hostel;
-      return (
-        matchesSearch && matchesCategory && matchesCondition && matchesHostel
-      );
-    });
-
-    AppState.filteredItems.sort(
-      (a, b) => (b.isBoosted || 0) - (a.isBoosted || 0)
-    );
-    this.renderItems();
-  }
-
-  renderItems() {
-    const itemsGrid = document.getElementById("itemsGrid");
-    if (!itemsGrid) return;
-    itemsGrid.innerHTML = "";
-
-    if (AppState.filteredItems.length === 0) {
-      itemsGrid.innerHTML = `<div class="no-items"><h3>No items found</h3><p>Try adjusting your search or filters</p></div>`;
-      return;
-    }
-    AppState.filteredItems.forEach((item, index) => {
-      itemsGrid.appendChild(this.createItemCard(item, index));
-    });
-  }
-
-  createItemCard(item, index) {
-    const card = document.createElement("div");
-    card.className = `item-card glass-card${item.isBoosted ? " boosted" : ""}`;
-    card.style.animationDelay = `${index * 0.1}s`;
-
-    const savings = item.originalPrice
-      ? utils.calculateSavings(item.originalPrice, item.price)
-      : null;
-    const isUserItem =
-      !!item.sellerId &&
-      item.sellerId === window.userSession?.getCurrentUser?.()?.uid;
-    const isHearted = AppState.userProfile.heartedPosts.includes(item.id);
-    const primaryImage =
-      Array.isArray(item.images) && item.images.length > 0
-        ? item.images[0]
-        : null;
-
-    card.innerHTML = `
-      <div class="item-image">
-          ${
-            primaryImage
-              ? `<img src="${primaryImage}" alt="${item.title}" class="item-img" style="width:100%;height:160px;object-fit:cover;border-radius:12px;"/>`
-              : `<span class="item-emoji">${item.icon || "📦"}</span>`
-          }
-          <button class="heart-btn ${isHearted ? "hearted" : ""}" data-id="${
-      item.id
-    }" title="Heart this item">${isHearted ? "❤️" : "🤍"}</button>
-      </div>
-      <h3 class="item-title">${item.title}</h3>
-      <div class="item-prices">
-          <div class="item-price">${utils.formatPrice(item.price)}</div>
-          ${
-            item.originalPrice
-              ? `<div class="item-original-price">${utils.formatPrice(
-                  item.originalPrice
-                )}</div>`
-              : ""
-          }
-          ${savings ? `<div class="item-savings">Save ₹${savings}</div>` : ""}
-      </div>
-      <div class="item-details">
-          <span class="item-tag">${item.category}</span>
-          <span class="item-tag">${item.condition}</span>
-          <span class="item-tag">${item.hostel}</span>
-      </div>
-      <div class="item-seller-info">
-          <span class="seller-label">Sold by:</span>
-          <span class="seller-name">${item.sellerName || "Anonymous"}</span>
-      </div>
-      <div class="item-actions">
-          <button class="btn btn--primary btn--sm contact-btn" data-id="${
-            item.id
-          }">Contact Seller</button>
-          ${
-            isUserItem
-              ? `
-              <button class="boost-btn" data-id="${item.id}" title="Boost post">🚀</button>
-              <button class="remove-btn" data-id="${item.id}" title="Remove post">🗑️</button>`
-              : ""
-          }
-      </div>`;
-
-    card.addEventListener("click", (e) => this.handleCardClick(e, item.id));
-    return card;
-  }
-
-  handleCardClick(e, itemId) {
-    const target = e.target;
-    if (target.closest(".contact-btn")) this.contactSeller(itemId);
-    else if (target.closest(".heart-btn"))
-      this.toggleHeart(itemId, target.closest(".heart-btn"));
-    else if (target.closest(".boost-btn")) this.showBoostModal(itemId);
-    else if (target.closest(".remove-btn")) this.showRemoveModal(itemId);
-  }
-
-  contactSeller(itemId) {
-    utils.showNotification("Chat request sent! 💬", "success");
-    setTimeout(() => switchToSection("chat"), 1000);
-  }
-
-  // File: app.js
-
-  // File: app.js
-
-  toggleHeart(itemId, button) {
-    const isHearted = AppState.userProfile.heartedPosts.includes(itemId);
-    if (isHearted) {
-      AppState.userProfile.heartedPosts =
-        AppState.userProfile.heartedPosts.filter((id) => id !== itemId);
-      button.textContent = "🤍";
-      utils.showNotification("Removed from favorites", "info");
-    } else {
-      AppState.userProfile.heartedPosts.push(itemId);
-      button.textContent = "❤️";
-      utils.showNotification("Added to favorites! ❤️", "success");
-    }
-    // The incorrect calculation is now removed.
-    utils.saveToStorage("user_profile", AppState.userProfile);
-  }
-
-  showBoostModal(itemId) {
-    AppState.currentBoostItemId = itemId;
-    const modal = document.getElementById("boostModal");
-    if (modal) {
-      modal.classList.remove("hidden");
-      document.body.classList.add("modal-open");
-    }
-  }
-
-  showRemoveModal(itemId) {
-    AppState.currentRemoveItemId = itemId;
-    document.getElementById("removeModal")?.classList.remove("hidden");
-  }
-
-  boostPost(itemId) {
-    // Logic can be implemented here, for now, it's a placeholder
-    const item = AppState.originalItems.find((i) => i.id === itemId);
-    if (item) {
-      item.isBoosted = true;
-      this.filterItems(); // Re-render to show boosted status
-      utils.showNotification("Post boosted successfully! 🚀", "success");
-    }
-  }
-
-  async removePost(itemId) {
-    const currentUser =
-      window.userSession?.getCurrentUser?.() ||
-      window.firebaseAuth?.currentUser ||
-      null;
-
-    let removedInCloud = false;
-    if (window.firebaseDb && window.firebaseModules && currentUser) {
-      const { doc, deleteDoc, updateDoc } = window.firebaseModules;
-      const itemRef = doc(window.firebaseDb, "items", String(itemId));
-
-      const withTimeout = (p, ms) =>
-        new Promise((resolve, reject) => {
-          const t = setTimeout(() => reject(new Error("timeout")), ms);
-          p.then((v) => {
-            clearTimeout(t);
-            resolve(v);
-          }).catch((e) => {
-            clearTimeout(t);
-            reject(e);
-          });
-        });
-
-      try {
-        await withTimeout(deleteDoc(itemRef), 8000);
-        removedInCloud = true;
-      } catch (err) {
-        // Fallback to soft-delete if hard delete is blocked
-        try {
-          await withTimeout(
-            updateDoc(itemRef, {
-              status: "removed",
-              updatedAt: new Date().toISOString(),
-            }),
-            8000
-          );
-          removedInCloud = true;
-        } catch (e2) {
-          // Fire-and-forget background attempts
-          deleteDoc(itemRef).catch(() => {});
-          updateDoc(itemRef, {
-            status: "removed",
-            updatedAt: new Date().toISOString(),
-          }).catch(() => {});
-        }
-      }
-    }
-
-    // Update UI and local cache regardless
-    AppState.originalItems = AppState.originalItems.filter(
-      (i) => i.id !== itemId
-    );
-    AppState.items = [...AppState.originalItems];
-    utils.saveToStorage("marketplace_items", AppState.originalItems);
-    this.filterItems();
-
-    utils.showNotification(
-      removedInCloud
-        ? "Post removed successfully"
-        : "Post removed locally. Will sync when online.",
-=======
         const { collection, query, where, orderBy, getDocs } = window.firebaseModules;
         const itemsRef = collection(window.firebaseDb, "items");
         let items = [];
@@ -1141,7 +823,6 @@ class Marketplace {
 
     utils.showNotification(
       removedInCloud ? "Post removed successfully" : "Post removed locally. Will sync when online.",
->>>>>>> parent of 7182f64 (Merge pull request #6 from Siddharth31415/master)
       removedInCloud ? "success" : "info"
     );
   }
@@ -1369,111 +1050,6 @@ class PostItem {
 
 // Replace the entire Chat class with this functional version
 class Chat {
-<<<<<<< HEAD
-  init() {
-    if (!AppState.chatData.activeFilter) {
-      AppState.chatData.activeFilter = "all";
-    }
-    this.updateFilterButtons();
-    this.loadConversations();
-    this.bindEvents();
-  }
-
-  updateFilterButtons() {
-    const filterBtns = document.querySelectorAll(".chat-filter-btn");
-    const currentFilter = AppState.chatData.activeFilter;
-    filterBtns.forEach((btn) => {
-      btn.classList.toggle("active", btn.dataset.filter === currentFilter);
-    });
-  }
-
-  loadConversations() {
-    const conversationList = document.getElementById("conversationList");
-    if (!conversationList) return;
-
-    const currentFilter = AppState.chatData.activeFilter;
-    const conversations = AppState.chatData.conversations;
-
-    const filteredConversations =
-      currentFilter === "all"
-        ? conversations
-        : conversations.filter((conv) => conv.type === currentFilter);
-
-    conversationList.innerHTML = "";
-
-    if (filteredConversations.length === 0) {
-      conversationList.innerHTML = `<div class="empty-state"><p>No conversations in this filter.</p></div>`;
-      return;
-    }
-
-    filteredConversations.forEach((conversation) => {
-      const element = document.createElement("div");
-      element.className = "conversation-item";
-      element.dataset.chatId = conversation.id;
-      element.innerHTML = `
-        <div class="conversation-details">
-            <div class="conversation-name">${conversation.participantName}</div>
-            <div class="conversation-preview">${conversation.lastMessage}</div>
-        </div>
-        <div class="conversation-meta">
-            <div class="conversation-time">${conversation.timestamp}</div>
-            ${conversation.unread ? '<div class="unread-indicator"></div>' : ""}
-        </div>
-      `;
-      conversationList.appendChild(element);
-    });
-  }
-
-  openChat(chatId) {
-    const conversation = AppState.chatData.conversations.find(
-      (c) => c.id === chatId
-    );
-    if (!conversation) return;
-
-    document.getElementById("chatUserName").textContent =
-      conversation.participantName;
-    document.getElementById("chatUserStatus").textContent = "Online";
-    document.getElementById("chatInputContainer").classList.remove("hidden");
-
-    const chatMessages = document.getElementById("chatMessages");
-    chatMessages.innerHTML = "";
-    conversation.messages.forEach((message) => {
-      const msgEl = document.createElement("div");
-      msgEl.className = `message ${message.sender}`;
-      msgEl.innerHTML = `<div class="message-text">${message.text}</div><div class="message-time">${message.time}</div>`;
-      chatMessages.appendChild(msgEl);
-    });
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-  }
-
-  bindEvents() {
-    // Event listener for filter buttons
-    const chatFilters = document.querySelector(".chat-filters");
-    if (chatFilters) {
-      chatFilters.addEventListener("click", (e) => {
-        const filterBtn = e.target.closest(".chat-filter-btn");
-        if (filterBtn && !filterBtn.classList.contains("active")) {
-          const newFilter = filterBtn.dataset.filter;
-          AppState.chatData.activeFilter = newFilter;
-          this.updateFilterButtons();
-          this.loadConversations();
-        }
-      });
-    }
-
-    // Event listener for opening a conversation
-    const conversationList = document.getElementById("conversationList");
-    if (conversationList) {
-      conversationList.addEventListener("click", (e) => {
-        const chatItem = e.target.closest(".conversation-item");
-        if (chatItem) {
-          this.openChat(chatItem.dataset.chatId);
-        }
-      });
-    }
-
-    // Add your message sending logic here if needed
-=======
 // In the Chat class, update the init method
   init() {
     this.db = window.firebaseDb;
@@ -2050,7 +1626,6 @@ class Chat {
     }
 
     chatInput.value = '';
->>>>>>> parent of 7182f64 (Merge pull request #6 from Siddharth31415/master)
   }
 }
 
@@ -2261,16 +1836,6 @@ class Profile {
     try {
       const user = window.firebaseAuth?.currentUser;
       if (!user) {
-<<<<<<< HEAD
-        utils.showNotification("No user signed in.", "error");
-        return;
-      }
-
-      utils.showNotification("Deleting your account...", "warning");
-
-      const { collection, query, where, getDocs, doc, updateDoc, deleteDoc } =
-        window.firebaseModules || {};
-=======
         utils.showNotification('No user signed in.', 'error');
         return;
       }
@@ -2278,33 +1843,11 @@ class Profile {
       utils.showNotification('Deleting your account...', 'warning');
 
       const { collection, query, where, getDocs, doc, updateDoc, deleteDoc } = window.firebaseModules || {};
->>>>>>> parent of 7182f64 (Merge pull request #6 from Siddharth31415/master)
       const db = window.firebaseDb;
 
       // 1) Soft-delete all items owned by the user (so they disappear from public listings)
       if (db && collection && query && where && getDocs && doc && updateDoc) {
         try {
-<<<<<<< HEAD
-          const itemsRef = collection(db, "items");
-          const q = query(itemsRef, where("sellerId", "==", user.uid));
-          const snap = await getDocs(q);
-          const updates = [];
-          snap.forEach((d) => {
-            const itemRef = doc(db, "items", d.id);
-            updates.push(
-              updateDoc(itemRef, {
-                status: "removed",
-                updatedAt: new Date().toISOString(),
-              })
-            );
-          });
-          await Promise.allSettled(updates);
-        } catch (e) {
-          console.warn(
-            "Failed to soft-delete items during account deletion:",
-            e
-          );
-=======
           const itemsRef = collection(db, 'items');
           const q = query(itemsRef, where('sellerId', '==', user.uid));
           const snap = await getDocs(q);
@@ -2316,22 +1859,15 @@ class Profile {
           await Promise.allSettled(updates);
         } catch (e) {
           console.warn('Failed to soft-delete items during account deletion:', e);
->>>>>>> parent of 7182f64 (Merge pull request #6 from Siddharth31415/master)
         }
       }
 
       // 2) Delete the user profile document
       if (db && doc && deleteDoc) {
         try {
-<<<<<<< HEAD
-          await deleteDoc(doc(db, "users", user.uid));
-        } catch (e) {
-          console.warn("Failed to delete user profile document:", e);
-=======
           await deleteDoc(doc(db, 'users', user.uid));
         } catch (e) {
           console.warn('Failed to delete user profile document:', e);
->>>>>>> parent of 7182f64 (Merge pull request #6 from Siddharth31415/master)
         }
       }
 
@@ -2341,38 +1877,14 @@ class Profile {
           await window.firebaseModules.deleteUser(user);
         } catch (e) {
           // Requires recent login
-<<<<<<< HEAD
-          console.error("Failed to delete auth user:", e);
-          utils.showNotification(
-            "Please re-login and try deleting again (recent sign-in required).",
-            "error"
-          );
-=======
           console.error('Failed to delete auth user:', e);
           utils.showNotification('Please re-login and try deleting again (recent sign-in required).', 'error');
->>>>>>> parent of 7182f64 (Merge pull request #6 from Siddharth31415/master)
           return;
         }
       }
 
       // 4) Clear local storage and redirect
       try {
-<<<<<<< HEAD
-        localStorage.removeItem("user_profile");
-        localStorage.removeItem("marketplace_items");
-      } catch {}
-
-      utils.showNotification("Account deleted. Goodbye!", "success");
-      setTimeout(() => {
-        window.location.href = "auth.html";
-      }, 800);
-    } catch (err) {
-      console.error("Account deletion failed:", err);
-      utils.showNotification(
-        "Failed to delete account. Please try again.",
-        "error"
-      );
-=======
         localStorage.removeItem('user_profile');
         localStorage.removeItem('marketplace_items');
       } catch {}
@@ -2384,7 +1896,6 @@ class Profile {
     } catch (err) {
       console.error('Account deletion failed:', err);
       utils.showNotification('Failed to delete account. Please try again.', 'error');
->>>>>>> parent of 7182f64 (Merge pull request #6 from Siddharth31415/master)
     }
   }
 
@@ -2509,10 +2020,6 @@ class Profile {
     });
   }
 
-<<<<<<< HEAD
-  loadTransactionHistory() {
-    /* Omitted for brevity, no changes needed */
-=======
   async loadTransactionHistory() {
     const container = document.getElementById('transactionList');
     if (!container) return;
@@ -2558,7 +2065,6 @@ class Profile {
       console.error('Failed to load transactions:', e);
       container.innerHTML = `<div class="empty-state"><p>Failed to load transactions.</p></div>`;
     }
->>>>>>> parent of 7182f64 (Merge pull request #6 from Siddharth31415/master)
   }
 }
 
@@ -2585,11 +2091,7 @@ function initializeGlobalEventListeners() {
     ) {
       if (modal) {
         modal.classList.add("hidden");
-<<<<<<< HEAD
-        document.body.classList.remove("modal-open");
-=======
         document.body.classList.remove('modal-open');
->>>>>>> parent of 7182f64 (Merge pull request #6 from Siddharth31415/master)
       }
     }
 
@@ -2626,30 +2128,18 @@ function initializeGlobalEventListeners() {
       if (AppState.currentBoostItemId && window.marketplace) {
         window.marketplace.boostPost(AppState.currentBoostItemId);
         if (modal) {
-<<<<<<< HEAD
-          modal.classList.add("hidden");
-          document.body.classList.remove("modal-open");
-        }
-      }
-    }
-    if (target.closest("#confirmDeleteAccount")) {
-      // Merged
-=======
             modal.classList.add("hidden");
             document.body.classList.remove('modal-open');
         }
       }
     }
     if (target.closest("#confirmDeleteAccount")) { // Merged
->>>>>>> parent of 7182f64 (Merge pull request #6 from Siddharth31415/master)
       e.preventDefault();
       if (window.profile?.deleteAccount) {
         await window.profile.deleteAccount();
       }
       if (modal) modal.classList.add("hidden");
     }
-<<<<<<< HEAD
-=======
     if (target.closest('#confirmMarkSold')) {
       e.preventDefault();
       await window.chat?.markItemAsSold?.();
@@ -2659,7 +2149,6 @@ function initializeGlobalEventListeners() {
       e.preventDefault();
       if (modal) modal.classList.add('hidden');
     }
->>>>>>> parent of 7182f64 (Merge pull request #6 from Siddharth31415/master)
   });
 }
 
