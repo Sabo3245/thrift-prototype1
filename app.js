@@ -1050,6 +1050,7 @@ class PostItem {
 
 // Replace the entire Chat class with this functional version
 class Chat {
+// In the Chat class, update the init method
   init() {
     this.db = window.firebaseDb;
     this.modules = window.firebaseModules || {};
@@ -1058,6 +1059,7 @@ class Chat {
     this.activeConversation = null;
     this.unsubConversations = null;
     this.unsubMessages = null;
+    this.activeFilter = 'all'; // NEW: Add this line to track the filter state
 
     this.bindEvents();
     // Try to subscribe now (if user is already available)
@@ -1111,15 +1113,43 @@ class Chat {
     });
   }
 
+// Replace the existing renderConversationList function with this one
+// Replace the entire renderConversationList method in the Chat class
   renderConversationList() {
     const conversationList = document.getElementById('conversationList');
     if (!conversationList) return;
     conversationList.innerHTML = '';
 
     const me = this.auth?.currentUser;
-    this.conversations.forEach((c) => {
+    if (!me) {
+      conversationList.innerHTML = `<div class="empty-state"><p>Please sign in to see your messages.</p></div>`;
+      return;
+    }
+
+    // NEW: Filter conversations based on the active filter
+    let filteredConversations = this.conversations;
+    if (this.activeFilter === 'selling') {
+      filteredConversations = this.conversations.filter(c => c.sellerId === me.uid);
+    } else if (this.activeFilter === 'buying') {
+      filteredConversations = this.conversations.filter(c => c.buyerId === me.uid);
+    }
+    
+    if (filteredConversations.length === 0) {
+      conversationList.innerHTML = `<div class="empty-state"><p>No conversations here yet.</p></div>`;
+      return;
+    }
+
+    // Use the filtered list to render the items
+    filteredConversations.forEach((c) => {
       const otherUid = (c.participants || []).find((p) => p !== me?.uid) || '';
-      const displayName = c.participantEmails?.[otherUid] || c.sellerEmail || 'Conversation';
+      
+      let displayName = 'Conversation';
+      if (otherUid) {
+          displayName = c.participantNames?.[otherUid]
+                      || c.participantEmails?.[otherUid]
+                      || c.sellerEmail;
+      }
+
       const preview = c.lastMessage || (c.itemTitle ? `About: ${c.itemTitle}` : '');
 
       const el = document.createElement('div');
@@ -1140,6 +1170,7 @@ class Chat {
   }
 
   // Start or reuse a conversation for a given item
+// Replace the existing startConversationForItem function with this one
   async startConversationForItem(item) {
     if (!this.db || !this.modules) throw new Error('Firebase not initialized');
     const user = this.auth?.currentUser;
@@ -1149,7 +1180,11 @@ class Chat {
     const sellerId = item.sellerId;
     const key = [buyerId, sellerId].sort().join('_');
 
-    // Use deterministic conversation ID to avoid permission issues on query
+    // Get display names for both users
+    const buyerName = window.userSession?.getUserData?.().displayName || user.displayName || 'Buyer';
+    const sellerName = item.sellerName || 'Seller';
+
+    // Use a deterministic conversation ID to avoid duplicates
     const convId = `${key}_${String(item.id)}`;
     const { doc, setDoc, serverTimestamp } = this.modules;
 
@@ -1160,21 +1195,27 @@ class Chat {
         [buyerId]: user.email || '',
         [sellerId]: item.sellerEmail || ''
       },
+      // NEW: Add participant names to the document
+      participantNames: {
+        [buyerId]: buyerName,
+        [sellerId]: sellerName
+      },
       buyerId,
       sellerId,
       sellerEmail: item.sellerEmail || '',
       itemId: String(item.id),
       itemTitle: item.title || '',
-      // keep/update preview fields
       lastMessage: '',
       lastMessageAt: serverTimestamp(),
       createdAt: serverTimestamp()
     }, { merge: true });
 
-    // Open the chat immediately; conversation list will sync via onSnapshot
+    // Open the chat immediately
     this.openChat(convId);
   }
 
+// Replace the existing openChat function with this one
+// Replace the existing openChat function with this one
   openChat(chatId) {
     const convo = this.conversations.find((c) => c.id === chatId) || { id: chatId };
     this.activeConversation = convo;
@@ -1186,13 +1227,266 @@ class Chat {
     if (chatUserName) {
       const me = this.auth?.currentUser;
       const otherUid = (convo.participants || []).find((p) => p !== me?.uid);
-      const name = (convo.participantEmails && otherUid) ? convo.participantEmails[otherUid] : (convo.sellerEmail || 'Chat');
+      
+      let name = 'Chat'; // Default name
+      if (otherUid) {
+          name = convo.participantNames?.[otherUid]
+               || convo.participantEmails?.[otherUid]
+               || convo.sellerEmail;
+      }
       chatUserName.textContent = name;
+      
+      const chatAvatar = document.querySelector('.chat-avatar');
+      if (chatAvatar) {
+        let initials = '👤';
+        if (name && name !== 'Chat' && name.trim().length > 0) {
+          const nameParts = name.trim().split(' ');
+          const firstInitial = nameParts[0][0] || '';
+          const lastInitial = nameParts.length > 1 ? (nameParts[nameParts.length - 1][0] || '') : '';
+          initials = `${firstInitial}${lastInitial}`.toUpperCase();
+        }
+        chatAvatar.textContent = initials;
+      }
     }
+    
     if (chatUserStatus) chatUserStatus.textContent = 'Online';
     if (chatInputContainer) chatInputContainer.classList.remove('hidden');
 
+    // Subscribe to active conversation doc and messages; update UI for sold state
+    this.subscribeActiveConversation(chatId);
     this.subscribeMessages(chatId);
+    this.updateSoldUI();
+  }
+
+  subscribeActiveConversation(conversationId) {
+    if (!this.db || !this.modules?.onSnapshot) return;
+    const { doc, onSnapshot } = this.modules;
+    const convRef = doc(this.db, 'conversations', conversationId);
+    if (this.unsubActiveConvo) { this.unsubActiveConvo(); this.unsubActiveConvo = null; }
+    this.unsubActiveConvo = onSnapshot(convRef, (snapshot) => {
+      if (!snapshot.exists()) return;
+      const data = snapshot.data();
+      this.activeConversation = { id: conversationId, ...data };
+      this.updateSoldUI();
+
+      // Auto-award buyer if needed when they see the sold conversation
+      const me = this.auth?.currentUser;
+      if (data.itemSold && data.soldToId && me && data.soldToId === me.uid && !data.buyerAwarded) {
+        this.awardBuyerPoints(conversationId);
+      }
+    });
+  }
+
+  updateSoldUI() {
+    const convo = this.activeConversation || {};
+    const me = this.auth?.currentUser;
+    const isSeller = me && convo.sellerId === me.uid;
+    const sold = !!convo.itemSold;
+
+    const btn = document.getElementById('markAsSoldBtn');
+    if (btn) btn.style.display = isSeller && !sold ? 'inline-flex' : 'none';
+
+    const input = document.getElementById('chatInput');
+    const send = document.getElementById('chatSendBtn');
+    const messages = document.getElementById('chatMessages');
+
+    if (sold) {
+      if (input) input.disabled = true;
+      if (send) send.disabled = true;
+      if (messages && !messages.querySelector('.sold-banner')) {
+        const div = document.createElement('div');
+        div.className = 'sold-banner';
+        div.style.cssText = 'text-align:center;color:#ff6b6b;margin:8px 0;opacity:0.9;';
+        div.textContent = 'This item has been sold';
+        messages.prepend(div);
+      }
+    } else {
+      if (input) input.disabled = false;
+      if (send) send.disabled = false;
+      const banner = messages?.querySelector('.sold-banner');
+      if (banner) banner.remove();
+    }
+  }
+
+  getOtherParticipantEmail() {
+    const me = this.auth?.currentUser;
+    const convo = this.activeConversation || {};
+    if (!convo.participantEmails || !convo.participants) return '';
+    const otherUid = (convo.participants || []).find((p) => p !== me?.uid);
+    return convo.participantEmails[otherUid] || '';
+  }
+
+  async awardBuyerPoints(conversationId) {
+    try {
+      const me = this.auth?.currentUser;
+      if (!me || !this.db || !this.modules) return;
+      const { doc, setDoc, getDoc, updateDoc } = this.modules;
+
+      // Prefer atomic increment that also works if the doc is missing (merge)
+      if (this.modules.increment && setDoc) {
+        await setDoc(doc(this.db, 'users', me.uid), { points: this.modules.increment(5) }, { merge: true });
+      } else {
+        const userRef = doc(this.db, 'users', me.uid);
+        let current = window.userSession?.getUserData?.()?.points || 0;
+        try {
+          const snap = await getDoc(userRef);
+          if (snap?.exists()) current = snap.data()?.points || 0;
+        } catch {}
+        try {
+          await updateDoc(userRef, { points: current + 5 });
+        } catch {
+          await setDoc(userRef, { points: current + 5 }, { merge: true });
+        }
+      }
+
+      await this.modules.updateDoc(this.modules.doc(this.db, 'conversations', conversationId), { buyerAwarded: true });
+      const currentLocal = window.userSession?.getUserData?.()?.points || 0;
+      window.userSession?.updateUserData?.({ points: currentLocal + 5 });
+    } catch (e) {
+      console.warn('Failed to award buyer points:', e);
+    }
+  }
+
+  async markItemAsSold() {
+    const me = this.auth?.currentUser;
+    const convo = this.activeConversation || {};
+    if (!me || !convo?.id || !this.db || !this.modules) return;
+    if (convo.sellerId !== me.uid) {
+      utils.showNotification('Only the seller can mark as sold', 'error');
+      return;
+    }
+    const buyerId = convo.buyerId || (convo.participants || []).find((p) => p !== me.uid);
+    if (!buyerId) {
+      utils.showNotification('Cannot determine buyer', 'error');
+      return;
+    }
+
+    const { doc, updateDoc, setDoc, getDoc, query, where, collection, getDocs, serverTimestamp, addDoc } = this.modules;
+
+    let criticalFailed = false;
+    const warnings = [];
+
+    // 1) Update item status to sold (critical)
+    try {
+      if (convo.itemId) {
+        const itemRef = doc(this.db, 'items', String(convo.itemId));
+        await updateDoc(itemRef, { status: 'sold', soldToId: buyerId, updatedAt: serverTimestamp() });
+      }
+    } catch (e) {
+      criticalFailed = true;
+      console.error('Item status update failed:', e);
+    }
+
+    // 2) Update all conversations of this item (non-critical if some fail)
+    try {
+      if (convo.itemId) {
+        const convRef = collection(this.db, 'conversations');
+        const q = query(convRef, where('itemId', '==', String(convo.itemId)));
+        const snap = await getDocs(q);
+        const updates = [];
+        snap.forEach((d) => {
+          if (d.id === convo.id) {
+            updates.push(updateDoc(doc(this.db, 'conversations', d.id), {
+              itemSold: true,
+              soldToId: buyerId,
+              soldAt: serverTimestamp(),
+              sellerAwarded: true
+            }));
+          } else {
+            updates.push(updateDoc(doc(this.db, 'conversations', d.id), {
+              itemSold: true,
+              soldAt: serverTimestamp(),
+              sellerAwarded: true
+            }));
+          }
+        });
+        const results = await Promise.allSettled(updates);
+        if (results.some(r => r.status === 'rejected')) {
+          warnings.push('Some conversations could not be updated.');
+        }
+      } else {
+        await updateDoc(doc(this.db, 'conversations', convo.id), {
+          itemSold: true,
+          soldToId: buyerId,
+          soldAt: serverTimestamp(),
+          sellerAwarded: true
+        });
+      }
+    } catch (e) {
+      warnings.push('Conversation state update encountered issues.');
+      console.warn('Conversation update warnings:', e);
+    }
+
+    // 3) Award seller points (important but not critical for marking sold)
+    if (!criticalFailed) {
+      try {
+        const userRef = doc(this.db, 'users', me.uid);
+        if (this.modules.increment && setDoc) {
+          await setDoc(userRef, { points: this.modules.increment(5) }, { merge: true });
+        } else {
+          let currentPts = window.userSession?.getUserData?.()?.points || 0;
+          try {
+            const snap = await getDoc(userRef);
+            if (snap?.exists()) currentPts = snap.data()?.points || 0;
+          } catch {}
+          try {
+            await updateDoc(userRef, { points: currentPts + 5 });
+          } catch {
+            await setDoc(userRef, { points: currentPts + 5 }, { merge: true });
+          }
+        }
+        const current = window.userSession?.getUserData?.()?.points || 0;
+        window.userSession?.updateUserData?.({ points: current + 5 });
+      } catch (e) {
+        warnings.push('Awarded sale, but failed to update points right now.');
+        console.warn('Points awarding warning:', e);
+      }
+    }
+
+    // 4) Create transaction records (non-critical)
+    if (!criticalFailed) {
+      const txRef = collection(this.db, 'transactions');
+      const itemTitle = convo.itemTitle || 'Item';
+      const price = convo.itemPrice || null;
+      try {
+        await addDoc(txRef, {
+          userId: me.uid,
+          type: 'sale',
+          itemId: String(convo.itemId || ''),
+          itemTitle,
+          price,
+          counterpartId: buyerId,
+          createdAt: serverTimestamp()
+        });
+      } catch (e) {
+        warnings.push('Could not log seller transaction.');
+        console.warn('Seller transaction warning:', e);
+      }
+      try {
+        await addDoc(txRef, {
+          userId: buyerId,
+          type: 'purchase',
+          itemId: String(convo.itemId || ''),
+          itemTitle,
+          price,
+          counterpartId: me.uid,
+          createdAt: serverTimestamp()
+        });
+      } catch (e) {
+        warnings.push('Could not log buyer transaction.');
+        console.warn('Buyer transaction warning:', e);
+      }
+    }
+
+    if (!criticalFailed) {
+      utils.showNotification('Item marked as sold', 'success');
+      if (warnings.length) {
+        utils.showNotification(warnings.join(' '), 'warning');
+      }
+      this.updateSoldUI();
+    } else {
+      utils.showNotification('Failed to mark as sold. Please try again.', 'error');
+    }
   }
 
   subscribeMessages(conversationId) {
@@ -1226,19 +1520,47 @@ class Chat {
     });
   }
 
+// Replace the entire bindEvents method in the Chat class
   bindEvents() {
     const chatSendBtn = document.getElementById('chatSendBtn');
     const chatInput = document.getElementById('chatInput');
+    const chatFilters = document.querySelector('.chat-filters'); // Get the filter container
+    const markAsSoldBtn = document.getElementById('markAsSoldBtn');
 
-    if (chatSendBtn && chatInput) {
-      chatSendBtn.addEventListener('click', () => {
-        this.sendMessage();
+    if (markAsSoldBtn) {
+      markAsSoldBtn.addEventListener('click', () => {
+        const buyerEmail = this.getOtherParticipantEmail();
+        const span = document.getElementById('soldBuyerEmail');
+        if (span) span.textContent = buyerEmail || 'this user';
+        document.getElementById('markSoldModal')?.classList.remove('hidden');
       });
+    }
 
+    // Handle sending a message
+    if (chatSendBtn && chatInput) {
+      chatSendBtn.addEventListener('click', () => this.sendMessage());
       chatInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          this.sendMessage();
-        }
+        if (e.key === 'Enter') this.sendMessage();
+      });
+    }
+    
+    // NEW: Handle clicks on the filter buttons
+    if (chatFilters) {
+      chatFilters.addEventListener('click', (e) => {
+        const target = e.target.closest('.chat-filter-btn');
+        if (!target) return;
+
+        // Get the filter from the button's data attribute
+        this.activeFilter = target.dataset.filter;
+
+        // Update the active class on the UI
+        chatFilters.querySelectorAll('.chat-filter-btn').forEach(btn => {
+          btn.classList.remove('active');
+        });
+        target.classList.add('active');
+
+        // Re-render the list with the new filter
+        this.renderConversationList();
       });
     }
   }
@@ -1278,22 +1600,32 @@ class Chat {
     const { collection, addDoc, serverTimestamp, doc, updateDoc } = this.modules;
     const msgsRef = collection(this.db, 'conversations', convo.id, 'messages');
 
+    // Send the message first (critical)
     try {
       await addDoc(msgsRef, {
         senderId: user.uid,
         text,
         createdAt: serverTimestamp()
       });
+    } catch (e) {
+      console.error('Failed to send message:', e);
+      utils.showNotification('Message failed. Please try again.', 'error');
+      return;
+    }
+
+    // Update convo metadata (non-critical)
+    try {
       const convRef = doc(this.db, 'conversations', convo.id);
       await updateDoc(convRef, {
         lastMessage: text,
         lastMessageAt: serverTimestamp()
       });
-      chatInput.value = '';
     } catch (e) {
-      console.error('Failed to send message:', e);
-      utils.showNotification('Message failed. Please try again.', 'error');
+      console.warn('Message sent, but failed to update conversation metadata:', e);
+      // No error toast here; message already sent
     }
+
+    chatInput.value = '';
   }
 }
 
@@ -1688,8 +2020,51 @@ class Profile {
     });
   }
 
-  loadTransactionHistory() {
-    /* Omitted for brevity, no changes needed */
+  async loadTransactionHistory() {
+    const container = document.getElementById('transactionList');
+    if (!container) return;
+    container.innerHTML = '';
+
+    try {
+      const me = window.firebaseAuth?.currentUser;
+      if (!me) {
+        container.innerHTML = `<div class="empty-state"><p>Please sign in to see transactions.</p></div>`;
+        return;
+      }
+      const { collection, query, where, orderBy, getDocs } = window.firebaseModules || {};
+      if (!collection || !query || !where || !orderBy || !getDocs) {
+        container.innerHTML = `<div class="empty-state"><p>Transactions unavailable.</p></div>`;
+        return;
+      }
+      const txRef = collection(window.firebaseDb, 'transactions');
+      const q = query(txRef, where('userId', '==', me.uid), orderBy('createdAt', 'desc'));
+      const snap = await getDocs(q);
+      if (snap.empty) {
+        container.innerHTML = `<div class="empty-state"><p>No transactions yet.</p></div>`;
+        return;
+      }
+
+      const items = [];
+      snap.forEach((d) => items.push({ id: d.id, ...d.data() }));
+      const html = items.map((t) => {
+        const when = t.createdAt?.toDate?.()?.toLocaleDateString?.() || '';
+        const label = t.type === 'sale' ? 'Sold' : 'Purchased';
+        const amount = t.price ? ` - ₹${t.price}` : '';
+        return `
+          <div class="transaction-item">
+            <div class="transaction-info">
+              <div class="transaction-type">${label}: ${t.itemTitle || ''}</div>
+              <div class="transaction-date">${when}</div>
+            </div>
+            <div class="transaction-points">+5</div>
+          </div>
+        `;
+      }).join('');
+      container.innerHTML = html;
+    } catch (e) {
+      console.error('Failed to load transactions:', e);
+      container.innerHTML = `<div class="empty-state"><p>Failed to load transactions.</p></div>`;
+    }
   }
 }
 
@@ -1764,6 +2139,15 @@ function initializeGlobalEventListeners() {
         await window.profile.deleteAccount();
       }
       if (modal) modal.classList.add("hidden");
+    }
+    if (target.closest('#confirmMarkSold')) {
+      e.preventDefault();
+      await window.chat?.markItemAsSold?.();
+      if (modal) modal.classList.add('hidden');
+    }
+    if (target.closest('#cancelMarkSold')) {
+      e.preventDefault();
+      if (modal) modal.classList.add('hidden');
     }
   });
 }

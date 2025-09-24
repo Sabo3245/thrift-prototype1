@@ -391,6 +391,9 @@
                     <p id="chatUserStatus">Choose from the conversation list</p>
                   </div>
                 </div>
+                <div class="chat-actions">
+                  <button class="btn btn--outline btn--sm" id="markAsSoldBtn" style="display:none;">Mark as Sold</button>
+                </div>
               </div>
 
               <div class="chat-messages" id="chatMessages">
@@ -533,7 +536,6 @@
                 <a href="#" id="logoutBtn" class="setting-action-item">
                     <span>&#x1F6AA; Logout</span>
       <span>&gt;</span>
-    </a>
     </a>
     <a href="#" id="changePasswordBtn" class="setting-action-item">
       <span>&#x1F510; Privacy - Change Password</span>
@@ -689,6 +691,20 @@
           </div>
         </div>
       </div>
+      <div class="modal hidden" id="markSoldModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content glass-card">
+          <div class="modal-header">
+            <div class="warning-icon">⚠️</div>
+            <h3 class="modal-title">Confirm Sale</h3>
+            <p class="modal-message">Are you sure you want to mark this item as sold to <span id="soldBuyerEmail">this user</span>? This will remove it from the marketplace.</p>
+          </div>
+          <div class="modal-actions">
+            <button class="btn btn--outline" id="cancelMarkSold">Cancel</button>
+            <button class="btn btn--primary" id="confirmMarkSold">Confirm</button>
+          </div>
+        </div>
+      </div>
       <button class="fab" id="fabButton">
         <span class="fab-icon">➕</span>
         <div class="fab-ripple"></div>
@@ -696,7 +712,7 @@
 
     <script src="user-session.js"></script>
     <script src="app.js"></script>
-    <script type="module">
+  <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
       import { 
         getAuth, 
@@ -724,7 +740,8 @@
         deleteDoc,
         orderBy,
         serverTimestamp,
-        onSnapshot
+        onSnapshot,
+        increment
       } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
       import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
       import { 
@@ -782,6 +799,7 @@
           orderBy,
           serverTimestamp,
           onSnapshot,
+          increment,
           // Storage helpers
           ref,
           uploadBytes,
