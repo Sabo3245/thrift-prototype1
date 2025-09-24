@@ -416,6 +416,9 @@ function updateNavigationIndicator() {
   indicator.style.opacity = "1";
 }
 
+// File: app.js
+
+// NEW: Faster, cleaner LoadingScreen class
 class LoadingScreen {
   constructor() {
     this.loadingScreen = document.getElementById("loadingScreen");
@@ -423,43 +426,37 @@ class LoadingScreen {
     this.loadingText = document.querySelector(".loading-text");
   }
 
+  // This function is now much simpler.
   init() {
-    const messages = [
-      "Loading your marketplace...",
-      "Connecting students...",
-      "Preparing awesome deals...",
-      "Almost ready!",
-    ];
-    let messageIndex = 0;
-    let progress = 0;
+    // 1. Instantly set the loading text to the only message needed.
+    this.loadingText.textContent = "Loading your marketplace...";
 
-    const loadingInterval = setInterval(() => {
-      progress += Math.random() * 25;
-      progress = Math.min(progress, 100);
-      this.progressFill.style.transform = `translateX(${progress - 100}%)`;
+    // 2. Animate the progress bar to 100% over 0.4 seconds.
+    if (this.progressFill) {
+      // We use a CSS transition for a much smoother animation.
+      this.progressFill.style.transition = "transform 0.4s ease-out";
+      this.progressFill.style.transform = "translateX(0%)";
+    }
 
-      if (
-        messageIndex < messages.length - 1 &&
-        progress > (messageIndex + 1) * 25
-      ) {
-        messageIndex++;
-        this.loadingText.textContent = messages[messageIndex];
-      }
-
-      if (progress >= 100) {
-        clearInterval(loadingInterval);
-        setTimeout(() => this.hide(), 500);
-      }
-    }, 100);
+    // 3. Hide the loading screen right after the animation finishes.
+    setTimeout(() => this.hide(), 1000); // 500ms = 0.5s
   }
 
   hide() {
-    this.loadingScreen.style.animation = "fadeOut 1s ease-out forwards";
+    if (!this.loadingScreen) return;
+
+    // Fade out the entire loading screen.
+    this.loadingScreen.style.animation = "fadeOut 0.5s ease-out forwards";
+
     setTimeout(() => {
       this.loadingScreen.style.display = "none";
-      document.getElementById("mainApp").classList.remove("hidden");
-      window.app.init(); // This will now correctly call the async init
-    }, 1000);
+      const mainApp = document.getElementById("mainApp");
+      if (mainApp) {
+        mainApp.classList.remove("hidden");
+      }
+      // This correctly starts the rest of your app.
+      window.app.init();
+    }, 500);
   }
 }
 
@@ -535,15 +532,13 @@ class Marketplace {
     this.calculateMoneySaved();
   }
 
+  // File: app.js
+
   calculateMoneySaved() {
-    let totalSaved = 0;
-    AppState.userProfile.heartedPosts.forEach((itemId) => {
-      const item = AppState.originalItems.find((i) => i.id === itemId);
-      if (item && item.originalPrice) {
-        totalSaved +=
-          utils.calculateSavings(item.originalPrice, item.price) || 0;
-      }
-    });
+    // This function is updated to prevent incorrect calculations based on hearted items.
+    // "Money Saved" will be correctly calculated from actual transactions in a future update.
+    const totalSaved = 0;
+
     AppState.userProfile.moneySaved = totalSaved;
     utils.saveToStorage("user_profile", AppState.userProfile);
   }
@@ -683,6 +678,10 @@ class Marketplace {
     setTimeout(() => switchToSection("chat"), 1000);
   }
 
+  // File: app.js
+
+  // File: app.js
+
   toggleHeart(itemId, button) {
     const isHearted = AppState.userProfile.heartedPosts.includes(itemId);
     if (isHearted) {
@@ -695,7 +694,7 @@ class Marketplace {
       button.textContent = "❤️";
       utils.showNotification("Added to favorites! ❤️", "success");
     }
-    this.calculateMoneySaved();
+    // The incorrect calculation is now removed.
     utils.saveToStorage("user_profile", AppState.userProfile);
   }
 
@@ -704,7 +703,7 @@ class Marketplace {
     const modal = document.getElementById("boostModal");
     if (modal) {
       modal.classList.remove("hidden");
-      document.body.classList.add('modal-open');
+      document.body.classList.add("modal-open");
     }
   }
 
@@ -715,27 +714,36 @@ class Marketplace {
 
   boostPost(itemId) {
     // Logic can be implemented here, for now, it's a placeholder
-    const item = AppState.originalItems.find(i => i.id === itemId);
-    if(item) {
-        item.isBoosted = true;
-        this.filterItems(); // Re-render to show boosted status
-        utils.showNotification("Post boosted successfully! 🚀", "success");
+    const item = AppState.originalItems.find((i) => i.id === itemId);
+    if (item) {
+      item.isBoosted = true;
+      this.filterItems(); // Re-render to show boosted status
+      utils.showNotification("Post boosted successfully! 🚀", "success");
     }
   }
 
   async removePost(itemId) {
     const currentUser =
-      window.userSession?.getCurrentUser?.() || window.firebaseAuth?.currentUser || null;
+      window.userSession?.getCurrentUser?.() ||
+      window.firebaseAuth?.currentUser ||
+      null;
 
     let removedInCloud = false;
     if (window.firebaseDb && window.firebaseModules && currentUser) {
       const { doc, deleteDoc, updateDoc } = window.firebaseModules;
-      const itemRef = doc(window.firebaseDb, 'items', String(itemId));
+      const itemRef = doc(window.firebaseDb, "items", String(itemId));
 
-      const withTimeout = (p, ms) => new Promise((resolve, reject) => {
-        const t = setTimeout(() => reject(new Error('timeout')), ms);
-        p.then(v => { clearTimeout(t); resolve(v); }).catch(e => { clearTimeout(t); reject(e); });
-      });
+      const withTimeout = (p, ms) =>
+        new Promise((resolve, reject) => {
+          const t = setTimeout(() => reject(new Error("timeout")), ms);
+          p.then((v) => {
+            clearTimeout(t);
+            resolve(v);
+          }).catch((e) => {
+            clearTimeout(t);
+            reject(e);
+          });
+        });
 
       try {
         await withTimeout(deleteDoc(itemRef), 8000);
@@ -743,24 +751,37 @@ class Marketplace {
       } catch (err) {
         // Fallback to soft-delete if hard delete is blocked
         try {
-          await withTimeout(updateDoc(itemRef, { status: 'removed', updatedAt: new Date().toISOString() }), 8000);
+          await withTimeout(
+            updateDoc(itemRef, {
+              status: "removed",
+              updatedAt: new Date().toISOString(),
+            }),
+            8000
+          );
           removedInCloud = true;
         } catch (e2) {
           // Fire-and-forget background attempts
           deleteDoc(itemRef).catch(() => {});
-          updateDoc(itemRef, { status: 'removed', updatedAt: new Date().toISOString() }).catch(() => {});
+          updateDoc(itemRef, {
+            status: "removed",
+            updatedAt: new Date().toISOString(),
+          }).catch(() => {});
         }
       }
     }
 
     // Update UI and local cache regardless
-    AppState.originalItems = AppState.originalItems.filter((i) => i.id !== itemId);
+    AppState.originalItems = AppState.originalItems.filter(
+      (i) => i.id !== itemId
+    );
     AppState.items = [...AppState.originalItems];
     utils.saveToStorage("marketplace_items", AppState.originalItems);
     this.filterItems();
 
     utils.showNotification(
-      removedInCloud ? "Post removed successfully" : "Post removed locally. Will sync when online.",
+      removedInCloud
+        ? "Post removed successfully"
+        : "Post removed locally. Will sync when online.",
       removedInCloud ? "success" : "info"
     );
   }
@@ -1301,38 +1322,47 @@ class Profile {
     try {
       const user = window.firebaseAuth?.currentUser;
       if (!user) {
-        utils.showNotification('No user signed in.', 'error');
+        utils.showNotification("No user signed in.", "error");
         return;
       }
 
-      utils.showNotification('Deleting your account...', 'warning');
+      utils.showNotification("Deleting your account...", "warning");
 
-      const { collection, query, where, getDocs, doc, updateDoc, deleteDoc } = window.firebaseModules || {};
+      const { collection, query, where, getDocs, doc, updateDoc, deleteDoc } =
+        window.firebaseModules || {};
       const db = window.firebaseDb;
 
       // 1) Soft-delete all items owned by the user (so they disappear from public listings)
       if (db && collection && query && where && getDocs && doc && updateDoc) {
         try {
-          const itemsRef = collection(db, 'items');
-          const q = query(itemsRef, where('sellerId', '==', user.uid));
+          const itemsRef = collection(db, "items");
+          const q = query(itemsRef, where("sellerId", "==", user.uid));
           const snap = await getDocs(q);
           const updates = [];
           snap.forEach((d) => {
-            const itemRef = doc(db, 'items', d.id);
-            updates.push(updateDoc(itemRef, { status: 'removed', updatedAt: new Date().toISOString() }));
+            const itemRef = doc(db, "items", d.id);
+            updates.push(
+              updateDoc(itemRef, {
+                status: "removed",
+                updatedAt: new Date().toISOString(),
+              })
+            );
           });
           await Promise.allSettled(updates);
         } catch (e) {
-          console.warn('Failed to soft-delete items during account deletion:', e);
+          console.warn(
+            "Failed to soft-delete items during account deletion:",
+            e
+          );
         }
       }
 
       // 2) Delete the user profile document
       if (db && doc && deleteDoc) {
         try {
-          await deleteDoc(doc(db, 'users', user.uid));
+          await deleteDoc(doc(db, "users", user.uid));
         } catch (e) {
-          console.warn('Failed to delete user profile document:', e);
+          console.warn("Failed to delete user profile document:", e);
         }
       }
 
@@ -1342,25 +1372,31 @@ class Profile {
           await window.firebaseModules.deleteUser(user);
         } catch (e) {
           // Requires recent login
-          console.error('Failed to delete auth user:', e);
-          utils.showNotification('Please re-login and try deleting again (recent sign-in required).', 'error');
+          console.error("Failed to delete auth user:", e);
+          utils.showNotification(
+            "Please re-login and try deleting again (recent sign-in required).",
+            "error"
+          );
           return;
         }
       }
 
       // 4) Clear local storage and redirect
       try {
-        localStorage.removeItem('user_profile');
-        localStorage.removeItem('marketplace_items');
+        localStorage.removeItem("user_profile");
+        localStorage.removeItem("marketplace_items");
       } catch {}
 
-      utils.showNotification('Account deleted. Goodbye!', 'success');
+      utils.showNotification("Account deleted. Goodbye!", "success");
       setTimeout(() => {
-        window.location.href = 'auth.html';
+        window.location.href = "auth.html";
       }, 800);
     } catch (err) {
-      console.error('Account deletion failed:', err);
-      utils.showNotification('Failed to delete account. Please try again.', 'error');
+      console.error("Account deletion failed:", err);
+      utils.showNotification(
+        "Failed to delete account. Please try again.",
+        "error"
+      );
     }
   }
 
@@ -1513,7 +1549,7 @@ function initializeGlobalEventListeners() {
     ) {
       if (modal) {
         modal.classList.add("hidden");
-        document.body.classList.remove('modal-open');
+        document.body.classList.remove("modal-open");
       }
     }
 
@@ -1550,12 +1586,13 @@ function initializeGlobalEventListeners() {
       if (AppState.currentBoostItemId && window.marketplace) {
         window.marketplace.boostPost(AppState.currentBoostItemId);
         if (modal) {
-            modal.classList.add("hidden");
-            document.body.classList.remove('modal-open');
+          modal.classList.add("hidden");
+          document.body.classList.remove("modal-open");
         }
       }
     }
-    if (target.closest("#confirmDeleteAccount")) { // Merged
+    if (target.closest("#confirmDeleteAccount")) {
+      // Merged
       e.preventDefault();
       if (window.profile?.deleteAccount) {
         await window.profile.deleteAccount();

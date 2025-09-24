@@ -330,27 +330,20 @@
             </div>
             <div class="form-tips-card">
               <h4 class="tips-title">💡 Safety Tips & Disclaimer</h4>
-              <ul class="tips-list">
-                <li>
-                  <strong>Be Cautious:</strong> Don't share OTPs or personal
-                  details like bank account numbers.
-                </li>
-                <li>
-                  <strong>No Advance Payments:</strong> Never give money or the
-                  product to someone in advance.
-                </li>
-                <li>
-                  <strong>Meet Safely:</strong> Always be cautious while meeting
-                  a buyer or seller. Prefer public places on campus.
-                </li>
-                <li>
-                  <strong>Report Suspicious Users:</strong> Help keep the
-                  community safe by reporting any suspicious behavior to the
-                  admins.
-                </li>
-              </ul>
-            </div>
+              <br>
+              <div class="tips-textbox">
+                <p><strong>Be Cautious:</strong> Don't share OTPs or personal details like bank account numbers.</p>
+                <p><strong>No Advance Payments:</strong> Never give money or the product to someone in advance.</p>
+                <p><strong>Meet Safely:</strong> Always be cautious while meeting a buyer or seller. Prefer public places on campus.</p>
+                <p><strong>Report Suspicious Users:</strong> Help keep the community safe by reporting any suspicious behavior to the admins.</p>
+              </div>
 
+              <div class="tip-agreement">
+                <input type="checkbox" id="agree_tips" name="agree_tips" required>
+                <label for="agree_tips">I have read and agree to all the safety tips.</label>
+              </div>
+            </div>
+            <br>
             <button
               type="submit"
               class="btn btn--primary btn--full-width animated-btn"
@@ -692,9 +685,9 @@
         <span class="fab-icon">➕</span>
         <div class="fab-ripple"></div>
       </button>
-
+    
     <script src="user-session.js"></script>
-    <script src="app.js"></script>
+
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
       import { 
@@ -732,7 +725,6 @@
         getDownloadURL
       } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
-      // Your web app's Firebase configuration
       const firebaseConfig = {
         apiKey: "AIzaSyBrVVik7_oVaPXpyI20jcyq9nqXUKcwcOM",
         authDomain: "thrift-6bd6d.firebaseapp.com",
@@ -743,59 +735,35 @@
         measurementId: "G-7PGCTDYP38",
       };
 
-      // Initialize Firebase
       try {
         console.log('🔥 Initializing Firebase for main app...');
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        // Force long-polling to avoid WebChannel transport issues in restricted networks
         const db = initializeFirestore(app, { experimentalForceLongPolling: true, useFetchStreams: false });
-        // Enable offline persistence so writes succeed locally and sync later
         try { await enableIndexedDbPersistence(db); } catch (e) { console.warn('IndexedDB persistence disabled or failed:', e?.message || e); }
         const analytics = getAnalytics(app);
         const storage = getStorage(app);
         
-        // Make Firebase services available globally for user session manager
         window.firebaseAuth = auth;
         window.firebaseDb = db;
         window.firebaseStorage = storage;
         window.firebaseModules = {
-          onAuthStateChanged,
-          signOut,
-          updateProfile,
-          EmailAuthProvider,
-          reauthenticateWithCredential,
-          updatePassword,
-          deleteUser,
-          doc,
-          setDoc,
-          getDoc,
-          updateDoc,
-          collection,
-          query,
-          where,
-          getDocs,
-          addDoc,
-          deleteDoc,
-          orderBy,
-          serverTimestamp,
-          // Storage helpers
-          ref,
-          uploadBytes,
-          getDownloadURL
+          onAuthStateChanged, signOut, updateProfile, EmailAuthProvider,
+          reauthenticateWithCredential, updatePassword, deleteUser, doc, setDoc,
+          getDoc, updateDoc, collection, query, where, getDocs, addDoc, deleteDoc,
+          orderBy, serverTimestamp, ref, uploadBytes, getDownloadURL
         };
-        
         console.log('✅ Firebase services initialized and made globally available');
       } catch (error) {
         console.error('❌ Firebase initialization failed:', error);
       }
     </script>
     
+    <script src="app.js"></script>
+    
     <script>
-      // Handle logout functionality
       async function handleLogout(event) {
         event.preventDefault();
-        
         if (window.userSession) {
           await window.userSession.logout();
         } else {
@@ -804,28 +772,11 @@
         }
       }
       
-      // Handle profile completion
       function completeProfile() {
         if (window.userSession) {
           window.userSession.switchToProfile();
         }
       }
-      
-      // Initialize authentication-dependent features
-      document.addEventListener('DOMContentLoaded', () => {
-        // Hide loading screen after a delay
-        setTimeout(() => {
-          const loadingScreen = document.getElementById('loadingScreen');
-          if (loadingScreen) {
-            loadingScreen.classList.add('hidden');
-          }
-          
-          const mainApp = document.getElementById('mainApp');
-          if (mainApp) {
-            mainApp.classList.remove('hidden');
-          }
-        }, 2000);
-      });
     </script>
   </body>
 </html>
