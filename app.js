@@ -1171,6 +1171,7 @@ class Chat {
 
   // Start or reuse a conversation for a given item
 // Replace the existing startConversationForItem function with this one
+// Start or reuse a conversation for a given item
   async startConversationForItem(item) {
     if (!this.db || !this.modules) throw new Error('Firebase not initialized');
     const user = this.auth?.currentUser;
@@ -1178,24 +1179,54 @@ class Chat {
 
     const buyerId = user.uid;
     const sellerId = item.sellerId;
-    const key = [buyerId, sellerId].sort().join('_');
 
-    // Get display names for both users
+    // 1. First, check if a conversation for this item already exists between these two users
+    const { collection, query, where, getDocs, doc, setDoc, serverTimestamp } = this.modules;
+    const convRef = collection(this.db, 'conversations');
+    
+    // The query looks for a conversation where:
+    // a) The participants array contains the current user (buyerId)
+    // b) AND The itemId field matches the item being contacted
+    // Note: We don't need to check for sellerId in participants array explicitly 
+    // because the itemId being unique to the seller/item combination handles that, 
+    // but the `participants` array must contain both.
+    
+    // For a cleaner query, we can rely on the deterministic ID format that was originally intended, 
+    // OR we can use the following multi-field query:
+    
+    const existingQuery = query(
+        convRef,
+        where('itemId', '==', String(item.id)),
+        where('participants', 'array-contains', buyerId)
+    );
+
+    const snapshot = await getDocs(existingQuery);
+
+    if (!snapshot.empty) {
+      // Conversation already exists!
+      const existingConv = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+      this.openChat(existingConv.id);
+      return;
+    }
+
+
+    // 2. If no conversation exists, create a new one (Original logic)
+    const key = [buyerId, sellerId].sort().join('_');
     const buyerName = window.userSession?.getUserData?.().displayName || user.displayName || 'Buyer';
     const sellerName = item.sellerName || 'Seller';
 
-    // Use a deterministic conversation ID to avoid duplicates
+    // Use a deterministic conversation ID for this item/user pair (fallback ID)
     const convId = `${key}_${String(item.id)}`;
-    const { doc, setDoc, serverTimestamp } = this.modules;
+    
+    const initialMessage = `Is your ${item.title} still available?`;
 
-    await setDoc(doc(this.db, 'conversations', convId), {
+    const docToSet = {
       key,
       participants: [buyerId, sellerId],
       participantEmails: {
         [buyerId]: user.email || '',
         [sellerId]: item.sellerEmail || ''
       },
-      // NEW: Add participant names to the document
       participantNames: {
         [buyerId]: buyerName,
         [sellerId]: sellerName
@@ -1205,10 +1236,21 @@ class Chat {
       sellerEmail: item.sellerEmail || '',
       itemId: String(item.id),
       itemTitle: item.title || '',
-      lastMessage: '',
+      itemPrice: item.price || null, // Store price for transaction logging
+      lastMessage: initialMessage, // Set an initial message
       lastMessageAt: serverTimestamp(),
       createdAt: serverTimestamp()
-    }, { merge: true });
+    };
+
+    await setDoc(doc(this.db, 'conversations', convId), docToSet, { merge: true });
+    
+    // Add the initial message to the messages subcollection
+    const msgsRef = collection(this.db, 'conversations', convId, 'messages');
+    await addDoc(msgsRef, {
+        senderId: buyerId,
+        text: initialMessage,
+        createdAt: serverTimestamp()
+    });
 
     // Open the chat immediately
     this.openChat(convId);
@@ -1269,30 +1311,63 @@ class Chat {
       this.activeConversation = { id: conversationId, ...data };
       this.updateSoldUI();
 
-      // Auto-award buyer if needed when they see the sold conversation
+      // REMOVE: The following block is now removed since points are awarded proactively:
+      /*
       const me = this.auth?.currentUser;
       if (data.itemSold && data.soldToId && me && data.soldToId === me.uid && !data.buyerAwarded) {
         this.awardBuyerPoints(conversationId);
       }
+      */
     });
   }
+  
+  
 
-  updateSoldUI() {
+
+
+updateSoldUI() {
     const convo = this.activeConversation || {};
     const me = this.auth?.currentUser;
     const isSeller = me && convo.sellerId === me.uid;
-    const sold = !!convo.itemSold;
+    const sold = !!convo.itemSold; 
 
     const btn = document.getElementById('markAsSoldBtn');
-    if (btn) btn.style.display = isSeller && !sold ? 'inline-flex' : 'none';
-
-    const input = document.getElementById('chatInput');
-    const send = document.getElementById('chatSendBtn');
     const messages = document.getElementById('chatMessages');
 
+    // Logic for the Mark As Sold button
+    if (btn) {
+      if (isSeller) {
+        btn.style.display = 'inline-flex';
+        
+        if (sold) {
+          // If already sold, disable and change text
+          btn.textContent = 'This Item Has Been Sold'; // Updated text for clarity
+          btn.disabled = true;
+          btn.classList.remove('btn--primary');
+          btn.classList.add('btn--outline');
+        } else {
+          // If not sold, ensure it's enabled and shows the original text
+          btn.textContent = 'Mark as Sold';
+          btn.disabled = false;
+          btn.classList.add('btn--primary');
+          btn.classList.remove('btn--outline');
+        }
+      } else {
+        // Hide button for the buyer
+        btn.style.display = 'none';
+      }
+    }
+    
+    // ... (rest of the function for chat input/banner is correct and remains the same)
+    const input = document.getElementById('chatInput');
+    const send = document.getElementById('chatSendBtn');
+
+    // Logic for chat input and sold banner
     if (sold) {
       if (input) input.disabled = true;
       if (send) send.disabled = true;
+      
+      // Ensure there is a sold banner message
       if (messages && !messages.querySelector('.sold-banner')) {
         const div = document.createElement('div');
         div.className = 'sold-banner';
@@ -1301,12 +1376,13 @@ class Chat {
         messages.prepend(div);
       }
     } else {
+      // If not sold, ensure chat is enabled and remove the banner
       if (input) input.disabled = false;
       if (send) send.disabled = false;
       const banner = messages?.querySelector('.sold-banner');
       if (banner) banner.remove();
     }
-  }
+}
 
   getOtherParticipantEmail() {
     const me = this.auth?.currentUser;
@@ -1316,55 +1392,72 @@ class Chat {
     return convo.participantEmails[otherUid] || '';
   }
 
-  async awardBuyerPoints(conversationId) {
+async awardPoints(userId) {
+    // This is the common function to award points to any user (buyer or seller)
     try {
-      const me = this.auth?.currentUser;
-      if (!me || !this.db || !this.modules) return;
-      const { doc, setDoc, getDoc, updateDoc } = this.modules;
-
-      // Prefer atomic increment that also works if the doc is missing (merge)
-      if (this.modules.increment && setDoc) {
-        await setDoc(doc(this.db, 'users', me.uid), { points: this.modules.increment(5) }, { merge: true });
-      } else {
-        const userRef = doc(this.db, 'users', me.uid);
-        let current = window.userSession?.getUserData?.()?.points || 0;
-        try {
-          const snap = await getDoc(userRef);
-          if (snap?.exists()) current = snap.data()?.points || 0;
-        } catch {}
-        try {
-          await updateDoc(userRef, { points: current + 5 });
-        } catch {
-          await setDoc(userRef, { points: current + 5 }, { merge: true });
-        }
+      if (!userId || !this.db || !this.modules) return;
+      // Destructure modules, ensuring increment and setDoc are available
+      const { doc, setDoc, increment } = this.modules;
+      if (!increment || !setDoc) {
+        throw new Error("Firebase modules for atomic update are missing.");
       }
+      
+      const userRef = doc(this.db, 'users', userId);
 
-      await this.modules.updateDoc(this.modules.doc(this.db, 'conversations', conversationId), { buyerAwarded: true });
-      const currentLocal = window.userSession?.getUserData?.()?.points || 0;
-      window.userSession?.updateUserData?.({ points: currentLocal + 5 });
+      // CRITICAL FIX: Use setDoc with merge: true and increment. 
+      // This is the most robust operation: it will create the 'users' document 
+      // if it doesn't exist and then successfully apply the 5 point increment.
+      await setDoc(userRef, { points: increment(5) }, { merge: true });
+
     } catch (e) {
-      console.warn('Failed to award buyer points:', e);
+      console.error('Failed to award points to user:', userId, e);
+      // Re-throw the error so markItemAsSold can catch it and display a warning/error.
+      throw e; 
     }
   }
 
-  async markItemAsSold() {
+
+async markItemAsSold() {
     const me = this.auth?.currentUser;
     const convo = this.activeConversation || {};
-    if (!me || !convo?.id || !this.db || !this.modules) return;
+    const markAsSoldBtn = document.getElementById('markAsSoldBtn');
+
+    if (!me || !convo?.id || !this.db || !this.modules || !markAsSoldBtn) return;
+    
+    // CRUCIAL CHECK 1: Prevent multiple transactions if already marked sold (local check)
+    if (convo.itemSold || markAsSoldBtn.disabled) {
+        utils.showNotification('Item is already marked as sold or processing.', 'warning');
+        this.updateSoldUI();
+        return;
+    }
+    
+    // CRUCIAL FIX: Immediately set the local state and disable the button
+    const originalText = markAsSoldBtn.textContent;
+    markAsSoldBtn.disabled = true;
+    markAsSoldBtn.textContent = 'Processing...';
+
+    // The rest of the checks
     if (convo.sellerId !== me.uid) {
       utils.showNotification('Only the seller can mark as sold', 'error');
+      markAsSoldBtn.disabled = false; // Re-enable if it fails validation
+      markAsSoldBtn.textContent = originalText;
       return;
     }
     const buyerId = convo.buyerId || (convo.participants || []).find((p) => p !== me.uid);
     if (!buyerId) {
       utils.showNotification('Cannot determine buyer', 'error');
+      markAsSoldBtn.disabled = false;
+      markAsSoldBtn.textContent = originalText;
       return;
     }
 
-    const { doc, updateDoc, setDoc, getDoc, query, where, collection, getDocs, serverTimestamp, addDoc } = this.modules;
+
+    const { doc, updateDoc, query, where, collection, getDocs, serverTimestamp, addDoc } = this.modules;
 
     let criticalFailed = false;
-    const warnings = [];
+    let warnings = [];
+    const itemTitle = convo.itemTitle || 'Item';
+    const price = convo.itemPrice || null;
 
     // 1) Update item status to sold (critical)
     try {
@@ -1377,7 +1470,39 @@ class Chat {
       console.error('Item status update failed:', e);
     }
 
-    // 2) Update all conversations of this item (non-critical if some fail)
+    // 2) Award points to BOTH seller and buyer immediately
+    let sellerAwardedSuccessfully = false;
+    let buyerAwardedSuccessfully = false;
+
+    if (!criticalFailed) {
+      // Award Seller Points
+      try {
+        await this.awardPoints(me.uid);
+        sellerAwardedSuccessfully = true;
+      } catch (e) {
+        warnings.push('Seller point award failed.');
+        console.warn('Seller Points awarding warning:', e);
+      }
+
+      // Award Buyer Points
+      try {
+        await this.awardPoints(buyerId);
+        buyerAwardedSuccessfully = true;
+      } catch (e) {
+        warnings.push('Buyer point award failed.'); 
+        console.warn('Buyer Points awarding warning:', e);
+      }
+    }
+
+    // 3) Update all conversations (mark as sold, flag BOTH awarded statuses)
+    const updatePayload = {
+        itemSold: true,
+        soldToId: buyerId,
+        soldAt: serverTimestamp(),
+        sellerAwarded: sellerAwardedSuccessfully,
+        buyerAwarded: buyerAwardedSuccessfully
+    };
+    
     try {
       if (convo.itemId) {
         const convRef = collection(this.db, 'conversations');
@@ -1385,109 +1510,91 @@ class Chat {
         const snap = await getDocs(q);
         const updates = [];
         snap.forEach((d) => {
-          if (d.id === convo.id) {
-            updates.push(updateDoc(doc(this.db, 'conversations', d.id), {
-              itemSold: true,
-              soldToId: buyerId,
-              soldAt: serverTimestamp(),
-              sellerAwarded: true
-            }));
-          } else {
-            updates.push(updateDoc(doc(this.db, 'conversations', d.id), {
-              itemSold: true,
-              soldAt: serverTimestamp(),
-              sellerAwarded: true
-            }));
-          }
+          updates.push(updateDoc(doc(this.db, 'conversations', d.id), updatePayload));
         });
-        const results = await Promise.allSettled(updates);
-        if (results.some(r => r.status === 'rejected')) {
-          warnings.push('Some conversations could not be updated.');
-        }
+        await Promise.allSettled(updates);
       } else {
-        await updateDoc(doc(this.db, 'conversations', convo.id), {
-          itemSold: true,
-          soldToId: buyerId,
-          soldAt: serverTimestamp(),
-          sellerAwarded: true
-        });
+        await updateDoc(doc(this.db, 'conversations', convo.id), updatePayload);
       }
+      
+      // CRITICAL FIX 4: Update the local active conversation immediately
+      this.activeConversation = { ...this.activeConversation, ...updatePayload, itemSold: true };
+      
     } catch (e) {
       warnings.push('Conversation state update encountered issues.');
       console.warn('Conversation update warnings:', e);
     }
-
-    // 3) Award seller points (important but not critical for marking sold)
-    if (!criticalFailed) {
-      try {
-        const userRef = doc(this.db, 'users', me.uid);
-        if (this.modules.increment && setDoc) {
-          await setDoc(userRef, { points: this.modules.increment(5) }, { merge: true });
-        } else {
-          let currentPts = window.userSession?.getUserData?.()?.points || 0;
-          try {
-            const snap = await getDoc(userRef);
-            if (snap?.exists()) currentPts = snap.data()?.points || 0;
-          } catch {}
-          try {
-            await updateDoc(userRef, { points: currentPts + 5 });
-          } catch {
-            await setDoc(userRef, { points: currentPts + 5 }, { merge: true });
-          }
-        }
-        const current = window.userSession?.getUserData?.()?.points || 0;
-        window.userSession?.updateUserData?.({ points: current + 5 });
-      } catch (e) {
-        warnings.push('Awarded sale, but failed to update points right now.');
-        console.warn('Points awarding warning:', e);
-      }
-    }
-
+    
     // 4) Create transaction records (non-critical)
     if (!criticalFailed) {
       const txRef = collection(this.db, 'transactions');
-      const itemTitle = convo.itemTitle || 'Item';
-      const price = convo.itemPrice || null;
-      try {
-        await addDoc(txRef, {
-          userId: me.uid,
-          type: 'sale',
-          itemId: String(convo.itemId || ''),
-          itemTitle,
-          price,
-          counterpartId: buyerId,
-          createdAt: serverTimestamp()
-        });
-      } catch (e) {
-        warnings.push('Could not log seller transaction.');
-        console.warn('Seller transaction warning:', e);
-      }
-      try {
-        await addDoc(txRef, {
-          userId: buyerId,
-          type: 'purchase',
-          itemId: String(convo.itemId || ''),
-          itemTitle,
-          price,
-          counterpartId: me.uid,
-          createdAt: serverTimestamp()
-        });
-      } catch (e) {
-        warnings.push('Could not log buyer transaction.');
-        console.warn('Buyer transaction warning:', e);
-      }
+      const transactionPromises = [];
+
+      // Seller Transaction
+      transactionPromises.push(addDoc(txRef, {
+        userId: me.uid,
+        type: 'sale',
+        itemId: String(convo.itemId || ''),
+        itemTitle,
+        price,
+        counterpartId: buyerId,
+        createdAt: serverTimestamp(),
+        pointsAwarded: sellerAwardedSuccessfully ? 5 : 0
+      }).catch(() => warnings.push('Could not log seller transaction.')));
+      
+      // Buyer Transaction
+      transactionPromises.push(addDoc(txRef, { 
+        userId: buyerId,
+        type: 'purchase',
+        itemId: String(convo.itemId || ''),
+        itemTitle,
+        price,
+        counterpartId: me.uid,
+        createdAt: serverTimestamp(),
+        pointsAwarded: buyerAwardedSuccessfully ? 5 : 0
+      }).catch(() => warnings.push('Could not log buyer transaction.')));
+      
+      await Promise.allSettled(transactionPromises);
     }
 
+    // 5) Final Notification and Cleanup
     if (!criticalFailed) {
-      utils.showNotification('Item marked as sold', 'success');
-      if (warnings.length) {
-        utils.showNotification(warnings.join(' '), 'warning');
+      let message = 'Item marked as sold. ';
+      let type = 'success';
+      
+      if (sellerAwardedSuccessfully && buyerAwardedSuccessfully) {
+          message = 'Item marked as sold. Points awarded to both seller and buyer! 🎉';
+      } else {
+          type = 'warning';
+          if (sellerAwardedSuccessfully) {
+              message = `Item sold, Seller points awarded. Buyer point award failed (${warnings.filter(w => w.includes('Buyer')).length} warnings).`;
+          } else if (buyerAwardedSuccessfully) {
+              message = `Item sold, Buyer points awarded. Seller point award failed (${warnings.filter(w => w.includes('Seller')).length} warnings).`;
+          } else {
+              message = 'Item sold, but point awards failed for both. Please contact admin.';
+              type = 'error';
+          }
       }
-      this.updateSoldUI();
+
+      utils.showNotification(message, type);
+      
+      // FINAL UI UPDATE: This runs after local state is updated (Fix 4)
+      this.updateSoldUI(); 
+      
+      // Update local profile stats for the seller immediately
+      if (sellerAwardedSuccessfully) {
+          const current = window.userSession?.getUserData?.()?.points || 0;
+          window.userSession?.updateUserData?.({ points: current + 5 });
+      }
     } else {
-      utils.showNotification('Failed to mark as sold. Please try again.', 'error');
+        // If critical operation failed, re-enable the button
+        if (markAsSoldBtn) {
+            markAsSoldBtn.disabled = false;
+            markAsSoldBtn.textContent = originalText;
+        }
+        utils.showNotification('Failed to mark item as sold (Critical Error). Please try again.', 'error');
     }
-  }
+}
 
   subscribeMessages(conversationId) {
     const chatMessages = document.getElementById('chatMessages');
@@ -1632,13 +1739,21 @@ class Chat {
 class Profile {
   init() {
     this.loadData();
-    this.bindEvents(); // Attaches all necessary event listeners
+    this.bindEvents();
+    // Attach event listeners for password change modal buttons (as they are outside the class scope)
+    document.getElementById("changePasswordBtn")?.addEventListener("click", (e) => {
+        e.preventDefault();
+        this.openChangePasswordModal();
+    });
+    document.getElementById("saveChangePassword")?.addEventListener("click", (e) => {
+        e.preventDefault();
+        this.savePasswordChange();
+    });
   }
 
   // Binds clicks to all the interactive elements in the profile section
   bindEvents() {
     const avatarEditBtn = document.querySelector(".avatar-edit"); // The pencil icon
-    const editNameBtn = document.getElementById("editNameBtn"); // The settings link
     const saveEditNameBtn = document.getElementById("saveEditName");
     const cancelEditNameBtn = document.getElementById("cancelEditName");
     const logoutBtn = document.getElementById("logoutBtn");
@@ -1647,14 +1762,6 @@ class Profile {
     // NEW: Make the pencil icon open the Edit Name modal
     if (avatarEditBtn) {
       avatarEditBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        this.openEditNameModal();
-      });
-    }
-
-    // Make the "Edit Name" link in settings open the modal
-    if (editNameBtn) {
-      editNameBtn.addEventListener("click", (e) => {
         e.preventDefault();
         this.openEditNameModal();
       });
@@ -1694,6 +1801,7 @@ class Profile {
     }
   }
 
+  // ... (Keep openEditNameModal and saveEditedName methods as they are) ...
   openEditNameModal() {
     const modal = document.getElementById("editNameModal");
     if (!modal) return;
@@ -1733,6 +1841,7 @@ class Profile {
     }
   }
 
+  // ... (Keep openChangePasswordModal and savePasswordChange methods as they are) ...
   openChangePasswordModal() {
     const user = window.firebaseAuth?.currentUser;
     if (!user) {
@@ -1824,6 +1933,7 @@ class Profile {
     }
   }
 
+  // ... (Keep logout and deleteAccount methods as they are) ...
   logout() {
     if (window.userSession?.logout) {
       utils.showNotification("Logging you out...", "info");
@@ -1899,35 +2009,78 @@ class Profile {
     }
   }
 
+
   loadData() {
+    this.updateDisplayName(); // New method to ensure name/email are correct
     this.updateStats();
     this.loadMyListings();
     this.loadHeartedPosts();
     this.loadTransactionHistory();
   }
+  
+  updateDisplayName() {
+    const user = window.firebaseAuth?.currentUser;
+    const userData = window.userSession?.getUserData?.() || {};
+    const displayNameEl = document.getElementById("profileDisplayName");
+    const emailEl = document.getElementById("profileDisplayEmail");
+    
+    if(displayNameEl) {
+        displayNameEl.textContent = userData.displayName || user?.displayName || 'CampusKart User';
+    }
+    if(emailEl) {
+        emailEl.textContent = user?.email || 'N/A';
+    }
+  }
 
+  // CRITICAL FIX: Ensure all 3 stats are updated here.
   updateStats() {
+    const userData = window.userSession?.getUserData?.() || {};
+    
+    // --- 1. POINTS ---
+    const currentPoints = userData.points || AppState.userProfile.points;
     utils.animateValue(
       document.getElementById("userPoints"),
       0,
-      AppState.userProfile.points,
+      currentPoints,
       1000
     );
+    
+    // --- 2. TOTAL TRANSACTIONS (Requires counting) ---
+    // We fetch transactions, count them, and then animate.
+    const container = document.getElementById('transactionList');
+    const totalTransactions = container?.children?.length || AppState.userProfile.totalTransactions;
+    
     utils.animateValue(
       document.getElementById("totalTransactions"),
       0,
-      AppState.userProfile.totalTransactions,
+      totalTransactions,
       1000
     );
+
+    // --- 3. MONEY SAVED ---
+    // We rely on the value calculated by the Marketplace class on load/heart.
+    const moneySaved = AppState.userProfile.moneySaved;
     utils.animateValue(
       document.getElementById("moneySaved"),
       0,
-      AppState.userProfile.moneySaved,
+      moneySaved,
       1000,
-      (val) => `₹${val}`
+      (val) => `₹${utils.formatPrice(val).replace('₹', '')}` // formatPrice includes '₹'
     );
+    
+    // Also update the points progress bar
+    const pointsProgress = document.getElementById("pointsProgress");
+    const progressText = document.getElementById("progressText");
+    const requiredForBoost = 25;
+    
+    if (pointsProgress && progressText) {
+        const progressPercent = Math.min((currentPoints / requiredForBoost) * 100, 100);
+        pointsProgress.style.width = `${progressPercent}%`;
+        progressText.textContent = `${currentPoints} / ${requiredForBoost} Points (Next Boost)`;
+    }
   }
 
+  // ... (Keep loadMyListings, loadHeartedPosts, and loadTransactionHistory as they are) ...
   loadMyListings() {
     const myListingsContainer = document.getElementById("myListings");
     const emptyNotice = document.querySelector(".my-listings .empty-notice");
@@ -2020,7 +2173,9 @@ class Profile {
     });
   }
 
-  async loadTransactionHistory() {
+
+
+async loadTransactionHistory() {
     const container = document.getElementById('transactionList');
     if (!container) return;
     container.innerHTML = '';
@@ -2037,33 +2192,69 @@ class Profile {
         return;
       }
       const txRef = collection(window.firebaseDb, 'transactions');
-      const q = query(txRef, where('userId', '==', me.uid), orderBy('createdAt', 'desc'));
-      const snap = await getDocs(q);
-      if (snap.empty) {
+      
+      // --- 1. Query Transactions where I am the PRIMARY user (Seller/Sale) ---
+      const q1 = query(txRef, 
+        where('userId', '==', me.uid), 
+        orderBy('createdAt', 'desc')
+      );
+      const snap1 = await getDocs(q1);
+
+      // --- 2. Query Transactions where I am the COUNTERPART user (Buyer/Purchase) ---
+      const q2 = query(txRef,
+        where('counterpartId', '==', me.uid),
+        orderBy('createdAt', 'desc')
+      );
+      const snap2 = await getDocs(q2);
+
+      let allTransactions = [];
+      snap1.forEach((d) => {
+        allTransactions.push({ id: d.id, ...d.data(), role: 'primary' });
+      });
+      snap2.forEach((d) => {
+          // Prevent duplicates
+          if (!allTransactions.some(t => t.id === d.id)) {
+            allTransactions.push({ id: d.id, ...d.data(), role: 'counterpart' });
+          }
+      });
+      
+      // Sort all transactions by date 
+      allTransactions.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+
+      if (allTransactions.length === 0) {
         container.innerHTML = `<div class="empty-state"><p>No transactions yet.</p></div>`;
+        this.updateStats(); // Update stats even if empty
         return;
       }
 
-      const items = [];
-      snap.forEach((d) => items.push({ id: d.id, ...d.data() }));
-      const html = items.map((t) => {
+      const html = allTransactions.map((t) => {
+        // FIX: Check 'type' field to correctly set label
+        const isPurchase = t.type === 'purchase'; 
         const when = t.createdAt?.toDate?.()?.toLocaleDateString?.() || '';
-        const label = t.type === 'sale' ? 'Sold' : 'Purchased';
-        const amount = t.price ? ` - ₹${t.price}` : '';
+        const label = isPurchase ? 'Purchased' : 'Sold'; // Use Purchased or Sold
+        const points = (t.pointsAwarded === 5) ? '+5' : '';
+        const typeClass = isPurchase ? 'purchase' : 'sale'; // For potential CSS styling
+        
         return `
-          <div class="transaction-item">
+          <div class="transaction-item transaction-${typeClass}">
             <div class="transaction-info">
               <div class="transaction-type">${label}: ${t.itemTitle || ''}</div>
               <div class="transaction-date">${when}</div>
             </div>
-            <div class="transaction-points">+5</div>
+            <div class="transaction-points">${points}</div>
           </div>
         `;
       }).join('');
+      
       container.innerHTML = html;
+      
+      // After rendering, update the stats based on the new count
+      this.updateStats();
+
     } catch (e) {
       console.error('Failed to load transactions:', e);
       container.innerHTML = `<div class="empty-state"><p>Failed to load transactions.</p></div>`;
+      this.updateStats(); // Ensure stats are updated even on failure
     }
   }
 }
