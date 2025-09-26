@@ -1161,89 +1161,7 @@ class Chat {
   // Start or reuse a conversation for a given item
 // Replace the existing startConversationForItem function with this one
 // Start or reuse a conversation for a given item
-  async startConversationForItem(item) {
-    if (!this.db || !this.modules) throw new Error('Firebase not initialized');
-    const user = this.auth?.currentUser;
-    if (!user) throw new Error('Not authenticated');
 
-    const buyerId = user.uid;
-    const sellerId = item.sellerId;
-
-    // 1. First, check if a conversation for this item already exists between these two users
-    const { collection, query, where, getDocs, doc, setDoc, serverTimestamp } = this.modules;
-    const convRef = collection(this.db, 'conversations');
-    
-    // The query looks for a conversation where:
-    // a) The participants array contains the current user (buyerId)
-    // b) AND The itemId field matches the item being contacted
-    // Note: We don't need to check for sellerId in participants array explicitly 
-    // because the itemId being unique to the seller/item combination handles that, 
-    // but the `participants` array must contain both.
-    
-    // For a cleaner query, we can rely on the deterministic ID format that was originally intended, 
-    // OR we can use the following multi-field query:
-    
-    const existingQuery = query(
-        convRef,
-        where('itemId', '==', String(item.id)),
-        where('participants', 'array-contains', buyerId)
-    );
-
-    const snapshot = await getDocs(existingQuery);
-
-    if (!snapshot.empty) {
-      // Conversation already exists!
-      const existingConv = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
-      this.openChat(existingConv.id);
-      return;
-    }
-
-
-    // 2. If no conversation exists, create a new one (Original logic)
-    const key = [buyerId, sellerId].sort().join('_');
-    const buyerName = window.userSession?.getUserData?.().displayName || user.displayName || 'Buyer';
-    const sellerName = item.sellerName || 'Seller';
-
-    // Use a deterministic conversation ID for this item/user pair (fallback ID)
-    const convId = `${key}_${String(item.id)}`;
-    
-    const initialMessage = `Is your ${item.title} still available?`;
-
-    const docToSet = {
-      key,
-      participants: [buyerId, sellerId],
-      participantEmails: {
-        [buyerId]: user.email || '',
-        [sellerId]: item.sellerEmail || ''
-      },
-      participantNames: {
-        [buyerId]: buyerName,
-        [sellerId]: sellerName
-      },
-      buyerId,
-      sellerId,
-      sellerEmail: item.sellerEmail || '',
-      itemId: String(item.id),
-      itemTitle: item.title || '',
-      itemPrice: item.price || null, // Store price for transaction logging
-      lastMessage: initialMessage, // Set an initial message
-      lastMessageAt: serverTimestamp(),
-      createdAt: serverTimestamp()
-    };
-
-    await setDoc(doc(this.db, 'conversations', convId), docToSet, { merge: true });
-    
-    // Add the initial message to the messages subcollection
-    const msgsRef = collection(this.db, 'conversations', convId, 'messages');
-    await addDoc(msgsRef, {
-        senderId: buyerId,
-        text: initialMessage,
-        createdAt: serverTimestamp()
-    });
-
-    // Open the chat immediately
-    this.openChat(convId);
-  }
 
 // Replace the existing openChat function with this one
 // Replace the existing openChat function with this one
@@ -2183,15 +2101,14 @@ async loadTransactionHistory() {
             container.innerHTML = `<div class="empty-state"><p>Please sign in to see transactions.</p></div>`;
             return;
         }
-        const { collection, query, where, orderBy, getDocs } = window.firebaseModules || {};
-        if (!collection || !query || !where || !orderBy || !getDocs) {
+        const { collection, query, where, orderBy, getDocs, doc, getDoc } = window.firebaseModules || {};
+        if (!collection || !query || !where || !orderBy || !getDocs || !doc || !getDoc) {
             container.innerHTML = `<div class="empty-state"><p>Transactions unavailable.</p></div>`;
             return;
         }
         const txRef = collection(window.firebaseDb, 'transactions');
 
-        // SIMPLIFIED: We only need this one query. 
-        // It fetches all records (sales and purchases) belonging to the current user.
+        // This query correctly fetches the user's transaction records.
         const q = query(txRef,
             where('userId', '==', me.uid),
             orderBy('createdAt', 'desc')
@@ -2203,18 +2120,31 @@ async loadTransactionHistory() {
             allTransactions.push({ id: d.id, ...d.data() });
         });
 
-        // The logic for calculating money saved remains the same.
-        allTransactions.forEach(transaction => {
-            if (transaction.type === 'purchase') {
-                const item = AppState.originalItems.find(i => String(i.id) === String(transaction.itemId));
-                if (item && item.originalPrice && item.price) {
-                    const savings = item.originalPrice - item.price;
-                    if (savings > 0) {
-                        totalMoneySaved += savings;
+        // --- NEW AND IMPROVED CALCULATION LOGIC ---
+        // We now use a for...of loop to allow for async database calls inside.
+        for (const transaction of allTransactions) {
+            // Only perform this check for purchase transactions that have an itemId.
+            if (transaction.type === 'purchase' && transaction.itemId) {
+                try {
+                    // Fetch the item document directly from Firestore using its ID.
+                    const itemRef = doc(window.firebaseDb, 'items', String(transaction.itemId));
+                    const itemSnap = await getDoc(itemRef);
+
+                    if (itemSnap.exists()) {
+                        const item = itemSnap.data();
+                        if (item && item.originalPrice && item.price) {
+                            const savings = item.originalPrice - item.price;
+                            if (savings > 0) {
+                                totalMoneySaved += savings;
+                            }
+                        }
                     }
+                } catch (e) {
+                    // This can fail if the item was deleted, which is okay.
+                    console.warn(`Could not fetch details for sold item ${transaction.itemId}:`, e);
                 }
             }
-        });
+        }
         
         AppState.userProfile.moneySaved = totalMoneySaved;
 
@@ -2224,11 +2154,11 @@ async loadTransactionHistory() {
             return;
         }
 
-        // This mapping logic is already correct and will now work as intended.
+        // The existing HTML rendering logic is correct and does not need to change.
         const html = allTransactions.map((t) => {
             const isPurchase = t.type === 'purchase';
             const when = t.createdAt?.toDate?.()?.toLocaleDateString?.() || 'Just now';
-            const label = isPurchase ? 'Purchased' : 'Sold'; // This now correctly identifies the type.
+            const label = isPurchase ? 'Purchased' : 'Sold';
             const points = (t.pointsAwarded === 5) ? '+5' : '';
             const typeClass = isPurchase ? 'purchase' : 'sale';
 
@@ -2244,6 +2174,7 @@ async loadTransactionHistory() {
         }).join('');
 
         container.innerHTML = html;
+        // This call will now use the correctly calculated moneySaved value.
         this.updateStats();
 
     } catch (e) {
