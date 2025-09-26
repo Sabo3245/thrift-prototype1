@@ -541,7 +541,7 @@ class Marketplace {
           AppState.items = [...savedItems];
           AppState.originalItems = [...savedItems];
           AppState.filteredItems = [...savedItems];
-          this.calculateMoneySaved();
+          
           return;
         }
 
@@ -549,7 +549,7 @@ class Marketplace {
         AppState.items = [...items];
         AppState.originalItems = [...items];
         AppState.filteredItems = [...items];
-        this.calculateMoneySaved();
+        
         return;
       }
     } catch (err) {
@@ -561,21 +561,10 @@ class Marketplace {
     AppState.items = [...savedItems];
     AppState.originalItems = [...savedItems];
     AppState.filteredItems = [...savedItems];
-    this.calculateMoneySaved();
+    
   }
 
-  calculateMoneySaved() {
-    let totalSaved = 0;
-    AppState.userProfile.heartedPosts.forEach((itemId) => {
-      const item = AppState.originalItems.find((i) => i.id === itemId);
-      if (item && item.originalPrice) {
-        totalSaved +=
-          utils.calculateSavings(item.originalPrice, item.price) || 0;
-      }
-    });
-    AppState.userProfile.moneySaved = totalSaved;
-    utils.saveToStorage("user_profile", AppState.userProfile);
-  }
+
 
   bindEvents() {
     document.getElementById("searchInput")?.addEventListener(
@@ -756,7 +745,7 @@ class Marketplace {
       item.hearts = (item.hearts || 0) + (isHearted ? -1 : 1);
     }
 
-    this.calculateMoneySaved();
+    
     utils.saveToStorage("user_profile", AppState.userProfile);
     utils.saveToStorage("marketplace_items", AppState.originalItems);
   }
@@ -1321,53 +1310,59 @@ class Chat {
     });
   }
   
-  
-
-
-
-updateSoldUI() {
+  async updateSoldUI() {
     const convo = this.activeConversation || {};
     const me = this.auth?.currentUser;
     const isSeller = me && convo.sellerId === me.uid;
-    const sold = !!convo.itemSold; 
+    
+    // --- NEW: Check the database directly for the item's status ---
+    let isItemSoldInDB = false;
+    if (convo.itemId && this.db && this.modules?.doc && this.modules?.getDoc) {
+        try {
+            const { doc, getDoc } = this.modules;
+            const itemRef = doc(this.db, 'items', String(convo.itemId));
+            const itemSnap = await getDoc(itemRef);
+            if (itemSnap.exists() && itemSnap.data().status === 'sold') {
+                isItemSoldInDB = true;
+            }
+        } catch (e) {
+            console.error("Failed to fetch item status:", e);
+        }
+    }
+    
+    // The 'sold' status is true if EITHER the conversation says so OR the database confirms it.
+    const sold = !!convo.itemSold || isItemSoldInDB;
 
     const btn = document.getElementById('markAsSoldBtn');
     const messages = document.getElementById('chatMessages');
 
-    // Logic for the Mark As Sold button
     if (btn) {
       if (isSeller) {
         btn.style.display = 'inline-flex';
         
         if (sold) {
-          // If already sold, disable and change text
-          btn.textContent = 'This Item Has Been Sold'; // Updated text for clarity
+          btn.textContent = 'This Item Has Been Sold'; 
           btn.disabled = true;
           btn.classList.remove('btn--primary');
           btn.classList.add('btn--outline');
         } else {
-          // If not sold, ensure it's enabled and shows the original text
           btn.textContent = 'Mark as Sold';
           btn.disabled = false;
           btn.classList.add('btn--primary');
           btn.classList.remove('btn--outline');
         }
       } else {
-        // Hide button for the buyer
         btn.style.display = 'none';
       }
     }
     
-    // ... (rest of the function for chat input/banner is correct and remains the same)
     const input = document.getElementById('chatInput');
     const send = document.getElementById('chatSendBtn');
 
-    // Logic for chat input and sold banner
     if (sold) {
       if (input) input.disabled = true;
       if (send) send.disabled = true;
       
-      // Ensure there is a sold banner message
       if (messages && !messages.querySelector('.sold-banner')) {
         const div = document.createElement('div');
         div.className = 'sold-banner';
@@ -1376,7 +1371,6 @@ updateSoldUI() {
         messages.prepend(div);
       }
     } else {
-      // If not sold, ensure chat is enabled and remove the banner
       if (input) input.disabled = false;
       if (send) send.disabled = false;
       const banner = messages?.querySelector('.sold-banner');
@@ -1580,6 +1574,7 @@ async markItemAsSold() {
       
       // FINAL UI UPDATE: This runs after local state is updated (Fix 4)
       this.updateSoldUI(); 
+       await this.updateSoldUI(); 
       
       // Update local profile stats for the seller immediately
       if (sellerAwardedSuccessfully) {
@@ -2180,83 +2175,83 @@ async loadTransactionHistory() {
     if (!container) return;
     container.innerHTML = '';
 
+    let totalMoneySaved = 0;
+
     try {
-      const me = window.firebaseAuth?.currentUser;
-      if (!me) {
-        container.innerHTML = `<div class="empty-state"><p>Please sign in to see transactions.</p></div>`;
-        return;
-      }
-      const { collection, query, where, orderBy, getDocs } = window.firebaseModules || {};
-      if (!collection || !query || !where || !orderBy || !getDocs) {
-        container.innerHTML = `<div class="empty-state"><p>Transactions unavailable.</p></div>`;
-        return;
-      }
-      const txRef = collection(window.firebaseDb, 'transactions');
-      
-      // --- 1. Query Transactions where I am the PRIMARY user (Seller/Sale) ---
-      const q1 = query(txRef, 
-        where('userId', '==', me.uid), 
-        orderBy('createdAt', 'desc')
-      );
-      const snap1 = await getDocs(q1);
+        const me = window.firebaseAuth?.currentUser;
+        if (!me) {
+            container.innerHTML = `<div class="empty-state"><p>Please sign in to see transactions.</p></div>`;
+            return;
+        }
+        const { collection, query, where, orderBy, getDocs } = window.firebaseModules || {};
+        if (!collection || !query || !where || !orderBy || !getDocs) {
+            container.innerHTML = `<div class="empty-state"><p>Transactions unavailable.</p></div>`;
+            return;
+        }
+        const txRef = collection(window.firebaseDb, 'transactions');
 
-      // --- 2. Query Transactions where I am the COUNTERPART user (Buyer/Purchase) ---
-      const q2 = query(txRef,
-        where('counterpartId', '==', me.uid),
-        orderBy('createdAt', 'desc')
-      );
-      const snap2 = await getDocs(q2);
+        // SIMPLIFIED: We only need this one query. 
+        // It fetches all records (sales and purchases) belonging to the current user.
+        const q = query(txRef,
+            where('userId', '==', me.uid),
+            orderBy('createdAt', 'desc')
+        );
+        const snapshot = await getDocs(q);
 
-      let allTransactions = [];
-      snap1.forEach((d) => {
-        allTransactions.push({ id: d.id, ...d.data(), role: 'primary' });
-      });
-      snap2.forEach((d) => {
-          // Prevent duplicates
-          if (!allTransactions.some(t => t.id === d.id)) {
-            allTransactions.push({ id: d.id, ...d.data(), role: 'counterpart' });
-          }
-      });
-      
-      // Sort all transactions by date 
-      allTransactions.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+        let allTransactions = [];
+        snapshot.forEach((d) => {
+            allTransactions.push({ id: d.id, ...d.data() });
+        });
 
-      if (allTransactions.length === 0) {
-        container.innerHTML = `<div class="empty-state"><p>No transactions yet.</p></div>`;
-        this.updateStats(); // Update stats even if empty
-        return;
-      }
-
-      const html = allTransactions.map((t) => {
-        // FIX: Check 'type' field to correctly set label
-        const isPurchase = t.type === 'purchase'; 
-        const when = t.createdAt?.toDate?.()?.toLocaleDateString?.() || '';
-        const label = isPurchase ? 'Purchased' : 'Sold'; // Use Purchased or Sold
-        const points = (t.pointsAwarded === 5) ? '+5' : '';
-        const typeClass = isPurchase ? 'purchase' : 'sale'; // For potential CSS styling
+        // The logic for calculating money saved remains the same.
+        allTransactions.forEach(transaction => {
+            if (transaction.type === 'purchase') {
+                const item = AppState.originalItems.find(i => String(i.id) === String(transaction.itemId));
+                if (item && item.originalPrice && item.price) {
+                    const savings = item.originalPrice - item.price;
+                    if (savings > 0) {
+                        totalMoneySaved += savings;
+                    }
+                }
+            }
+        });
         
-        return `
-          <div class="transaction-item transaction-${typeClass}">
-            <div class="transaction-info">
-              <div class="transaction-type">${label}: ${t.itemTitle || ''}</div>
-              <div class="transaction-date">${when}</div>
-            </div>
-            <div class="transaction-points">${points}</div>
-          </div>
-        `;
-      }).join('');
-      
-      container.innerHTML = html;
-      
-      // After rendering, update the stats based on the new count
-      this.updateStats();
+        AppState.userProfile.moneySaved = totalMoneySaved;
+
+        if (allTransactions.length === 0) {
+            container.innerHTML = `<div class="empty-state"><p>No transactions yet.</p></div>`;
+            this.updateStats();
+            return;
+        }
+
+        // This mapping logic is already correct and will now work as intended.
+        const html = allTransactions.map((t) => {
+            const isPurchase = t.type === 'purchase';
+            const when = t.createdAt?.toDate?.()?.toLocaleDateString?.() || 'Just now';
+            const label = isPurchase ? 'Purchased' : 'Sold'; // This now correctly identifies the type.
+            const points = (t.pointsAwarded === 5) ? '+5' : '';
+            const typeClass = isPurchase ? 'purchase' : 'sale';
+
+            return `
+              <div class="transaction-item transaction-${typeClass}">
+                <div class="transaction-info">
+                  <div class="transaction-type">${label}: ${t.itemTitle || ''}</div>
+                  <div class="transaction-date">${when}</div>
+                </div>
+                <div class="transaction-points">${points}</div>
+              </div>
+            `;
+        }).join('');
+
+        container.innerHTML = html;
+        this.updateStats();
 
     } catch (e) {
-      console.error('Failed to load transactions:', e);
-      container.innerHTML = `<div class="empty-state"><p>Failed to load transactions.</p></div>`;
-      this.updateStats(); // Ensure stats are updated even on failure
+        console.error('Failed to load transactions:', e);
+        container.innerHTML = `<div class="empty-state"><p>Failed to load transactions.</p></div>`;
+        this.updateStats();
     }
-  }
+}
 }
 
 class Help {
