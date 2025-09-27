@@ -1159,6 +1159,67 @@ class Chat {
   }
 
   // Start or reuse a conversation for a given item
+  async startConversationForItem(item) {
+    if (!this.db || !this.modules) throw new Error("Chat not initialized.");
+    const me = this.auth?.currentUser;
+    if (!me) {
+      utils.showNotification("Please sign in to start a chat.", "error");
+      return;
+    }
+    if (!item || !item.sellerId) throw new Error("Invalid item data.");
+    if (item.sellerId === me.uid) {
+        utils.showNotification("You cannot start a conversation about your own item.", "warning");
+        return;
+    }
+
+    const { collection, query, where, getDocs, addDoc, serverTimestamp } = this.modules;
+
+    // Check for an existing conversation for this item with this user
+    const convRef = collection(this.db, 'conversations');
+    const q = query(convRef,
+        where('itemId', '==', String(item.id)),
+        where('participants', 'array-contains', me.uid)
+    );
+
+    const snapshot = await getDocs(q);
+    if (!snapshot.empty) {
+        // Conversation already exists, just open it
+        const existingConvo = snapshot.docs[0];
+        this.openChat(existingConvo.id);
+        return;
+    }
+
+    // No existing conversation, so create a new one
+    const sellerData = { displayName: item.sellerName || 'Seller', email: item.sellerEmail || '' };
+    const buyerData = { displayName: me.displayName || 'Buyer', email: me.email || '' };
+
+    const newConversation = {
+        itemId: String(item.id),
+        itemTitle: item.title,
+        itemPrice: item.price,
+        sellerId: item.sellerId,
+        buyerId: me.uid,
+        participants: [me.uid, item.sellerId],
+        participantNames: {
+            [me.uid]: buyerData.displayName,
+            [item.sellerId]: sellerData.displayName,
+        },
+        participantEmails: {
+            [me.uid]: buyerData.email,
+            [item.sellerId]: sellerData.email,
+        },
+        createdAt: serverTimestamp(),
+        lastMessageAt: serverTimestamp(),
+        lastMessage: `Conversation started about "${item.title}"`,
+        itemSold: false,
+    };
+
+    const docRef = await addDoc(convRef, newConversation);
+    // Open the newly created chat
+    this.openChat(docRef.id);
+  }
+
+  // Start or reuse a conversation for a given item
 // Replace the existing startConversationForItem function with this one
 // Start or reuse a conversation for a given item
 
@@ -1329,6 +1390,8 @@ async awardPoints(userId) {
   }
 
 
+// app.js
+
 async markItemAsSold() {
     const me = this.auth?.currentUser;
     const convo = this.activeConversation || {};
@@ -1336,33 +1399,22 @@ async markItemAsSold() {
 
     if (!me || !convo?.id || !this.db || !this.modules || !markAsSoldBtn) return;
     
-    // CRUCIAL CHECK 1: Prevent multiple transactions if already marked sold (local check)
     if (convo.itemSold || markAsSoldBtn.disabled) {
-        utils.showNotification('Item is already marked as sold or processing.', 'warning');
-        this.updateSoldUI();
+        utils.showNotification('Item is already marked as sold.', 'warning');
         return;
     }
     
-    // CRUCIAL FIX: Immediately set the local state and disable the button
     const originalText = markAsSoldBtn.textContent;
     markAsSoldBtn.disabled = true;
     markAsSoldBtn.textContent = 'Processing...';
 
-    // The rest of the checks
-    if (convo.sellerId !== me.uid) {
-      utils.showNotification('Only the seller can mark as sold', 'error');
-      markAsSoldBtn.disabled = false; // Re-enable if it fails validation
-      markAsSoldBtn.textContent = originalText;
-      return;
-    }
     const buyerId = convo.buyerId || (convo.participants || []).find((p) => p !== me.uid);
     if (!buyerId) {
-      utils.showNotification('Cannot determine buyer', 'error');
-      markAsSoldBtn.disabled = false;
-      markAsSoldBtn.textContent = originalText;
-      return;
+        utils.showNotification('Cannot determine buyer', 'error');
+        markAsSoldBtn.disabled = false;
+        markAsSoldBtn.textContent = originalText;
+        return;
     }
-
 
     const { doc, updateDoc, query, where, collection, getDocs, serverTimestamp, addDoc } = this.modules;
 
@@ -1373,139 +1425,86 @@ async markItemAsSold() {
 
     // 1) Update item status to sold (critical)
     try {
-      if (convo.itemId) {
-        const itemRef = doc(this.db, 'items', String(convo.itemId));
-        await updateDoc(itemRef, { status: 'sold', soldToId: buyerId, updatedAt: serverTimestamp() });
-      }
+        if (convo.itemId) {
+            const itemRef = doc(this.db, 'items', String(convo.itemId));
+            await updateDoc(itemRef, { status: 'sold', soldToId: buyerId, updatedAt: serverTimestamp() });
+        }
     } catch (e) {
-      criticalFailed = true;
-      console.error('Item status update failed:', e);
+        criticalFailed = true;
+        console.error('Item status update failed:', e);
     }
 
-    // 2) Award points to BOTH seller and buyer immediately
+    // 2) Award points to BOTH seller and buyer
     let sellerAwardedSuccessfully = false;
     let buyerAwardedSuccessfully = false;
-
     if (!criticalFailed) {
-      // Award Seller Points
-      try {
-        await this.awardPoints(me.uid);
-        sellerAwardedSuccessfully = true;
-      } catch (e) {
-        warnings.push('Seller point award failed.');
-        console.warn('Seller Points awarding warning:', e);
-      }
-
-      // Award Buyer Points
-      try {
-        await this.awardPoints(buyerId);
-        buyerAwardedSuccessfully = true;
-      } catch (e) {
-        warnings.push('Buyer point award failed.'); 
-        console.warn('Buyer Points awarding warning:', e);
-      }
+        try {
+            await this.awardPoints(me.uid);
+            sellerAwardedSuccessfully = true;
+        } catch (e) { warnings.push('Seller point award failed.'); }
+        try {
+            await this.awardPoints(buyerId);
+            buyerAwardedSuccessfully = true;
+        } catch (e) { warnings.push('Buyer point award failed.'); }
     }
 
-    // 3) Update all conversations (mark as sold, flag BOTH awarded statuses)
-    const updatePayload = {
-        itemSold: true,
-        soldToId: buyerId,
-        soldAt: serverTimestamp(),
-        sellerAwarded: sellerAwardedSuccessfully,
-        buyerAwarded: buyerAwardedSuccessfully
-    };
-    
+    // 3) Update all related conversations
+    const updatePayload = { itemSold: true, soldToId: buyerId, soldAt: serverTimestamp() };
     try {
-      if (convo.itemId) {
-        const convRef = collection(this.db, 'conversations');
-        const q = query(convRef, where('itemId', '==', String(convo.itemId)));
-        const snap = await getDocs(q);
-        const updates = [];
-        snap.forEach((d) => {
-          updates.push(updateDoc(doc(this.db, 'conversations', d.id), updatePayload));
-        });
-        await Promise.allSettled(updates);
-      } else {
-        await updateDoc(doc(this.db, 'conversations', convo.id), updatePayload);
-      }
-      
-      // CRITICAL FIX 4: Update the local active conversation immediately
-      this.activeConversation = { ...this.activeConversation, ...updatePayload, itemSold: true };
-      
+        if (convo.itemId) {
+            const convRef = collection(this.db, 'conversations');
+            const q = query(convRef, where('itemId', '==', String(convo.itemId)));
+            const snap = await getDocs(q);
+            const updates = snap.docs.map(d => updateDoc(d.ref, updatePayload));
+            await Promise.allSettled(updates);
+        } else {
+            await updateDoc(doc(this.db, 'conversations', convo.id), updatePayload);
+        }
+        this.activeConversation = { ...this.activeConversation, ...updatePayload };
     } catch (e) {
-      warnings.push('Conversation state update encountered issues.');
-      console.warn('Conversation update warnings:', e);
+        warnings.push('Conversation state update encountered issues.');
     }
     
-    // 4) Create transaction records (non-critical)
+    // 4) Create transaction records
     if (!criticalFailed) {
-      const txRef = collection(this.db, 'transactions');
-      const transactionPromises = [];
+        const txRef = collection(this.db, 'transactions');
+        const transactionPromises = [];
 
-      // Seller Transaction
-      transactionPromises.push(addDoc(txRef, {
-        userId: me.uid,
-        type: 'sale',
-        itemId: String(convo.itemId || ''),
-        itemTitle,
-        price,
-        counterpartId: buyerId,
-        createdAt: serverTimestamp(),
-        pointsAwarded: sellerAwardedSuccessfully ? 5 : 0
-      }).catch(() => warnings.push('Could not log seller transaction.')));
+        // Seller Transaction: Assigned to the SELLER
+        transactionPromises.push(addDoc(txRef, {
+            userId: me.uid, // <-- Correctly uses the seller's ID
+            type: 'sale',
+            itemId: String(convo.itemId || ''),
+            itemTitle,
+            price,
+            counterpartId: buyerId,
+            createdAt: serverTimestamp(),
+            pointsAwarded: sellerAwardedSuccessfully ? 5 : 0
+        }));
       
-      // Buyer Transaction
-      transactionPromises.push(addDoc(txRef, { 
-        userId: buyerId,
-        type: 'purchase',
-        itemId: String(convo.itemId || ''),
-        itemTitle,
-        price,
-        counterpartId: me.uid,
-        createdAt: serverTimestamp(),
-        pointsAwarded: buyerAwardedSuccessfully ? 5 : 0
-      }).catch(() => warnings.push('Could not log buyer transaction.')));
+        // Buyer Transaction: Assigned to the BUYER
+        transactionPromises.push(addDoc(txRef, { 
+            userId: buyerId, // <-- Correctly uses the buyer's ID
+            type: 'purchase',
+            itemId: String(convo.itemId || ''),
+            itemTitle,
+            price,
+            counterpartId: me.uid,
+            createdAt: serverTimestamp(),
+            pointsAwarded: buyerAwardedSuccessfully ? 5 : 0
+        }));
       
-      await Promise.allSettled(transactionPromises);
+        await Promise.allSettled(transactionPromises);
     }
 
-    // 5) Final Notification and Cleanup
-    if (!criticalFailed) {
-      let message = 'Item marked as sold. ';
-      let type = 'success';
-      
-      if (sellerAwardedSuccessfully && buyerAwardedSuccessfully) {
-          message = 'Item marked as sold. Points awarded to both seller and buyer! 🎉';
-      } else {
-          type = 'warning';
-          if (sellerAwardedSuccessfully) {
-              message = `Item sold, Seller points awarded. Buyer point award failed (${warnings.filter(w => w.includes('Buyer')).length} warnings).`;
-          } else if (buyerAwardedSuccessfully) {
-              message = `Item sold, Buyer points awarded. Seller point award failed (${warnings.filter(w => w.includes('Seller')).length} warnings).`;
-          } else {
-              message = 'Item sold, but point awards failed for both. Please contact admin.';
-              type = 'error';
-          }
-      }
-
-      utils.showNotification(message, type);
-      
-      // FINAL UI UPDATE: This runs after local state is updated (Fix 4)
-      this.updateSoldUI(); 
-       await this.updateSoldUI(); 
-      
-      // Update local profile stats for the seller immediately
-      if (sellerAwardedSuccessfully) {
-          const current = window.userSession?.getUserData?.()?.points || 0;
-          window.userSession?.updateUserData?.({ points: current + 5 });
-      }
+    // 5) Final Notification and UI Cleanup
+    if (criticalFailed) {
+        markAsSoldBtn.disabled = false;
+        markAsSoldBtn.textContent = originalText;
+        utils.showNotification('Failed to mark item as sold. Please try again.', 'error');
     } else {
-        // If critical operation failed, re-enable the button
-        if (markAsSoldBtn) {
-            markAsSoldBtn.disabled = false;
-            markAsSoldBtn.textContent = originalText;
-        }
-        utils.showNotification('Failed to mark item as sold (Critical Error). Please try again.', 'error');
+        utils.showNotification('Item marked as sold! Points awarded. 🎉', 'success');
+        this.updateSoldUI();
     }
 }
 
@@ -1946,11 +1945,11 @@ class Profile {
   }
 
   // CRITICAL FIX: Ensure all 3 stats are updated here.
-  updateStats() {
+updateStats(transactionCount, moneySaved) {
     const userData = window.userSession?.getUserData?.() || {};
-    
+    const currentPoints = userData.points || 0;
+
     // --- 1. POINTS ---
-    const currentPoints = userData.points || AppState.userProfile.points;
     utils.animateValue(
       document.getElementById("userPoints"),
       0,
@@ -1958,30 +1957,24 @@ class Profile {
       1000
     );
     
-    // --- 2. TOTAL TRANSACTIONS (Requires counting) ---
-    // We fetch transactions, count them, and then animate.
-    const container = document.getElementById('transactionList');
-    const totalTransactions = container?.children?.length || AppState.userProfile.totalTransactions;
-    
+    // --- 2. TOTAL TRANSACTIONS (Now reliable) ---
     utils.animateValue(
       document.getElementById("totalTransactions"),
       0,
-      totalTransactions,
+      transactionCount, // <-- USES THE RELIABLE COUNT PASSED AS AN ARGUMENT
       1000
     );
 
-    // --- 3. MONEY SAVED ---
-    // We rely on the value calculated by the Marketplace class on load/heart.
-    const moneySaved = AppState.userProfile.moneySaved;
+    // --- 3. MONEY SAVED (Now reliable) ---
     utils.animateValue(
       document.getElementById("moneySaved"),
       0,
-      moneySaved,
+      moneySaved, // <-- USES THE RELIABLE VALUE PASSED AS AN ARGUMENT
       1000,
-      (val) => `₹${utils.formatPrice(val).replace('₹', '')}` // formatPrice includes '₹'
+      (val) => `₹${utils.formatPrice(val).replace('₹', '')}`
     );
     
-    // Also update the points progress bar
+    // Update the points progress bar
     const pointsProgress = document.getElementById("pointsProgress");
     const progressText = document.getElementById("progressText");
     const requiredForBoost = 25;
@@ -1991,7 +1984,7 @@ class Profile {
         pointsProgress.style.width = `${progressPercent}%`;
         progressText.textContent = `${currentPoints} / ${requiredForBoost} Points (Next Boost)`;
     }
-  }
+}
 
   // ... (Keep loadMyListings, loadHeartedPosts, and loadTransactionHistory as they are) ...
   loadMyListings() {
@@ -2091,77 +2084,54 @@ class Profile {
 async loadTransactionHistory() {
     const container = document.getElementById('transactionList');
     if (!container) return;
-    container.innerHTML = '';
-
-    let totalMoneySaved = 0;
+    container.innerHTML = '<h4>Loading Transactions...</h4>';
 
     try {
         const me = window.firebaseAuth?.currentUser;
-        if (!me) {
-            container.innerHTML = `<div class="empty-state"><p>Please sign in to see transactions.</p></div>`;
-            return;
-        }
-        const { collection, query, where, orderBy, getDocs, doc, getDoc } = window.firebaseModules || {};
-        if (!collection || !query || !where || !orderBy || !getDocs || !doc || !getDoc) {
-            container.innerHTML = `<div class="empty-state"><p>Transactions unavailable.</p></div>`;
-            return;
-        }
+        if (!me) throw new Error("User not signed in.");
+
+        const { collection, query, where, orderBy, getDocs, doc, getDoc } = window.firebaseModules;
         const txRef = collection(window.firebaseDb, 'transactions');
 
-        // This query correctly fetches the user's transaction records.
-        const q = query(txRef,
-            where('userId', '==', me.uid),
-            orderBy('createdAt', 'desc')
-        );
+        const q = query(txRef, where('userId', '==', me.uid), orderBy('createdAt', 'desc'));
         const snapshot = await getDocs(q);
 
-        let allTransactions = [];
-        snapshot.forEach((d) => {
-            allTransactions.push({ id: d.id, ...d.data() });
-        });
+        const allTransactions = [];
+        snapshot.forEach((d) => allTransactions.push({ id: d.id, ...d.data() }));
 
-        // --- NEW AND IMPROVED CALCULATION LOGIC ---
-        // We now use a for...of loop to allow for async database calls inside.
+        let totalMoneySaved = 0;
+        // This loop now runs on all fetched transactions
         for (const transaction of allTransactions) {
-            // Only perform this check for purchase transactions that have an itemId.
             if (transaction.type === 'purchase' && transaction.itemId) {
                 try {
-                    // Fetch the item document directly from Firestore using its ID.
                     const itemRef = doc(window.firebaseDb, 'items', String(transaction.itemId));
                     const itemSnap = await getDoc(itemRef);
-
                     if (itemSnap.exists()) {
-                        const item = itemSnap.data();
-                        if (item && item.originalPrice && item.price) {
-                            const savings = item.originalPrice - item.price;
-                            if (savings > 0) {
-                                totalMoneySaved += savings;
-                            }
+                        const itemData = itemSnap.data();
+                        if (itemData.originalPrice && itemData.price) {
+                            const savings = itemData.originalPrice - itemData.price;
+                            if (savings > 0) totalMoneySaved += savings;
                         }
                     }
                 } catch (e) {
-                    // This can fail if the item was deleted, which is okay.
                     console.warn(`Could not fetch details for sold item ${transaction.itemId}:`, e);
                 }
             }
         }
-        
-        AppState.userProfile.moneySaved = totalMoneySaved;
 
         if (allTransactions.length === 0) {
             container.innerHTML = `<div class="empty-state"><p>No transactions yet.</p></div>`;
-            this.updateStats();
+            this.updateStats(0, 0); // <-- UPDATE STATS WITH 0s
             return;
         }
 
-        // The existing HTML rendering logic is correct and does not need to change.
+        // Render the list
         const html = allTransactions.map((t) => {
             const isPurchase = t.type === 'purchase';
             const when = t.createdAt?.toDate?.()?.toLocaleDateString?.() || 'Just now';
             const label = isPurchase ? 'Purchased' : 'Sold';
             const points = (t.pointsAwarded === 5) ? '+5' : '';
             const typeClass = isPurchase ? 'purchase' : 'sale';
-
             return `
               <div class="transaction-item transaction-${typeClass}">
                 <div class="transaction-info">
@@ -2172,15 +2142,15 @@ async loadTransactionHistory() {
               </div>
             `;
         }).join('');
-
         container.innerHTML = html;
-        // This call will now use the correctly calculated moneySaved value.
-        this.updateStats();
+
+        // Finally, update the stats with the correct, calculated data
+        this.updateStats(allTransactions.length, totalMoneySaved);
 
     } catch (e) {
         console.error('Failed to load transactions:', e);
         container.innerHTML = `<div class="empty-state"><p>Failed to load transactions.</p></div>`;
-        this.updateStats();
+        this.updateStats(0, 0); // <-- UPDATE STATS WITH 0s ON ERROR
     }
 }
 }
