@@ -2994,6 +2994,47 @@ input:checked + .toggle-label::before {
   color: var(--color-gray-200);
 }
 
+/* ===================================== */
+/* === FIX: TRANSACTION LIST SCROLL === */
+/* ===================================== */
+
+#transactionList {
+  /* Set a maximum height. The list will not grow taller than this. */
+  max-height: 350px; 
+  
+  /* Add a vertical scrollbar ONLY when the content inside is taller than the max-height. */
+  overflow-y: auto; 
+  
+  /* Add some padding to prevent content from touching the scrollbar. */
+  padding-right: 12px; 
+  
+  /* A subtle border to help define the scrollable area, matching your theme. */
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-base);
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+/* Optional: Custom scrollbar styling to match your app's neon aesthetic */
+#transactionList::-webkit-scrollbar {
+  width: 8px;
+}
+
+#transactionList::-webkit-scrollbar-track {
+  background: rgba(10, 10, 35, 0.5); /* Deep navy, semi-transparent */
+  border-radius: 10px;
+}
+
+#transactionList::-webkit-scrollbar-thumb {
+  background: var(--neon-cyan);
+  border-radius: 10px;
+  border: 2px solid rgba(10, 10, 35, 0.5);
+}
+
+#transactionList::-webkit-scrollbar-thumb:hover {
+  background: var(--neon-purple);
+}
+
 .transaction-item {
   display: flex;
   justify-content: space-between;
