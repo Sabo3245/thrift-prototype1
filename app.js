@@ -668,7 +668,7 @@ class Marketplace {
       </div>
       <div class="item-seller-info">
           <span class="seller-label">Sold by:</span>
-          <span class="seller-name">${item.sellerName || "Anonymous"}</span>
+          <span class="seller-name" data-seller-name="${item.sellerName || "Anonymous"}">${item.sellerName || "Anonymous"}</span>
       </div>
       <div class="item-actions">
           <button class="btn btn--primary btn--sm contact-btn" data-id="${

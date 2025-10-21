@@ -145,6 +145,29 @@ export const updateUserProfile = async (updates) => {
       updatedAt: new Date().toISOString()
     });
 
+    // Update seller name in all items posted by this user
+    if (updates.firstName || updates.lastName) {
+      // Get the updated full name
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      const userData = userDoc.data();
+      const fullName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim();
+      
+      // Find all items posted by this user
+      const itemsRef = collection(db, 'items');
+      const q = query(itemsRef, where('sellerId', '==', user.uid));
+      const querySnapshot = await getDocs(q);
+      
+      // Update each item with the new seller name
+      const batch = writeBatch(db);
+      querySnapshot.forEach((itemDoc) => {
+        batch.update(itemDoc.ref, { sellerName: fullName || user.email });
+      });
+      
+      // Commit the batch update
+      await batch.commit();
+      console.log(`Updated seller name in ${querySnapshot.size} items`);
+    }
+
     return { success: true };
   } catch (error) {
     console.error('Profile update error:', error);

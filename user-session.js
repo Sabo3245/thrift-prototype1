@@ -366,6 +366,9 @@ class UserSessionManager {
     // Update profile information
     this.updateProfileSection();
 
+        // Update item card seller names
+    this.updateItemCardSellerNames();
+
     // Update navigation to show user status
     this.updateNavigation();
 
@@ -378,6 +381,22 @@ class UserSessionManager {
     // Update connectivity status
     this.updateConnectivityStatus();
   }
+
+  updateItemCardSellerNames() {
+    // Find all item cards and update the seller name if it matches the current user
+    const itemCards = document.querySelectorAll('.item-card');
+    itemCards.forEach(card => {
+      const sellerId = card.dataset.sellerId;
+      if (sellerId === this.currentUser?.uid) {
+        const sellerNameElement = card.querySelector('.seller-name');
+        if (sellerNameElement) {
+          sellerNameElement.textContent = `${this.userData.firstName || ''} ${this.userData.lastName || 'Anonymous'}`;
+        }
+      }
+    });
+  }
+
+
 
   updateProfileSection() {
     console.log("👤 Updating profile section with user data...");
@@ -778,13 +797,90 @@ class UserSessionManager {
 
       // Update local data
       this.userData = { ...this.userData, ...updates };
+      this.cacheUserData(this.userData);
+      this.cacheUserData(this.userData);
+      await this.updateItemsWithNewName(this.userData.firstName, this.userData.lastName);
+      await this.updateItemsWithNewSellerName(this.userData.firstName, this.userData.lastName);
       this.updateUI();
+      this.refreshMarketplace();
 
       console.log("✅ User data updated");
     } catch (error) {
       console.error("❌ Failed to update user data:", error);
     }
   }
+
+  async updateItemsWithNewName(firstName, lastName) {
+    if (!this.currentUser) return;
+
+    try {
+      const itemsQuery = this.modules.query(
+        this.modules.collection(this.db, "items"),
+        this.modules.where("userId", "==", this.currentUser.uid)
+        );        
+        
+
+
+      const querySnapshot = await thi`s.modules.getDocs(itemsQuery);
+`
+      querySnapshot.forEach(async (doc) => {
+        await this.modules.updateDoc(doc.ref, {
+          postedByFirstName: firstName,
+          postedByLastName: lastName,
+          postedByDisplayName: `${firstName} ${lastName}`
+        });
+        console.log(`✅ Updated item ${doc.id} with new name`);
+      });
+
+    } catch (error) {
+
+
+    }
+  }
+
+    async updateItemsWithNewSellerName(firstName, lastName) {
+    if (!this.currentUser) return;
+
+    try {
+      const itemsQuery = this.modules.query(
+        this.modules.collection(this.db, "items"),
+        this.modules.where("sellerId", "==", this.currentUser.uid)
+      );
+      const querySnapshot = await this.modules.getDocs(itemsQuery);
+
+      querySnapshot.forEach(async (doc) => {
+        await this.modules.updateDoc(doc.ref, {
+          sellerName: `${firstName} ${lastName}`,
+        });
+        console.log(`✅ Updated item ${doc.id} with new sellerName`);
+      });
+
+    } catch (error) {
+      console.error("❌ Failed to update items with new sellerName:", error);
+    }
+  }
+
+
+
+  async refreshMarketplace() {
+    console.log("🔄 Refreshing marketplace section...");
+    const marketplaceSection = document.getElementById("marketplace");
+    if (marketplaceSection) {
+      // Trigger a re-render of the items in the marketplace
+      // This is a simplified approach; in a real app, you might want to
+      // use a more efficient method to update the items, like only updating
+      // the changed item cards.
+      const itemsGrid = document.getElementById("itemsGrid");
+      if (itemsGrid) {
+        itemsGrid.innerHTML = ""; // Clear existing items
+        // Call the function to load the items again
+        window.app.loadItems(); // Replace with the actual function call
+      }
+      console.error("❌ Failed to update items with new name:", error);
+    } 
+  }
+
+
 }
 
 // Create global instance
