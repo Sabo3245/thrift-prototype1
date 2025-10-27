@@ -13,7 +13,7 @@ const AppState = {
   },
   userProfile: {
     username: "student123",
-    email: "student@gmail.com",
+    email: "student@gmafil.com",
     phone: "Not verified",
     points: 15,
     totalTransactions: 3,
@@ -245,6 +245,9 @@ const utils = {
     return originalPrice - currentPrice;
   },
 
+
+
+
   animateValue(element, start, end, duration, formatter = (val) => val) {
     if (!element) return;
     const startTime = performance.now();
@@ -312,6 +315,22 @@ const utils = {
       return defaultValue;
     }
   },
+
+  getTimestamp(dateField) {
+    if (!dateField) return 0;
+    // Case 1: Firestore Timestamp object (from server)
+    if (typeof dateField.toDate === 'function') {
+      return dateField.toDate().getTime();
+    }
+    // Case 2: ISO String or Date object (local)
+    const date = new Date(dateField);
+    // Check if it's a valid date
+    if (!isNaN(date.getTime())) { 
+      return date.getTime();
+    }
+    return 0; // Fallback
+  },
+  // END OF NEW FUNCTION
 
   showNotification(message, type = "success") {
     const notification = document.createElement("div");
@@ -491,7 +510,7 @@ class Marketplace {
   async init() {
     await this.loadData();
     this.bindEvents();
-    this.renderItems();
+    this.filterItems();
   }
 
   async loadData() {
@@ -601,9 +620,33 @@ class Marketplace {
       );
     });
 
-    AppState.filteredItems.sort(
-      (a, b) => (b.isBoosted || 0) - (a.isBoosted || 0)
-    );
+      
+    AppState.filteredItems.sort((a, b) => {
+      const aIsBoosted = a.isBoosted || false;
+      const bIsBoosted = b.isBoosted || false;
+
+      // 1. One is boosted, one is not
+      if (aIsBoosted && !bIsBoosted) return -1; // a comes first
+      if (!aIsBoosted && bIsBoosted) return 1;  // b comes first
+
+      // 2. Both are boosted: sort by updatedAt descending
+      if (aIsBoosted && bIsBoosted) {
+        // We use 'updatedAt' because boosting updates this field
+        const aTime = utils.getTimestamp(a.updatedAt);
+        const bTime = utils.getTimestamp(b.updatedAt);
+        return bTime - aTime; // Higher (more recent) timestamp first
+      }
+
+      // 3. Neither is boosted: sort by createdAt descending
+      if (!aIsBoosted && !bIsBoosted) {
+        const aTime = utils.getTimestamp(a.createdAt);
+        const bTime = utils.getTimestamp(b.createdAt);
+        return bTime - aTime; // Higher (more recent) timestamp first
+      }
+      
+      return 0; // Should be unreachable
+    });
+    
     this.renderItems();
   }
 
@@ -760,7 +803,39 @@ class Marketplace {
   showBoostModal(itemId) {
     AppState.currentBoostItemId = itemId;
     const modal = document.getElementById("boostModal");
+    
+    // --- FIX START ---
+    
+    // 1. Get the user's real points from the user session
+    const userData = window.userSession?.getUserData?.() || {};
+    const currentPoints = userData.points || 0;
+    const requiredPoints = 25;
+
+    // 2. Get the modal elements
+    const pointsSpan = document.getElementById("currentPoints");
+    const confirmBtn = document.getElementById("confirmBoost");
+    
     if (modal) {
+      // 3. Update the text in the modal
+      if (pointsSpan) {
+        pointsSpan.textContent = currentPoints; 
+      }
+
+      // 4. Check if the user has enough points and update the button
+      if (confirmBtn) {
+        if (currentPoints >= requiredPoints) {
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = `Boost Post (${requiredPoints} points)`;
+        } else {
+          confirmBtn.disabled = true;
+          // Give the user helpful feedback on the button
+          confirmBtn.textContent = `Need ${requiredPoints - currentPoints} more points`;
+        }
+      }
+      
+      // --- FIX END ---
+      
+      // Now, show the modal with the correct info
       modal.classList.remove("hidden");
       document.body.classList.add('modal-open');
     }
@@ -771,13 +846,66 @@ class Marketplace {
     document.getElementById("removeModal")?.classList.remove("hidden");
   }
 
-  boostPost(itemId) {
-    // Logic can be implemented here, for now, it's a placeholder
-    const item = AppState.originalItems.find(i => i.id === itemId);
-    if(item) {
-        item.isBoosted = true;
-        this.filterItems(); // Re-render to show boosted status
-        utils.showNotification("Post boosted successfully! 🚀", "success");
+ async boostPost(itemId) {
+    const requiredPoints = 25;
+    const currentUser = window.userSession?.getCurrentUser?.() || window.firebaseAuth?.currentUser;
+    const userData = window.userSession?.getUserData?.() || {};
+    const currentPoints = userData.points || 0;
+
+    // 1. Check for user and points
+    if (!currentUser) {
+      utils.showNotification("Please sign in to boost posts", "error");
+      return;
+    }
+    
+    if (currentPoints < requiredPoints) {
+      utils.showNotification("Not enough points to boost", "error");
+      return;
+    }
+
+    // 2. Check for Firebase services
+    const { doc, updateDoc, increment, setDoc } = window.firebaseModules || {};
+    if (!window.firebaseDb || !doc || !updateDoc || !increment || !setDoc) {
+      utils.showNotification("Cannot connect to server. Please try again.", "error");
+      return;
+    }
+
+    // 3. Perform the server update
+    try {
+      const itemRef = doc(window.firebaseDb, 'items', String(itemId));
+      const userRef = doc(window.firebaseDb, 'users', currentUser.uid);
+      
+      // Update the item to be boosted
+      await updateDoc(itemRef, { 
+        isBoosted: true, 
+        updatedAt: new Date().toISOString() // Good practice to update this
+      });
+      
+      // Spend the user's points
+      // Using setDoc + merge + increment is the safest way
+      await setDoc(userRef, { 
+        points: increment(-requiredPoints) 
+      }, { merge: true });
+
+      // 4. Update local state
+      const item = AppState.originalItems.find(i => i.id === itemId);
+      if(item) {
+          item.isBoosted = true;
+      }
+
+
+      // 5. Update UI
+      this.filterItems(); // Re-render to show boosted status
+      utils.showNotification("Post boosted successfully! 🚀", "success");
+      
+      // Also update profile if it's the current section
+      if (AppState.currentSection === 'profile' && window.profile) {
+          window.profile.loadData();
+      }
+
+    } catch (error) {
+      console.error("Failed to boost post:", error);
+      utils.showNotification("Failed to boost post. Please try again.", "error");
     }
   }
 
@@ -2193,7 +2321,7 @@ class ItemDetail {
     }
   }
 
-  showById(itemId) {
+showById(itemId) {
     const item = AppState.originalItems.find((i) => String(i.id) === String(itemId));
     if (!item) {
       utils.showNotification('Item not found', 'error');
@@ -2202,15 +2330,20 @@ class ItemDetail {
 
     this.currentItemId = item.id;
 
+    // Get all UI elements
     const titleEl = document.getElementById('detailTitle');
     const nameEl = document.getElementById('detailName');
     const sellerEl = document.getElementById('detailSeller');
     const priceEl = document.getElementById('detailPrice');
     const statusEl = document.getElementById('detailStatus');
     const descEl = document.getElementById('detailDescription');
-    const imgEl = document.getElementById('detailImage');
+    
+    // --- Image Gallery Elements ---
+    const mainImgEl = document.getElementById('detailMainImage');
     const emojiEl = document.getElementById('detailEmoji');
-
+    const thumbnailsEl = document.getElementById('detailThumbnails');
+    
+    // --- Set Text Details ---
     if (titleEl) titleEl.textContent = 'Item Details';
     if (nameEl) nameEl.textContent = item.title || '';
     if (sellerEl) sellerEl.textContent = item.sellerName || 'Anonymous';
@@ -2218,17 +2351,53 @@ class ItemDetail {
     if (statusEl) statusEl.textContent = item.condition || '';
     if (descEl) descEl.textContent = item.description || '';
 
-    const primaryImage = Array.isArray(item.images) && item.images.length > 0 ? item.images[0] : null;
-    if (imgEl && emojiEl) {
-      if (primaryImage) {
-        imgEl.src = primaryImage;
-        imgEl.style.display = 'block';
-        emojiEl.style.display = 'none';
-      } else {
-        imgEl.style.display = 'none';
+    // --- Image Gallery Logic ---
+    const allImages = Array.isArray(item.images) && item.images.length > 0 ? item.images : [];
+    
+    if (thumbnailsEl) thumbnailsEl.innerHTML = ''; // Clear old thumbnails
+
+    if (allImages.length > 0) {
+      // We have images
+      if (mainImgEl) {
+        mainImgEl.src = allImages[0]; // Set main image to the first one
+        mainImgEl.style.display = 'block';
+      }
+      if (emojiEl) emojiEl.style.display = 'none';
+      if (thumbnailsEl) thumbnailsEl.style.display = 'flex';
+
+      // Create thumbnails
+      allImages.forEach((imgUrl, index) => {
+        const thumbImg = document.createElement('img');
+        thumbImg.src = imgUrl;
+        thumbImg.alt = `${item.title} thumbnail ${index + 1}`;
+        thumbImg.className = 'detail-thumbnail-img';
+        
+        if (index === 0) {
+          thumbImg.classList.add('active'); // Active state for the first one
+        }
+
+        // Add click listener to change main image
+        thumbImg.addEventListener('click', () => {
+          if (mainImgEl) mainImgEl.src = imgUrl;
+          
+          // Update active class
+          thumbnailsEl.querySelectorAll('.detail-thumbnail-img').forEach(img => {
+            img.classList.remove('active');
+          });
+          thumbImg.classList.add('active');
+        });
+        
+        if (thumbnailsEl) thumbnailsEl.appendChild(thumbImg);
+      });
+
+    } else {
+      // No images, show emoji
+      if (mainImgEl) mainImgEl.style.display = 'none';
+      if (emojiEl) {
         emojiEl.style.display = 'flex';
         emojiEl.textContent = item.icon || '📦';
       }
+      if (thumbnailsEl) thumbnailsEl.style.display = 'none';
     }
 
     switchToSection('itemDetail');

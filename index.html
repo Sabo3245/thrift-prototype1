@@ -11,7 +11,7 @@
     <div id="loadingScreen" class="loading-screen">
       <div class="loading-container">
         <div class="animated-logo">
-          <div class="logo-shape"></div>
+          <div class="logo-shape"> <img  src="logo.svg"/></div>
           <div class="logo-text">CampusKart</div>
         </div>
         <div class="particle-system">
@@ -19,7 +19,7 @@
           <div class="particle"></div>
           <div class="particle"></div>
           <div class="particle"></div>
-          <div class="particle"></div>
+          <div class="particle">fk</div>
         </div>
         <div class="progress-container">
           <div class="progress-bar">
@@ -188,8 +188,10 @@
             <div class="item-detail-grid">
               <div class="item-detail-left">
                 <div id="detailImageWrapper" class="item-detail-image-wrapper">
-                  <img id="detailImage" alt="Item photo" class="item-detail-image" />
+                  <img id="detailMainImage" alt="Item photo" class="item-detail-image" />
                   <div id="detailEmoji" class="item-detail-emoji">📦</div>
+                  <div id="detailThumbnails" class="item-detail-thumbnails">
+                    </div>
                 </div>
               </div>
               <div class="item-detail-right">
@@ -497,32 +499,7 @@
               </div>
             </div>
 
-            <div class="settings-card glass-card">
-              <h3 class="card-title">Settings</h3>
-              <div class="settings-list">
-                <div class="setting-item">
-                  <span class="setting-label">Push Notifications</span>
-                  <div class="toggle-switch">
-                    <input type="checkbox" id="pushNotifs" checked />
-                    <label for="pushNotifs" class="toggle-label"></label>
-                  </div>
-                </div>
-                <div class="setting-item">
-                  <span class="setting-label">Email Updates</span>
-                  <div class="toggle-switch">
-                    <input type="checkbox" id="emailUpdates" />
-                    <label for="emailUpdates" class="toggle-label"></label>
-                  </div>
-                </div>
-                <div class="setting-item">
-                  <span class="setting-label">Show Profile to Others</span>
-                  <div class="toggle-switch">
-                    <input type="checkbox" id="publicProfile" checked />
-                    <label for="publicProfile" class="toggle-label"></label>
-                  </div>
-                </div>
-              </div>
-            </div>
+
           </div>
 
           <div class="profile-sections">
@@ -776,6 +753,32 @@
       #itemDetail .detail-value { color: var(--color-gray-200); font-size: 16px; }
       #itemDetail .detail-price { font-size: 24px; font-weight: 800; color: var(--neon-green); }
       #itemDetail .detail-actions { margin-top: 12px; display: flex; gap: 8px; }
+
+      #itemDetail .item-detail-thumbnails {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap; /* Allows thumbnails to wrap */
+          }
+          #itemDetail .detail-thumbnail-img {
+            width: 64px;
+            height: 64px;
+            object-fit: cover;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid var(--glass-border);
+            opacity: 0.6;
+            transition: opacity 0.2s, border-color 0.2s;
+          }
+          #itemDetail .detail-thumbnail-img:hover {
+            opacity: 1;
+            border-color: var(--color-gray-300);
+          }
+          #itemDetail .detail-thumbnail-img.active {
+            opacity: 1;
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 8px var(--neon-cyan);
+          }
     </style>
 
     <script src="user-session.js"></script>
