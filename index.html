@@ -176,6 +176,52 @@
         </div>
       </section>
 
+      <!-- Item Detail Section -->
+      <section id="itemDetail" class="section" style="display:none;">
+        <div class="container item-detail-container">
+          <div class="section-header detail-header">
+            <button class="btn btn--outline" id="backToMarketplace">← Back</button>
+            <h1 class="page-title" id="detailTitle">Item Details</h1>
+          </div>
+
+          <div class="glass-card item-detail-card">
+            <div class="item-detail-grid">
+              <div class="item-detail-left">
+                <div id="detailImageWrapper" class="item-detail-image-wrapper">
+                  <img id="detailImage" alt="Item photo" class="item-detail-image" />
+                  <div id="detailEmoji" class="item-detail-emoji">📦</div>
+                </div>
+              </div>
+              <div class="item-detail-right">
+                <div class="detail-field">
+                  <label class="detail-label">Name</label>
+                  <div id="detailName" class="detail-value"></div>
+                </div>
+                <div class="detail-field">
+                  <label class="detail-label">Seller</label>
+                  <div id="detailSeller" class="detail-value"></div>
+                </div>
+                <div class="detail-field">
+                  <label class="detail-label">Price</label>
+                  <div id="detailPrice" class="detail-price"></div>
+                </div>
+                <div class="detail-field">
+                  <label class="detail-label">Condition</label>
+                  <div id="detailStatus" class="detail-value"></div>
+                </div>
+                <div class="detail-field">
+                  <label class="detail-label">Description</label>
+                  <div id="detailDescription" class="detail-value"></div>
+                </div>
+                <div class="detail-actions">
+                  <button class="btn btn--primary" id="detailContactBtn">Contact Seller</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section id="post" class="section">
         <div class="container">
           <div class="section-header">
@@ -710,6 +756,27 @@
         <span class="fab-icon">➕</span>
         <div class="fab-ripple"></div>
       </button>
+
+    <style id="item-detail-styles">
+      /* Item Detail Section Styles */
+      #itemDetail { min-height: 100vh; padding: var(--space-16) 0; }
+      #itemDetail .item-detail-container { max-width: 1280px; min-height: calc(100vh - 140px); }
+      #itemDetail .item-detail-card { padding: 0; background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow); }
+      #itemDetail .detail-header { display: flex; align-items: center; gap: 12px; }
+      #itemDetail .page-title { background: linear-gradient(45deg, var(--neon-purple), var(--neon-cyan)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      #itemDetail .item-detail-grid { display: grid; grid-template-columns: 1fr 420px; gap: 24px; padding: 20px; align-items: start; justify-content: end; }
+      @media (max-width: 900px) { 
+        #itemDetail .item-detail-grid { grid-template-columns: 1fr; justify-content: initial; }
+        #itemDetail .item-detail-right { position: static; max-width: 100%; }
+      }
+      #itemDetail .item-detail-image { width: 100%; height: min(60vh, 560px); min-height: 280px; object-fit: cover; border-radius: 14px; box-shadow: 0 20px 40px rgba(0,0,0,.35); display: none; }
+      #itemDetail .item-detail-emoji { font-size: 120px; display: flex; align-items: center; justify-content: center; height: min(50vh, 420px); border-radius: 14px; background: rgba(255,255,255,0.05); }
+      #itemDetail .item-detail-right { display: grid; gap: 12px; align-content: start; position: sticky; top: 100px; justify-self: end; width: 100%; max-width: 420px; }
+      #itemDetail .detail-label { display: block; opacity: 0.85; font-weight: 600; color: var(--color-gray-300); margin-bottom: 4px; }
+      #itemDetail .detail-value { color: var(--color-gray-200); font-size: 16px; }
+      #itemDetail .detail-price { font-size: 24px; font-weight: 800; color: var(--neon-green); }
+      #itemDetail .detail-actions { margin-top: 12px; display: flex; gap: 8px; }
+    </style>
 
     <script src="user-session.js"></script>
     <script src="app.js"></script>

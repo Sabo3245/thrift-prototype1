@@ -689,11 +689,18 @@ class Marketplace {
 
   handleCardClick(e, itemId) {
     const target = e.target;
-    if (target.closest(".contact-btn")) this.contactSeller(itemId);
-    else if (target.closest(".heart-btn"))
+    if (target.closest(".contact-btn")) {
+      this.contactSeller(itemId);
+    } else if (target.closest(".heart-btn")) {
       this.toggleHeart(itemId, target.closest(".heart-btn"));
-    else if (target.closest(".boost-btn")) this.showBoostModal(itemId);
-    else if (target.closest(".remove-btn")) this.showRemoveModal(itemId);
+    } else if (target.closest(".boost-btn")) {
+      this.showBoostModal(itemId);
+    } else if (target.closest(".remove-btn")) {
+      this.showRemoveModal(itemId);
+    } else {
+      // Open detail section for general card clicks
+      window.itemDetail?.showById?.(itemId);
+    }
   }
 
   async contactSeller(itemId) {
@@ -2161,6 +2168,73 @@ class Help {
   }
 }
 
+class ItemDetail {
+  constructor() {
+    this.currentItemId = null;
+  }
+
+  init() {
+    const backBtn = document.getElementById('backToMarketplace');
+    if (backBtn) {
+      backBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        switchToSection('marketplace');
+      });
+    }
+
+    const contactBtn = document.getElementById('detailContactBtn');
+    if (contactBtn) {
+      contactBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (this.currentItemId != null) {
+          window.marketplace?.contactSeller?.(this.currentItemId);
+        }
+      });
+    }
+  }
+
+  showById(itemId) {
+    const item = AppState.originalItems.find((i) => String(i.id) === String(itemId));
+    if (!item) {
+      utils.showNotification('Item not found', 'error');
+      return;
+    }
+
+    this.currentItemId = item.id;
+
+    const titleEl = document.getElementById('detailTitle');
+    const nameEl = document.getElementById('detailName');
+    const sellerEl = document.getElementById('detailSeller');
+    const priceEl = document.getElementById('detailPrice');
+    const statusEl = document.getElementById('detailStatus');
+    const descEl = document.getElementById('detailDescription');
+    const imgEl = document.getElementById('detailImage');
+    const emojiEl = document.getElementById('detailEmoji');
+
+    if (titleEl) titleEl.textContent = 'Item Details';
+    if (nameEl) nameEl.textContent = item.title || '';
+    if (sellerEl) sellerEl.textContent = item.sellerName || 'Anonymous';
+    if (priceEl) priceEl.textContent = utils.formatPrice(item.price || 0);
+    if (statusEl) statusEl.textContent = item.condition || '';
+    if (descEl) descEl.textContent = item.description || '';
+
+    const primaryImage = Array.isArray(item.images) && item.images.length > 0 ? item.images[0] : null;
+    if (imgEl && emojiEl) {
+      if (primaryImage) {
+        imgEl.src = primaryImage;
+        imgEl.style.display = 'block';
+        emojiEl.style.display = 'none';
+      } else {
+        imgEl.style.display = 'none';
+        emojiEl.style.display = 'flex';
+        emojiEl.textContent = item.icon || '📦';
+      }
+    }
+
+    switchToSection('itemDetail');
+  }
+}
+
 function initializeGlobalEventListeners() {
   document.body.addEventListener("click", async (e) => {
     const target = e.target;
@@ -2247,6 +2321,7 @@ class App {
     this.chat = new Chat();
     this.profile = new Profile();
     this.help = new Help();
+    this.itemDetail = new ItemDetail();
   }
 
   // --- APP INITIALIZATION (FIXED) ---
@@ -2259,6 +2334,7 @@ class App {
     window.chat = this.chat;
     window.profile = this.profile;
     window.help = this.help;
+    window.itemDetail = this.itemDetail;
 
     this.navigation.init();
 
@@ -2269,6 +2345,7 @@ class App {
     this.chat.init();
     this.profile.init(); // Now this runs AFTER items are loaded
     this.help.init();
+    this.itemDetail.init();
 
     initializeGlobalEventListeners();
 
