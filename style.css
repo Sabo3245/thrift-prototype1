@@ -14,7 +14,7 @@
   --color-slate-900: rgba(19, 52, 59, 1);
   --color-teal-300: rgba(50, 184, 198, 1);
   --color-teal-400: rgba(45, 166, 178, 1);
-  --color-teal-500: rgba(33, 128, 141, 1);
+  --color-teal-500: rgba(33, 128, 141, 1);f
   --color-teal-600: rgba(29, 116, 128, 1);
   --color-teal-700: rgba(26, 104, 115, 1);
   --color-teal-800: rgba(41, 150, 161, 1);
@@ -2760,7 +2760,7 @@ body {
 /* Profile Enhancements */
 .profile-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 0fr;
   gap: var(--space-32);
   margin-bottom: var(--space-32);
 }
