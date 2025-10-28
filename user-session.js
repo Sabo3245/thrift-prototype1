@@ -559,9 +559,7 @@ class UserSessionManager {
       <div class="prompt-card">
         <h4>👋 Welcome to CampusKart!</h4>
         <p>Complete your profile to start buying and selling.</p>
-        <button class="btn btn--primary btn--sm" onclick="userSession.switchToProfile()">
-          Complete Profile
-        </button>
+
       </div>
     `;
 

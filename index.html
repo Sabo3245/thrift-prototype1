@@ -401,7 +401,12 @@
                 </li>
               </ul>
             </div>
-
+            <div class="form-group form-group-checkbox">
+              <input type="checkbox" id="disclaimerCheckbox" class="styled-checkbox" />
+              <label for="disclaimerCheckbox" class="checkbox-label">
+                I have read and agree to the safety tips & disclaimer.
+              </label>
+            </div>
             <button
               type="submit"
               class="btn btn--primary btn--full-width animated-btn"
@@ -654,16 +659,17 @@
           <div class="modal-actions">
             <button class="btn btn--outline" id="cancelRemove">Cancel</button>
             <button class="btn btn--primary" id="confirmRemove">Remove</button>
-          </div>
+    </div>
         </div>
       </div>
+
       <div class="modal hidden" id="boostModal">
         <div class="modal-overlay"></div>
         <div class="modal-content glass-card">
           <div class="modal-header">
             <div class="boost-icon">🚀</div>
-            <h3 class="modal-title">Boost Your Post</h3>
-            <p class="modal-message">
+            <h3 class="modal-title" id="boostModalTitle">Boost Your Post</h3>
+            <p class="modal-message" id="boostModalMessage">
               Use 25 points to boost this post and pin it to the top for 7 days!
             </p>
             <p class="points-remaining">
@@ -678,7 +684,7 @@
           </div>
         </div>
       </div>
-      <div class="modal hidden" id="editNameModal">
+  <div class="modal hidden" id="editNameModal">
         <div class="modal-overlay"></div>
         <div class="modal-content glass-card">
           <div class="modal-header">
@@ -735,6 +741,38 @@
         <span class="fab-icon">➕</span>
         <div class="fab-ripple"></div>
       </button>
+
+      <style>
+  #chat .chat-container {
+    /* 1. Give the main chat container a fixed height.
+      You can adjust '75vh' (75% of the viewport height)
+      to whatever fits your design.
+    */
+    height: 75vh;
+    /* This assumes your .chat-container is a grid or flex.
+      If it's not, add 'display: grid;' or 'display: flex;'.
+    */
+  }
+
+  .chat-sidebar {
+    /* 2. Make the sidebar a flex column */
+    display: flex;
+    flex-direction: column;
+    /* 3. This is important: it ensures the sidebar
+      doesn't grow beyond its container's height.
+    */
+    overflow: hidden;
+  }
+
+  .conversation-list {
+    /* 4. This is the magic:
+      - flex: 1 makes it take all available vertical space.
+      - overflow-y: auto adds a scrollbar *only* when needed.
+    */
+    flex: 1;
+    overflow-y: auto;
+  }
+</style>
 
     <style id="item-detail-styles">
       /* Item Detail Section Styles */

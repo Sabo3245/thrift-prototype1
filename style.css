@@ -4406,3 +4406,103 @@ body.modal-open {
   gap: 8px;
   flex-shrink: 0; /* Prevents this column from shrinking */
 }
+
+/* --- Minimalist Scrollbar --- */
+
+/* For WebKit browsers (Chrome, Safari, Edge) */
+.conversation-list::-webkit-scrollbar {
+  width: 6px; /* Sets the width of the scrollbar */
+}
+
+.conversation-list::-webkit-scrollbar-track {
+  background: transparent; /* Makes the "track" (the background) invisible */
+}
+
+.conversation-list::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.3); /* Semi-transparent white thumb */
+  border-radius: 10px; /* Fully rounded corners */
+}
+
+.conversation-list::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.5); /* Slightly more opaque on hover */
+}
+
+/* For Firefox */
+.conversation-list {
+  scrollbar-width: thin; /* Makes the scrollbar thin */
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent; /* Sets thumb and track colors */
+}
+
+/* --- Styled Checkbox for Disclaimer --- */
+
+.form-group-checkbox {
+  display: flex;
+  align-items: center;
+  margin: 20px 0; /* Adds space around it */
+}
+
+/* Hide the default checkbox */
+.styled-checkbox {
+  opacity: 0;
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+.checkbox-label {
+  position: relative;
+  padding-left: 32px; /* Space for the custom box */
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--color-gray-300);
+  user-select: none; /* Prevents text selection on click */
+}
+
+/* Create the custom box */
+.checkbox-label:before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-border);
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+/* Create the checkmark (hidden by default) */
+.checkbox-label:after {
+  content: '✓';
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  /* Adjust top position slightly for perfect centering */
+  transform: translateY(-50%) scale(0);
+  font-size: 16px;
+  font-weight: bold;
+  color: var(--neon-cyan);
+  transition: all 0.2s ease;
+}
+
+/* When checked: change box background */
+.styled-checkbox:checked + .checkbox-label:before {
+  background: rgba(0, 229, 255, 0.15); /* Neon cyan bg */
+  border-color: var(--neon-cyan);
+}
+
+/* When checked: show checkmark */
+.styled-checkbox:checked + .checkbox-label:after {
+  transform: translateY(-50%) scale(1); /* Scale up to show */
+}
+
+.compact-item-card {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.compact-item-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}

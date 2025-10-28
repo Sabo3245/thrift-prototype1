@@ -745,6 +745,11 @@ class Marketplace {
       this.showRemoveModal(itemId);
     } else {
       // Open detail section for general card clicks
+      const newUrl = `${window.location.pathname}?item=${itemId}`;
+      // Update the browser history and URL bar
+      window.history.pushState({ itemId: itemId }, `Item ${itemId}`, newUrl);
+      
+      // Now, open the detail section
       window.itemDetail?.showById?.(itemId);
     }
   }
@@ -805,43 +810,60 @@ class Marketplace {
 
   showBoostModal(itemId) {
     AppState.currentBoostItemId = itemId;
+
+    // --- 1. Get all modal elements ---
     const modal = document.getElementById("boostModal");
-    
-    // --- FIX START ---
-    
-    // 1. Get the user's real points from the user session
+    if (!modal) return; // Safety check
+
+    const titleEl = document.getElementById("boostModalTitle");
+    const messageEl = document.getElementById("boostModalMessage");
+    const pointsSpan = document.getElementById("currentPoints");
+    const confirmBtn = document.getElementById("confirmBoost");
+
+    // --- 2. Get item and user data ---
+    const item = AppState.originalItems.find(i => String(i.id) === String(itemId));
+    if (!item) {
+      utils.showNotification("Could not find that item.", "error");
+      return;
+    }
+
     const userData = window.userSession?.getUserData?.() || {};
     const currentPoints = userData.points || 0;
     const requiredPoints = 25;
+    let buttonText = "";
 
-    // 2. Get the modal elements
-    const pointsSpan = document.getElementById("currentPoints");
-    const confirmBtn = document.getElementById("confirmBoost");
-    
-    if (modal) {
-      // 3. Update the text in the modal
-      if (pointsSpan) {
-        pointsSpan.textContent = currentPoints; 
-      }
+    // --- 3. Set modal text based on item's boosted status ---
+    if (item.isBoosted) {
+      // RE-BOOST LOGIC
+      if (titleEl) titleEl.textContent = "Re-Boost Your Post";
+      if (messageEl) messageEl.textContent = "This item is already boosted. Boosting it again will list it at the top of the marketplace again. Do you wish to continue?";
+      buttonText = `Re-Boost (${requiredPoints} points)`;
 
-      // 4. Check if the user has enough points and update the button
-      if (confirmBtn) {
-        if (currentPoints >= requiredPoints) {
-          confirmBtn.disabled = false;
-          confirmBtn.textContent = `Boost Post (${requiredPoints} points)`;
-        } else {
-          confirmBtn.disabled = true;
-          // Give the user helpful feedback on the button
-          confirmBtn.textContent = `Need ${requiredPoints - currentPoints} more points`;
-        }
-      }
-      
-      // --- FIX END ---
-      
-      // Now, show the modal with the correct info
-      modal.classList.remove("hidden");
-      document.body.classList.add('modal-open');
+    } else {
+      // FIRST-TIME BOOST LOGIC
+      if (titleEl) titleEl.textContent = "Boost Your Post";
+      if (messageEl) messageEl.textContent = "Use 25 points to boost this post and pin it to the top for 7 days!";
+      buttonText = `Boost Post (${requiredPoints} points)`;
     }
+
+    // --- 4. Handle points and button state (common logic) ---
+    if (pointsSpan) {
+      pointsSpan.textContent = currentPoints;
+    }
+
+    if (confirmBtn) {
+      if (currentPoints >= requiredPoints) {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = buttonText; // Set the correct text
+      } else {
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = `Need ${requiredPoints - currentPoints} more points`;
+      }
+    }
+    
+    // --- 5. Show the modal ---
+    modal.classList.remove("hidden");
+    document.body.classList.add('modal-open');
   }
 
   showRemoveModal(itemId) {
@@ -1036,6 +1058,18 @@ class PostItem {
           this.removePreview(index);
         }
       });
+
+    const disclaimerCheckbox = document.getElementById("disclaimerCheckbox");
+    // Select the button inside the postForm
+    const submitBtn = document.querySelector("#postForm button[type='submit']");
+
+    if (disclaimerCheckbox && submitBtn) {
+      // Add listener to the checkbox
+      disclaimerCheckbox.addEventListener("change", () => {
+        // Enable the button ONLY if the checkbox is checked
+        submitBtn.disabled = !disclaimerCheckbox.checked;
+      });
+    }
   }
 
   async uploadImagesToStorage(uid) {
@@ -1416,7 +1450,7 @@ class Chat {
       }
     }
     
-    if (chatUserStatus) chatUserStatus.textContent = 'Online';
+    if (chatUserStatus) chatUserStatus.innerHTML = '<div style = " justify-content : left"class="status-indicator active"><span class="status-dot"></span><span class="status-text">Online</span></div>';
     if (chatInputContainer) chatInputContainer.classList.remove('hidden');
 
     // Subscribe to active conversation doc and messages; update UI for sold state
@@ -2191,6 +2225,18 @@ updateStats(transactionCount, moneySaved) {
             <h4 class="compact-item-title">${item.title}</h4>
             <p class="compact-item-price">${utils.formatPrice(item.price)}</p>
         `;
+        
+       
+        listingCard.addEventListener('click', () => {
+          // Update URL for sharing
+          const newUrl = `${window.location.pathname}?item=${item.id}`;
+          window.history.pushState({ itemId: item.id }, `Item ${item.id}`, newUrl);
+          
+          // Show the item detail page
+          window.itemDetail?.showById?.(item.id);
+        });
+        
+
         myListingsContainer.appendChild(listingCard);
       });
     }
@@ -2232,6 +2278,15 @@ updateStats(transactionCount, moneySaved) {
         <h4 class="compact-item-title">${item.title}</h4>
         <p class="compact-item-price">${utils.formatPrice(item.price)}</p>
       `;
+
+      heartedCard.addEventListener('click', () => {
+        // Update URL for sharing
+        const newUrl = `${window.location.pathname}?item=${item.id}`;
+        window.history.pushState({ itemId: item.id }, `Item ${item.id}`, newUrl);
+        
+        // Show the item detail page
+        window.itemDetail?.showById?.(item.id);
+      });
       heartedPostsContainer.appendChild(heartedCard);
     });
   }
@@ -2328,6 +2383,7 @@ class ItemDetail {
     if (backBtn) {
       backBtn.addEventListener('click', (e) => {
         e.preventDefault();
+        window.history.pushState({ section: 'marketplace' }, 'Marketplace', window.location.pathname);
         switchToSection('marketplace');
       });
     }
@@ -2540,11 +2596,55 @@ class App {
 
     initializeGlobalEventListeners();
 
+    this.handleUrlRouting(); // Check URL on initial load
+    this.setupPopstateListener(); // Handle browser back/forward buttons
+
     document.querySelectorAll(".btn").forEach((btn) => {
       btn.addEventListener("click", (e) => utils.createRipple(e, btn));
     });
 
     console.log("App initialized successfully");
+  }
+
+  // --- START: ADD THIS NEW METHOD ---
+  // This method checks the URL when the page first loads
+  handleUrlRouting() {
+    const params = new URLSearchParams(window.location.search);
+    const itemId = params.get('item');
+    
+    if (itemId) {
+      console.log(`URL routing: Found item ID ${itemId}`);
+      // App.init() already 'await'ed the item load, so our data is ready
+      const itemExists = AppState.originalItems.some(i => String(i.id) === String(itemId));
+
+      if (itemExists) {
+        // This function will automatically switch to the itemDetail section
+        window.itemDetail.showById(itemId);
+      } else {
+        console.warn(`Item ${itemId} not found. Clearing URL.`);
+        // Clear the bad item ID from the URL
+        window.history.replaceState({ section: 'marketplace' }, 'Marketplace', window.location.pathname);
+        switchToSection('marketplace');
+      }
+    } else {
+      // No item ID, just show the marketplace (which is the default)
+      switchToSection('marketplace');
+    }
+  }
+
+  // --- START: ADD THIS NEW METHOD ---
+  // This handles the browser's back/forward buttons
+  setupPopstateListener() {
+    window.onpopstate = (event) => {
+      const state = event.state;
+      if (state && state.itemId) {
+        // User clicked 'forward' to an item page
+        window.itemDetail.showById(state.itemId);
+      } else {
+        // User clicked 'back' to the marketplace
+        switchToSection('marketplace');
+      }
+    };
   }
 }
 
