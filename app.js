@@ -605,11 +605,14 @@ class Marketplace {
 
   filterItems() {
     AppState.filteredItems = AppState.originalItems.filter((item) => {
+      // Only show active (approved) items in the marketplace
+      const matchesActive = item.isActive !== false;
       const { searchQuery, filters } = AppState;
       const matchesSearch =
         !searchQuery ||
         item.title.toLowerCase().includes(searchQuery) ||
         item.description.toLowerCase().includes(searchQuery);
+      if (!matchesActive) return false;
       const matchesCategory =
         !filters.category || item.category === filters.category;
       const matchesCondition =
@@ -1125,22 +1128,41 @@ class PostItem {
       }
 
       if (window.firebaseDb && window.firebaseModules) {
-        const { collection, addDoc, serverTimestamp } = window.firebaseModules;
+        const { collection, addDoc, serverTimestamp, doc, getDoc } = window.firebaseModules;
+
+        // Prevent banned users from posting
+        const userRef = doc(window.firebaseDb, 'users', currentUser.uid);
+        try {
+          const userSnapshot = await getDoc(userRef);
+          const userData = userSnapshot?.data?.() || {};
+          if (userData.banned) {
+            throw new Error('Your account has been banned from posting due to policy violations. Contact support if you believe this is an error.');
+          }
+        } catch (err) {
+          // Re-throw so it is handled by outer catch
+          throw err;
+        }
+
         const itemsRef = collection(window.firebaseDb, "items");
         const docToSave = {
           ...newItem,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
           isBoosted: false,
+          // Start as inactive until automated moderation approves the item
+          isActive: false,
+          approved: false,
+          flagged: false,
           hearts: 0,
           heartedBy: [],
         };
         const docRef = await addDoc(itemsRef, docToSave);
-
         AppState.originalItems.unshift({ ...docToSave, id: docRef.id });
       }
 
-      utils.showNotification("Item posted successfully! ✨", "success");
+      // The item is submitted for automated review. It will appear in the marketplace
+      // only after the moderation function marks it approved/isActive.
+      utils.showNotification("Item submitted for review — it will appear after moderation.", "info");
       form.reset();
       this.selectedFiles = []; // Clear selected files
       this.renderPreviews(); // Clear previews from UI

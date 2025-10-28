@@ -1,5 +1,9 @@
 {
   "projects": {
-    "default": "thrift-6bd6d"
-  }
+    "default": "thrift-6bd6d",
+    "moderation": "thrift-6bd6d",
+    "mod": "thrift-6bd6d"
+  },
+  "targets": {},
+  "etags": {}
 }
