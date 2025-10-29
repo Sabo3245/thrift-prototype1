@@ -526,16 +526,16 @@ class Marketplace {
         const itemsRef = collection(window.firebaseDb, "items");
         let items = [];
 
-        // 1) Try status == 'available' ordered by createdAt desc (may need index)
+        // 1) Try status == 'available' AND isActive == true ordered by createdAt desc
         try {
-          const q = query(itemsRef, where("status", "==", "available"), orderBy("createdAt", "desc"));
+          const q = query(itemsRef, where("status", "==", "available"), where("isActive", "==", true), orderBy("createdAt", "desc"));
           const snapshot = await getDocs(q);
           snapshot.forEach((doc) => items.push({ id: doc.id, ...doc.data() }));
         } catch (e) {
           const msg = (e?.message || "").toLowerCase();
           if (e?.code === "failed-precondition" || msg.includes("index")) {
             console.warn("Index not ready; retrying items fetch without orderBy");
-            const q2 = query(itemsRef, where("status", "==", "available"));
+            const q2 = query(itemsRef, where("status", "==", "available"), where("isActive", "==", true));
             const snapshot2 = await getDocs(q2);
             snapshot2.forEach((doc) => items.push({ id: doc.id, ...doc.data() }));
           } else {
@@ -1183,20 +1183,26 @@ class PostItem {
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
           isBoosted: false,
-          // Start as inactive until automated moderation approves the item
-          isActive: false,
+          // Start as active; Cloud Function will set to false if profanity detected
+          isActive: true,
           approved: false,
           flagged: false,
           hearts: 0,
           heartedBy: [],
         };
         const docRef = await addDoc(itemsRef, docToSave);
-        AppState.originalItems.unshift({ ...docToSave, id: docRef.id });
+        // Add to local state with actual timestamp for immediate display
+        const nowTimestamp = new Date();
+        AppState.originalItems.unshift({ 
+          ...docToSave, 
+          id: docRef.id,
+          createdAt: nowTimestamp,
+          updatedAt: nowTimestamp
+        });
       }
 
-      // The item is submitted for automated review. It will appear in the marketplace
-      // only after the moderation function marks it approved/isActive.
-      utils.showNotification("Item submitted for review — it will appear after moderation.", "info");
+      // The item is posted live immediately; Cloud Function will remove it if profanity is detected
+      utils.showNotification("Item posted successfully!", "success");
       form.reset();
       this.selectedFiles = []; // Clear selected files
       this.renderPreviews(); // Clear previews from UI

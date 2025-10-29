@@ -10,12 +10,15 @@
       .admin-container { max-width:1100px;margin:36px auto;padding:20px; color: #ffffff;}
       .item-row{display:flex;gap:12px;align-items:flex-start;padding:16px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);border-radius:8px;margin-bottom:12px}
       .item-info{flex:1}
-      .item-image{width:120px;height:120px;object-fit:cover;border-radius:6px}
+      .item-thumb{width:120px;height:120px;object-fit:cover;border-radius:6px}
+      .item-meta{flex:1;color: #cbd5e1;}
+      .item-meta strong{color: #ffffff;display:block;margin-bottom:4px;}
+      .item-meta div{margin:4px 0;font-size:14px;}
       .item-title{font-size:18px;font-weight:500;margin:0 0 4px;color: #ffffff;}
-      .item-meta{color: #8892b0;font-size:14px;margin:0}
       .item-description{margin:8px 0;font-size:15px;color: #cbd5e1;}
       .item-price{font-weight:500;color: #64ffda;}
       h1 { color: #ffffff; margin-bottom: 24px; font-size: 32px; }
+      h3 { color: #ffffff; margin: 32px 0 16px; font-size: 20px; }
       .sign-out-btn { 
         background: #ff4757;
         color: white;
@@ -36,19 +39,90 @@
         border-radius: 8px;
         margin-top: 20px;
       }
-      .action-buttons{display:flex;gap:8px}
-      .review-button{padding:6px 12px;border-radius:6px;border:none;cursor:pointer;font-size:14px}
-      .approve{background:#4CAF50;color:white}
-      .reject{background:#F44336;color:white}
+      .admin-actions{display:flex;gap:8px;flex-direction:column;min-width:150px;}
+      .btn{padding:8px 16px;border-radius:6px;border:none;cursor:pointer;font-size:14px;transition:all 0.2s;}
+      .btn--primary{background:#4CAF50;color:white;}
+      .btn--primary:hover{background:#45a049;}
+      .btn--danger{background:#F44336;color:white;}
+      .btn--danger:hover{background:#da190b;}
+      .hidden{display:none;}
+      .user-lookup-section{margin-top:32px;padding:20px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;}
+      .lookup-controls{display:flex;gap:12px;margin-bottom:16px;}
+      #lookupUid{flex:1;padding:8px 12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:4px;color:#ffffff;font-size:14px;}
+      #lookupBtn{padding:8px 16px;background:#00e5ff;color:#0a192f;border:none;border-radius:4px;cursor:pointer;font-weight:500;}
+      #lookupBtn:hover{background:#00b8d4;}
+      #userPanel{margin-top:16px;padding:16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:6px;}
+      #userPanel input{padding:6px 10px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:4px;color:#ffffff;margin-left:8px;}
+      #userPanel label{color:#cbd5e1;font-size:14px;}
+      .empty-state{text-align:center;padding:40px;color:#8892b0;}
+      .admin-tabs{display:flex;gap:8px;margin:20px 0;border-bottom:2px solid rgba(255,255,255,0.1);}
+      .admin-tab{background:none;border:none;color:#8892b0;padding:12px 20px;cursor:pointer;font-size:15px;border-bottom:3px solid transparent;transition:all 0.2s;}
+      .admin-tab:hover{color:#ffffff;background:rgba(255,255,255,0.05);}
+      .admin-tab.active{color:#00e5ff;border-bottom-color:#00e5ff;}
+      .tab-content{display:none;}
+      .tab-content.active{display:block;}
+      .tab-content h2{color:#ffffff;font-size:20px;margin:24px 0 16px;}
+      .user-card{padding:16px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;margin-bottom:12px;}
+      .user-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+      .user-name{font-size:16px;font-weight:500;color:#ffffff;}
+      .user-email{color:#8892b0;font-size:14px;}
+      .user-badges{display:flex;gap:6px;margin-top:8px;}
+      .badge{padding:4px 8px;border-radius:4px;font-size:12px;font-weight:500;}
+      .badge-admin{background:#8b5fff;color:#ffffff;}
+      .badge-banned{background:#ff4757;color:#ffffff;}
+      .badge-strikes{background:#ffa502;color:#ffffff;}
+      .user-actions{display:flex;gap:8px;margin-top:12px;}
+      .user-stats{display:flex;gap:24px;padding:16px;background:rgba(0,229,255,0.1);border:1px solid rgba(0,229,255,0.2);border-radius:8px;margin-bottom:20px;color:#cbd5e1;}
+      .user-stats strong{color:#00e5ff;}
+      .marketplace-item{display:flex;gap:12px;padding:16px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;margin-bottom:12px;}
+      .marketplace-item-image{width:100px;height:100px;object-fit:cover;border-radius:6px;}
+      .marketplace-item-info{flex:1;}
+      .marketplace-item-title{font-size:16px;font-weight:500;color:#ffffff;margin-bottom:4px;}
+      .marketplace-item-price{color:#00ff88;font-weight:500;font-size:14px;}
+      .marketplace-item-seller{color:#8892b0;font-size:13px;margin-top:4px;}
     </style>
   </head>
   <body>
     <div class="admin-container">
       <div id="content">
-        <h1>Item Review Dashboard</h1>
-        <div id="itemsList">
-          <!-- Items will be populated here -->
+        <h1>Admin Dashboard</h1>
+        
+        <!-- Tabs -->
+        <div class="admin-tabs">
+          <button class="admin-tab active" data-tab="pending">Pending Items</button>
+          <button class="admin-tab" data-tab="marketplace">Marketplace Posts</button>
+          <button class="admin-tab" data-tab="users">All Users</button>
         </div>
+
+        <!-- Pending Items Section -->
+        <div id="pendingSection" class="tab-content active">
+          <h2>Pending / Flagged Items</h2>
+          <div id="itemsList">
+            <!-- Pending items will be populated here -->
+          </div>
+        </div>
+
+        <!-- Marketplace Posts Section -->
+        <div id="marketplaceSection" class="tab-content">
+          <h2>Active Marketplace Posts</h2>
+          <div id="marketplaceList">
+            <!-- Marketplace items will be populated here -->
+          </div>
+        </div>
+
+        <!-- Users Section -->
+        <div id="usersSection" class="tab-content">
+          <h2>All Users</h2>
+          <div class="user-stats">
+            <span>Total Users: <strong id="totalUsers">0</strong></span>
+            <span>Banned: <strong id="bannedUsers">0</strong></span>
+            <span>Admins: <strong id="adminUsers">0</strong></span>
+          </div>
+          <div id="usersList">
+            <!-- Users will be populated here -->
+          </div>
+        </div>
+        
         <button id="signOutBtn" class="sign-out-btn">Sign Out</button>
       </div>
       <div id="notAdmin" style="display:none">

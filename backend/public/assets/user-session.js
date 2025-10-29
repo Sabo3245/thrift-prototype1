@@ -557,18 +557,35 @@ class UserSessionManager {
     messageContainer.className = "profile-complete-prompt";
     messageContainer.innerHTML = `
       <div class="prompt-card">
+        <button class="prompt-close" aria-label="Close">&times;</button>
         <h4>👋 Welcome to CampusKart!</h4>
         <p>Complete your profile to start buying and selling.</p>
-
       </div>
     `;
 
     document.body.appendChild(messageContainer);
 
-    // Auto-hide after 10 seconds
+    // Add click handler for close button
+    const closeBtn = messageContainer.querySelector('.prompt-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+        messageContainer.remove();
+      });
+    }
+
+    // Also allow clicking anywhere on the prompt to dismiss it
+    messageContainer.addEventListener('click', (e) => {
+      if (e.target === messageContainer) {
+        messageContainer.remove();
+      }
+    });
+
+    // Auto-hide after 5 seconds (reduced from 10)
     setTimeout(() => {
-      messageContainer.remove();
-    }, 10000);
+      if (messageContainer.parentElement) {
+        messageContainer.remove();
+      }
+    }, 5000);
   }
 
   async loadUserListings() {

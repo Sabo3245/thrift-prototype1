@@ -53,18 +53,19 @@
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
     import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
     import { getFirestore, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+    import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js';
 
         console.log('Starting admin setup page...');
 
         // Your Firebase config from firebase-config.js
         const firebaseConfig = {
-            apiKey: "AIzaSyDUE6N-VexVOcWlyK9xHDTQYR5F42JGsGw",
+            apiKey: "AIzaSyBrVVik7_oVaPXpyI20jcyq9nqXUKcwcOM",
             authDomain: "thrift-6bd6d.firebaseapp.com",
             projectId: "thrift-6bd6d",
-            storageBucket: "thrift-6bd6d.appspot.com",
-            messagingSenderId: "1055382186564",
-            appId: "1:1055382186564:web:c67fdd6f99414611f73916",
-            measurementId: "G-JHT6DL6E26"
+            storageBucket: "thrift-6bd6d.firebasestorage.app",
+            messagingSenderId: "595724600327",
+            appId: "1:595724600327:web:e1a9d65d6e6ee68e0456a2",
+            measurementId: "G-7PGCTDYP38"
         };
 
         // Initialize Firebase (or reuse existing global app if present)
@@ -90,7 +91,14 @@
 
         console.log('Firebase initialized successfully');
 
-        // Expose firestone helpers
+        // Initialize Functions
+        const functions = getFunctions(app, 'us-central1');
+        const grantAdminClaimFn = httpsCallable(functions, 'grantAdminClaim');
+
+        // Expose auth, db, functions and Firestore helpers globally
+        window.auth = auth;
+        window.db = db;
+        window.grantAdminClaimFn = grantAdminClaimFn;
         window.getDoc = getDoc;
         window.doc = doc;
         window.setDoc = setDoc;
@@ -201,28 +209,20 @@
                     throw new Error('Not logged in');
                 }
 
-                // Get user doc reference
-                const userRef = doc(db, 'users', user.uid);
-                const userDoc = await getDoc(userRef);
-
-                // Prepare user data
-                const userData = userDoc.exists() ? userDoc.data() : {};
-                userData.isAdmin = true;
-                userData.adminSetupAt = new Date().toISOString();
-
-                // Update user document
-                await setDoc(userRef, userData, { merge: true });
+                // Call the Cloud Function to grant admin claim
+                const result = await grantAdminClaimFn();
+                console.log('grantAdminClaim result:', result);
 
                 status.className = 'success';
                 status.innerHTML = `
                     ✅ Success! You are now an admin.<br>
-                    Please wait a moment for the change to take effect.<br>
-                    <small>You may need to log out and log back in to see the changes.</small>
+                    <strong>IMPORTANT: Log out and log back in to activate your admin privileges.</strong><br>
+                    <small>Your custom claims have been set directly.</small>
                 `;
             } catch (error) {
                 console.error('Error:', error);
                 status.className = 'error';
-                status.textContent = '❌ Error: ' + error.message;
+                status.textContent = '❌ Error: ' + (error.message || error);
                 makeAdminBtn.disabled = false;
             }
         }

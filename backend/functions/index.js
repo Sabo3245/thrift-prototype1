@@ -144,3 +144,30 @@ exports.syncAdminClaim = functions.region('us-central1').firestore
       return null;
     }
   });
+
+// Callable function to manually grant admin claims (for testing/setup)
+exports.grantAdminClaim = functions.region('us-central1').https.onCall(async (data, context) => {
+  // Only allow if user is authenticated
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Must be authenticated');
+  }
+
+  const userId = context.auth.uid;
+
+  try {
+    // Update Firestore
+    await db.collection('users').doc(userId).set({
+      isAdmin: true,
+      adminSetupAt: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+
+    // Set custom claims directly
+    await admin.auth().setCustomUserClaims(userId, { admin: true });
+
+    console.log(`Manually granted admin claim to ${userId}`);
+    return { success: true, message: 'Admin privileges granted' };
+  } catch (err) {
+    console.error('Error granting admin claim:', err);
+    throw new functions.https.HttpsError('internal', err.message);
+  }
+});
