@@ -5,14 +5,49 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Helper function to check if user is an admin
+    function isAdmin() {
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      return userDoc != null && userDoc.isAdmin == true;
+    }
+
     // Users collection
     match /users/{userId} {
-      // Users can read and write their own profile
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Users can read their own profile; admins can read all profiles
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+
+      /*
+        Writes are allowed in two cases:
+        1) Admins may write any user document (for management tasks).
+        2) A user may write their own document BUT must NOT create or change the
+           `isAdmin` field. This prevents ordinary users from granting themselves admin.
+
+        Rules handle create and update carefully:
+        - On create: only allow owner creation and ensure isAdmin is not true.
+        - On update: owner may update but request.resource.data.isAdmin must equal resource.data.isAdmin
+          (i.e., unchanged) unless the caller is an admin.
+      */
+
+      // Create: owner can create their document but cannot set isAdmin to true
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && ( ! (request.resource.data.keys().hasAny(['isAdmin'])) || request.resource.data.isAdmin == false );
+
+      // Update/Delete: allow if admin OR owner without changing isAdmin
+      allow update, delete: if request.auth != null && (
+        isAdmin() || (
+          request.auth.uid == userId && (
+            // owner cannot change isAdmin (it must remain same as stored)
+            // if the field didn't exist before, owner cannot add it
+            ( (resource.data.keys().hasAny(['isAdmin']) && request.resource.data.isAdmin == resource.data.isAdmin)
+              || (!resource.data.keys().hasAny(['isAdmin']) && !request.resource.data.keys().hasAny(['isAdmin'])) )
+          )
+        )
+      );
 
       // Users can read other users' public profile info (for chat, etc.)
-      allow read: if request.auth != null && 
-        resource.data.settings.showProfileToOthers == true;
+      allow get: if request.auth != null && resource.data.settings != null && resource.data.settings.showProfileToOthers == true;
+      allow list: if false;
     }
 
     // Items collection

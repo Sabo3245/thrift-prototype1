@@ -1,88 +1,963 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Welcome to Firebase Hosting</title>
-
-    <!-- update the version number as needed -->
-    <script defer src="/__/firebase/12.2.1/firebase-app-compat.js"></script>
-    <!-- include only the Firebase features as you need -->
-    <script defer src="/__/firebase/12.2.1/firebase-auth-compat.js"></script>
-    <script defer src="/__/firebase/12.2.1/firebase-database-compat.js"></script>
-    <script defer src="/__/firebase/12.2.1/firebase-firestore-compat.js"></script>
-    <script defer src="/__/firebase/12.2.1/firebase-functions-compat.js"></script>
-    <script defer src="/__/firebase/12.2.1/firebase-messaging-compat.js"></script>
-    <script defer src="/__/firebase/12.2.1/firebase-storage-compat.js"></script>
-    <script defer src="/__/firebase/12.2.1/firebase-analytics-compat.js"></script>
-    <script defer src="/__/firebase/12.2.1/firebase-remote-config-compat.js"></script>
-    <script defer src="/__/firebase/12.2.1/firebase-performance-compat.js"></script>
-    <!-- 
-      initialize the SDK after all desired features are loaded, set useEmulator to false
-      to avoid connecting the SDK to running emulators.
-    -->
-    <script defer src="/__/firebase/init.js?useEmulator=true"></script>
-
-    <style media="screen">
-      body { background: #ECEFF1; color: rgba(0,0,0,0.87); font-family: Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
-      #message { background: white; max-width: 360px; margin: 100px auto 16px; padding: 32px 24px; border-radius: 3px; }
-      #message h2 { color: #ffa100; font-weight: bold; font-size: 16px; margin: 0 0 8px; }
-      #message h1 { font-size: 22px; font-weight: 300; color: rgba(0,0,0,0.6); margin: 0 0 16px;}
-      #message p { line-height: 140%; margin: 16px 0 24px; font-size: 14px; }
-      #message a { display: block; text-align: center; background: #039be5; text-transform: uppercase; text-decoration: none; color: white; padding: 16px; border-radius: 4px; }
-      #message, #message a { box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24); }
-      #load { color: rgba(0,0,0,0.4); text-align: center; font-size: 13px; }
-      @media (max-width: 600px) {
-        body, #message { margin-top: 0; background: white; box-shadow: none; }
-        body { border-top: 16px solid #ffa100; }
-      }
-    </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CampusKart - College Marketplace</title>
+    <link rel="icon" type="image/svg" href="logo.svg">
+    <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <div id="message">
-      <h2>Welcome</h2>
-      <h1>Firebase Hosting Setup Complete</h1>
-      <p>You're seeing this because you've successfully setup Firebase Hosting. Now it's time to go build something extraordinary!</p>
-      <a target="_blank" href="https://firebase.google.com/docs/hosting/">Open Hosting Documentation</a>
+    <div id="loadingScreen" class="loading-screen">
+      <div class="loading-container">
+        <div class="animated-logo">
+            <div class="logo-shape">
+              <img src="./logo.svg" alt="CampusKart Logo" style="width: 80px; height: 80px; object-fit: contain; display: block; margin: 0 auto;" />
+            </div>
+          <div class="logo-text">CampusKart</div>
+        </div>
+        <div class="particle-system">
+          <div class="particle"></div>
+          <div class="particle"></div>
+          <div class="particle"></div>
+          <div class="particle"></div>
+          <div class="particle">fk</div>
+        </div>
+        <div class="progress-container">
+          <div class="progress-bar">
+            <div class="progress-fill"></div>
+          </div>
+          <div class="loading-text">Loading your marketplace...</div>
+        </div>
+      </div>
     </div>
-    <p id="load">Firebase SDK Loading&hellip;</p>
 
+    <div id="mainApp" class="main-app hidden">
+      <div class="status-bar">
+        <div class="status-indicator active">
+          <span class="status-dot"></span>
+          <span class="status-text">Online</span>
+        </div>
+      </div>
+
+      <nav class="nav-container">
+        <div class="nav-brand">
+          <div class="brand-logo" >CK</div>
+          <span class="brand-text">CampusKart</span>
+        </div>
+        <div class="nav-tabs">
+          <button class="nav-tab active" data-section="marketplace">
+            <span class="nav-icon">🏪</span>
+            <span>Marketplace</span>
+          </button>
+          <button class="nav-tab" data-section="post">
+            <span class="nav-icon">➕</span>
+            <span>Post Item</span>
+          </button>
+          <button class="nav-tab" data-section="chat">
+            <span class="nav-icon">💬</span>
+            <span>Chat</span>
+          </button>
+
+          <button class="nav-tab" data-section="profile">
+            <span class="nav-icon">👤</span>
+            <span>Profile</span>
+          </button>
+          <div class="nav-indicator"></div>
+        </div>
+      </nav>
+      <section id="help" class="section">
+        <div class="container">
+          <div class="section-header">
+            <h1 class="page-title">Help & Support</h1>
+            <p class="page-subtitle">
+              Get in touch with the CampusKart admin team
+            </p>
+          </div>
+          <div class="help-content-grid">
+            <div class="glass-card help-card">
+              <h3 class="card-title">Admin Contact Information</h3>
+              <p class="help-description">
+                If you encounter any issues, have questions, or need assistance
+                with a transaction, please don't hesitate to reach out to us.
+              </p>
+              <div class="contact-info-list">
+                <div class="contact-item">
+                  <span class="contact-icon">📧</span>
+                  <div class="contact-details">
+                    <span class="contact-label">Email Support</span>
+                    <span class="contact-value"
+                      >admin@campuskart.example.com</span
+                    >
+                  </div>
+                </div>
+                <div class="contact-item">
+                  <span class="contact-icon">📞</span>
+                  <div class="contact-details">
+                    <span class="contact-label">Phone Support</span>
+                    <span class="contact-value">+91 123-456-7890</span>
+                  </div>
+                </div>
+                <div class="contact-item">
+                  <span class="contact-icon">🕒</span>
+                  <div class="contact-details">
+                    <span class="contact-label">Office Hours</span>
+                    <span class="contact-value"
+                      >Mon-Fri, 10:00 AM - 5:00 PM</span
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="marketplace" class="section active">
+        <div class="container">
+          <div class="section-header">
+            <h1 class="page-title">Discover Amazing Deals</h1>
+            <p class="page-subtitle">
+              Find everything you need from fellow students
+            </p>
+          </div>
+
+          <div class="search-container glass-card">
+            <div class="search-input-wrapper">
+              <input
+                type="text"
+                id="searchInput"
+                placeholder="Search for items..."
+                class="search-input"
+              />
+              <button class="search-btn">🔍</button>
+            </div>
+            <div class="search-suggestions hidden" id="searchSuggestions"></div>
+          </div>
+
+          <div class="filters-container">
+            <div class="filter-group">
+              <label class="filter-label">Category</label>
+              <select id="categoryFilter" class="filter-select">
+                <option value="">All Categories</option>
+                <option value="Clothes">Clothes</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Books">Books</option>
+                <option value="Cosmetics">Cosmetics</option>
+                <option value="Miscellaneous">Miscellaneous</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label class="filter-label">Condition</label>
+              <select id="conditionFilter" class="filter-select">
+                <option value="">Any Condition</option>
+                <option value="New">New</option>
+                <option value="Used">Used</option>
+                <option value="Unused">Unused</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label class="filter-label">Hostel</label>
+              <select id="hostelFilter" class="filter-select">
+                <option value="">All Hostels</option>
+                <option value="Boys">Boys</option>
+                <option value="Girls">Girls</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="items-grid" id="itemsGrid"></div>
+
+          <div class="loading-more hidden" id="loadingMore">
+            <div class="skeleton-cards">
+              <div class="skeleton-card"></div>
+              <div class="skeleton-card"></div>
+              <div class="skeleton-card"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Item Detail Section -->
+      <section id="itemDetail" class="section" style="display:none;">
+        <div class="container item-detail-container">
+          <div class="section-header detail-header">
+            <button class="btn btn--outline" id="backToMarketplace">← Back</button>
+            <h1 class="page-title" id="detailTitle">Item Details</h1>
+          </div>
+
+          <div class="glass-card item-detail-card">
+            <div class="item-detail-grid">
+              <div class="item-detail-left">
+                <div id="detailImageWrapper" class="item-detail-image-wrapper">
+                  <img id="detailMainImage" alt="Item photo" class="item-detail-image" />
+                  <div id="detailEmoji" class="item-detail-emoji">📦</div>
+                  <div id="detailThumbnails" class="item-detail-thumbnails">
+                    </div>
+                </div>
+              </div>
+              <div class="item-detail-right">
+                <div class="detail-field">
+                  <label class="detail-label">Name</label>
+                  <div id="detailName" class="detail-value"></div>
+                </div>
+                <div class="detail-field">
+                  <label class="detail-label">Seller</label>
+                  <div id="detailSeller" class="detail-value"></div>
+                </div>
+                <div class="detail-field">
+                  <label class="detail-label">Price</label>
+                  <div id="detailPrice" class="detail-price"></div>
+                </div>
+                <div class="detail-field">
+                  <label class="detail-label">Condition</label>
+                  <div id="detailStatus" class="detail-value"></div>
+                </div>
+                <div class="detail-field">
+                  <label class="detail-label">Description</label>
+                  <div id="detailDescription" class="detail-value"></div>
+                </div>
+                <div class="detail-actions">
+                  <button class="btn btn--primary" id="detailContactBtn">Contact Seller</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="post" class="section">
+        <div class="container">
+          <div class="section-header">
+            <h1 class="page-title">Post Your Item</h1>
+            <p class="page-subtitle">
+              Share what you're selling with the community
+            </p>
+          </div>
+
+          <form class="post-form glass-card" id="postForm">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Item Title</label>
+                <input
+                  type="text"
+                  class="form-control animated-input"
+                  id="itemTitle"
+                  placeholder="What are you selling?"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Category</label>
+                <select
+                  class="form-control animated-input"
+                  id="itemCategory"
+                  required
+                >
+                  <option value="">Select category...</option>
+                  <option value="Clothes">Clothes</option>
+                  <option value="Electronics">Electronics</option>
+                  <option value="Books">Books</option>
+                  <option value="Cosmetics">Cosmetics</option>
+                  <option value="Miscellaneous">Miscellaneous</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Condition</label>
+                <select
+                  class="form-control animated-input"
+                  id="itemCondition"
+                  required
+                >
+                  <option value="">Select condition...</option>
+                  <option value="New">New</option>
+                  <option value="Used">Used</option>
+                  <option value="Unused">Unused</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Current Price (₹)</label>
+                <input
+                  type="number"
+                  class="form-control animated-input"
+                  id="itemPrice"
+                  placeholder="Current selling price"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Original Price (₹)</label>
+                <input
+                  type="number"
+                  class="form-control animated-input"
+                  id="itemOriginalPrice"
+                  placeholder="Original purchase price"
+                />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Hostel</label>
+                <select
+                  class="form-control animated-input"
+                  id="itemHostel"
+                  required
+                >
+                  <option value="">Select hostel...</option>
+                  <option value="Boys">Boys</option>
+                  <option value="Girls">Girls</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="clothing-checklist hidden" id="clothingChecklist">
+              <h4 class="checklist-title">Clothing Details</h4>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Quality</label>
+                  <select class="form-control" id="clothingQuality">
+                    <option value="">Select quality...</option>
+                    <option value="Excellent">Excellent</option>
+                    <option value="Good">Good</option>
+                    <option value="Fair">Fair</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Age</label>
+                  <select class="form-control" id="clothingAge">
+                    <option value="">Select age...</option>
+                    <option value="< 6 months">< 6 months</option>
+                    <option value="6-12 months">6-12 months</option>
+                    <option value="1-2 years">1-2 years</option>
+                    <option value="2+ years">2+ years</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Detailed Condition</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="clothingCondition"
+                  placeholder="e.g., Minimal wear, no stains"
+                />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Description</label>
+              <textarea
+                class="form-control animated-input"
+                id="itemDescription"
+                rows="4"
+                placeholder="Describe your item in detail"
+                required
+              ></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Upload Photos</label>
+              <div class="upload-area" id="uploadArea">
+                <div class="upload-content">
+                  <span class="upload-icon">📸</span>
+                  <span class="upload-text">Click or drag photos here</span>
+                  <input
+                    type="file"
+                    id="itemPhotos"
+                    multiple
+                    accept="image/*"
+                    class="upload-input"
+                  />
+                </div>
+              </div>
+              <div class="uploaded-images" id="uploadedImages"></div>
+            </div>
+            <div class="form-tips-card">
+              <h4 class="tips-title">💡 Safety Tips & Disclaimer</h4>
+              <ul class="tips-list">
+                <li>
+                  <strong>Be Cautious:</strong> Don't share OTPs or personal
+                  details like bank account numbers.
+                </li>
+                <li>
+                  <strong>No Advance Payments:</strong> Never give money or the
+                  product to someone in advance.
+                </li>
+                <li>
+                  <strong>Meet Safely:</strong> Always be cautious while meeting
+                  a buyer or seller. Prefer public places on campus.
+                </li>
+                <li>
+                  <strong>Report Suspicious Users:</strong> Help keep the
+                  community safe by reporting any suspicious behavior to the
+                  admins.
+                </li>
+              </ul>
+            </div>
+            <div class="form-group form-group-checkbox">
+              <input type="checkbox" id="disclaimerCheckbox" class="styled-checkbox" />
+              <label for="disclaimerCheckbox" class="checkbox-label">
+                I have read and agree to the safety tips & disclaimer.
+              </label>
+            </div>
+            <button
+              type="submit"
+              class="btn btn--primary btn--full-width animated-btn"
+            >
+              <span class="btn-text">Post Item</span>
+              <span class="btn-loader hidden">🔄</span>
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <section id="chat" class="section">
+        <div class="container">
+          <div class="section-header">
+            <h1 class="page-title">Messages</h1>
+            <p class="page-subtitle">Chat with buyers and sellers</p>
+          </div>
+
+          <div class="chat-container">
+            <div class="chat-sidebar glass-card">
+              <h3 class="sidebar-title">Conversations</h3>
+              <div class="chat-filters">
+                <button class="chat-filter-btn active" data-filter="all">All</button>
+                  <button class="chat-filter-btn" data-filter="selling">
+                    Selling
+                      </button>
+                      <button class="chat-filter-btn" data-filter="buying">Buying</button>
+                          </div>
+              <div class="conversation-list" id="conversationList"></div>
+            </div>
+
+            <div class="chat-window glass-card" id="chatWindow">
+              <div class="chat-header">
+                <div class="chat-user-info">
+                  <div class="chat-avatar">👤</div>
+                  <div class="chat-user-details">
+                    <h4 id="chatUserName">Select a conversation</h4>
+                    <p id="chatUserStatus">Choose from the conversation list</p>
+                  </div>
+                </div>
+                <div class="chat-actions">
+                  <button class="btn btn--outline btn--sm" id="markAsSoldBtn" style="display:none;">Mark as Sold</button>
+                </div>
+              </div>
+
+              <div class="chat-messages" id="chatMessages">
+                <div class="welcome-message">
+                  <p>👋 Welcome to Campus Thrift Chat!</p>
+                  <p>Select a conversation to start messaging</p>
+                </div>
+              </div>
+
+              <div class="chat-input-container hidden" id="chatInputContainer">
+                <input
+                  type="text"
+                  id="chatInput"
+                  placeholder="Type your message..."
+                  class="chat-input"
+                />
+                <button class="chat-send-btn" id="chatSendBtn">📤</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="profile" class="section">
+        <div class="container">
+          <div class="section-header">
+            <h1 class="page-title">Your Profile</h1>
+            <p class="page-subtitle">Manage your account and listings</p>
+          </div>
+
+          <div class="profile-grid">
+            <div class="profile-card glass-card">
+              <div class="profile-avatar">
+                <div class="avatar-circle">👤</div>
+                <button class="avatar-edit">✏️</button>
+              </div>
+              <div class="profile-info">
+                <h3 class="profile-name" id="profileDisplayName">Loading...</h3>
+                <p class="profile-email" id="profileDisplayEmail">Loading...</p>
+                <div class="profile-stats">
+                  <div class="stat">
+                    <span class="stat-number" id="userPoints">15</span>
+                    <span class="stat-label">Points</span>
+                  </div>
+                  <div class="stat">
+                    <span class="stat-number" id="totalTransactions">3</span>
+                    <span class="stat-label">Transactions</span>
+                  </div>
+                  <div class="stat">
+                    <span class="stat-number" id="moneySaved">₹0</span>
+                    <span class="stat-label">Money Saved</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+
+          </div>
+
+          <div class="profile-sections">
+            <div class="my-listings glass-card">
+              <div class="section-title-row">
+                <h3 class="card-title">My Recent Listings</h3>
+                <span class="empty-notice">No recent listings yet</span>
+              </div>
+              <div class="listings-grid" id="myListings">
+                <div class="empty-state">
+                  <p>
+                    🛍️ You haven't posted anything yet. Start selling to see
+                    your items here!
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="hearted-posts glass-card">
+              <h3 class="card-title">Hearted Posts ❤️</h3>
+              <div class="hearted-grid" id="heartedPosts">
+                <div class="empty-state">
+                  <p>💖 Items you heart will appear here</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="points-section glass-card">
+              <h3 class="card-title">Points & Rewards</h3>
+              <div class="points-info">
+                <p>
+                  Earn 5 points for each transaction. Use 25 points to boost
+                  your posts!
+                </p>
+                <div class="points-progress">
+                  <div class="progress-bar">
+                    <div
+                      class="progress-fill"
+                      id="pointsProgress"
+                      style="width: 60%"
+                    ></div>
+                  </div>
+                  <span class="progress-text" id="progressText">Loading...</span>
+                </div>
+              </div>
+              <div class="transaction-history">
+                <h4>Recent Transactions</h4>
+                <div id="transactionList"></div>
+              </div>
+            </div>
+            <div class="account-settings glass-card">
+              <h3 class="card-title">Settings</h3>
+              <div class="settings-actions-list">
+               <button class="nav-tab" data-section="help">
+                <span class="nav-icon">🆘</span>
+                <span>Help</span>
+              </button>
+                <a href="#" id="logoutBtn" class="setting-action-item">
+                    <span>&#x1F6AA; Logout</span>
+      <span>&gt;</span>
+    </a>
+    <a href="#" id="changePasswordBtn" class="setting-action-item">
+      <span>&#x1F510; Privacy - Change Password</span>
+      <span>&gt;</span>
+    </a>
+    <a
+      href="#"
+      id="notificationSettingsBtn"
+      class="setting-action-item"
+    >
+      <span>&#x1F514; Notification</span>
+      <span>&gt;</span>
+    </a>
+    <a
+      href="#"
+      id="deleteAccountBtn"
+      class="setting-action-item delete-account"
+    >
+      <span>&#x1F5D1;&#xFE0F; Delete Account</span>
+      <span>&gt;</span>
+    </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      
+      <div class="modal hidden" id="changePasswordModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content glass-card">
+          <div class="modal-header">
+            <h3 class="modal-title">Change Your Password</h3>
+            <p class="modal-message">For security, please enter your current password first.</p>
+          </div>
+          <div class="modal-body">
+            <form id="changePasswordForm">
+              <div class="form-group">
+                <label class="form-label">Current Password</label>
+                <input type="password" id="currentPassword" class="form-control" placeholder="Enter your current password" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">New Password</label>
+                <input type="password" id="newPassword" class="form-control" placeholder="Enter a new password" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Confirm New Password</label>
+                <input type="password" id="confirmNewPassword" class="form-control" placeholder="Confirm your new password" required />
+              </div>
+            </form>
+          </div>
+          <div class="modal-actions">
+            <button class="btn btn--outline" id="cancelChangePassword">Cancel</button>
+            <button class="btn btn--primary" id="saveChangePassword">Update Password</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal hidden" id="successModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content glass-card">
+          <div class="modal-header">
+            
+            <div class="success-icon">✨</div>
+            <h3 class="modal-title">Success!</h3>
+            <p class="modal-message">Your item has been posted successfully!</p>
+          </div>
+          <div class="celebration-particles">
+            <div class="confetti"></div>
+            <div class="confetti"></div>
+            <div class="confetti"></div>
+            <div class="confetti"></div>
+            <div class="confetti"></div>
+          </div>
+          <button class="btn btn--primary" id="closeModal">Awesome!</button>
+        </div>
+      </div>
+    </div>
+      <div class="modal hidden" id="removeModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content glass-card">
+          <div class="modal-header">
+          <div class="warning-icon">⚠️</div>
+            <h3 class="modal-title">Remove Post</h3>
+            <p class="modal-message">
+              Are you sure you want to remove this item? This action cannot be
+              undone.
+            </p>
+          </div>
+          <div class="modal-actions">
+            <button class="btn btn--outline" id="cancelRemove">Cancel</button>
+            <button class="btn btn--primary" id="confirmRemove">Remove</button>
+    </div>
+        </div>
+      </div>
+
+      <div class="modal hidden" id="boostModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content glass-card">
+          <div class="modal-header">
+            <div class="boost-icon">🚀</div>
+            <h3 class="modal-title" id="boostModalTitle">Boost Your Post</h3>
+            <p class="modal-message" id="boostModalMessage">
+              Use 25 points to boost this post and pin it to the top for 7 days!
+            </p>
+            <p class="points-remaining">
+              Your Points: <span id="currentPoints">15</span>
+            </p>
+          </div>
+          <div class="modal-actions">
+            <button class="btn btn--outline" id="cancelBoost">Cancel</button>
+            <button class="btn btn--primary" id="confirmBoost" disabled>
+              Boost Post (25 points)
+            </button>
+          </div>
+        </div>
+      </div>
+  <div class="modal hidden" id="editNameModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content glass-card">
+          <div class="modal-header">
+            <h3 class="modal-title">Edit Your Name</h3>
+            <p class="modal-message">Update how your name appears across the app.</p>
+          </div>
+          <div class="modal-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">First Name</label>
+                <input type="text" id="editFirstName" class="form-control" placeholder="First name" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Last Name</label>
+                <input type="text" id="editLastName" class="form-control" placeholder="Last name" />
+              </div>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button class="btn btn--outline" id="cancelEditName">Cancel</button>
+            <button class="btn btn--primary" id="saveEditName">Save</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal hidden" id="deleteAccountModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content glass-card">
+          <div class="modal-header">
+            <div class="warning-icon">⚠️</div>
+            <h3 class="modal-title">Delete Account</h3>
+            <p class="modal-message">This will permanently remove your account and listings. This action cannot be undone.</p>
+          </div>
+          <div class="modal-actions">
+            <button class="btn btn--outline" id="cancelDeleteAccount">Cancel</button>
+            <button class="btn btn--primary" id="confirmDeleteAccount">Delete</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal hidden" id="markSoldModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content glass-card">
+          <div class="modal-header">
+            <div class="warning-icon">⚠️</div>
+            <h3 class="modal-title">Confirm Sale</h3>
+            <p class="modal-message">Are you sure you want to mark this item as sold to <span id="soldBuyerEmail">this user</span>? This will remove it from the marketplace.</p>
+          </div>
+          <div class="modal-actions">
+            <button class="btn btn--outline" id="cancelMarkSold">Cancel</button>
+            <button class="btn btn--primary" id="confirmMarkSold">Confirm</button>
+          </div>
+        </div>
+      </div>
+      <button class="fab" id="fabButton">
+        <span class="fab-icon">➕</span>
+        <div class="fab-ripple"></div>
+      </button>
+
+      <style>
+  #chat .chat-container {
+    /* 1. Give the main chat container a fixed height.
+      You can adjust '75vh' (75% of the viewport height)
+      to whatever fits your design.
+    */
+    height: 75vh;
+    /* This assumes your .chat-container is a grid or flex.
+      If it's not, add 'display: grid;' or 'display: flex;'.
+    */
+  }
+
+  .chat-sidebar {
+    /* 2. Make the sidebar a flex column */
+    display: flex;
+    flex-direction: column;
+    /* 3. This is important: it ensures the sidebar
+      doesn't grow beyond its container's height.
+    */
+    overflow: hidden;
+  }
+
+  .conversation-list {
+    /* 4. This is the magic:
+      - flex: 1 makes it take all available vertical space.
+      - overflow-y: auto adds a scrollbar *only* when needed.
+    */
+    flex: 1;
+    overflow-y: auto;
+  }
+</style>
+
+    <style id="item-detail-styles">
+      /* Item Detail Section Styles */
+      #itemDetail { min-height: 100vh; padding: var(--space-16) 0; }
+      #itemDetail .item-detail-container { max-width: 1280px; min-height: calc(100vh - 140px); }
+      #itemDetail .item-detail-card { padding: 0; background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow); }
+      #itemDetail .detail-header { display: flex; align-items: center; gap: 12px; }
+      #itemDetail .page-title { background: linear-gradient(45deg, var(--neon-purple), var(--neon-cyan)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      #itemDetail .item-detail-grid { display: grid; grid-template-columns: 1fr 420px; gap: 24px; padding: 20px; align-items: start; justify-content: end; }
+      @media (max-width: 900px) { 
+        #itemDetail .item-detail-grid { grid-template-columns: 1fr; justify-content: initial; }
+        #itemDetail .item-detail-right { position: static; max-width: 100%; }
+      }
+      #itemDetail .item-detail-image { width: 100%; height: min(60vh, 560px); min-height: 280px; object-fit: cover; border-radius: 14px; box-shadow: 0 20px 40px rgba(0,0,0,.35); display: none; }
+      #itemDetail .item-detail-emoji { font-size: 120px; display: flex; align-items: center; justify-content: center; height: min(50vh, 420px); border-radius: 14px; background: rgba(255,255,255,0.05); }
+      #itemDetail .item-detail-right { display: grid; gap: 12px; align-content: start; position: sticky; top: 100px; justify-self: end; width: 100%; max-width: 420px; }
+      #itemDetail .detail-label { display: block; opacity: 0.85; font-weight: 600; color: var(--color-gray-300); margin-bottom: 4px; }
+      #itemDetail .detail-value { color: var(--color-gray-200); font-size: 16px; }
+      #itemDetail .detail-price { font-size: 24px; font-weight: 800; color: var(--neon-green); }
+      #itemDetail .detail-actions { margin-top: 12px; display: flex; gap: 8px; }
+
+      #itemDetail .item-detail-thumbnails {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap; /* Allows thumbnails to wrap */
+          }
+          #itemDetail .detail-thumbnail-img {
+            width: 64px;
+            height: 64px;
+            object-fit: cover;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid var(--glass-border);
+            opacity: 0.6;
+            transition: opacity 0.2s, border-color 0.2s;
+          }
+          #itemDetail .detail-thumbnail-img:hover {
+            opacity: 1;
+            border-color: var(--color-gray-300);
+          }
+          #itemDetail .detail-thumbnail-img.active {
+            opacity: 1;
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 8px var(--neon-cyan);
+          }
+    </style>
+
+  <!-- Append a version query to bust long-lived CDN/browser caches after deploy -->
+  <script src="user-session.js?v=20251029"></script>
+  <script src="app.js?v=20251029" defer></script>
+  <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import { 
+        getAuth, 
+        onAuthStateChanged,
+        signOut,
+        updateProfile,
+        EmailAuthProvider,
+        reauthenticateWithCredential,
+        updatePassword,
+        deleteUser
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+      import { 
+        getFirestore, 
+        initializeFirestore,
+        enableIndexedDbPersistence,
+        doc, 
+        setDoc, 
+        getDoc, 
+        updateDoc,
+        collection,
+        query,
+        where,
+        getDocs,
+        addDoc,
+        deleteDoc,
+        orderBy,
+        serverTimestamp,
+        onSnapshot,
+        increment
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+      import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
+      import { 
+        getStorage,
+        ref,
+        uploadBytes,
+        getDownloadURL
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+      // Your web app's Firebase configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyBrVVik7_oVaPXpyI20jcyq9nqXUKcwcOM",
+        authDomain: "thrift-6bd6d.firebaseapp.com",
+        projectId: "thrift-6bd6d",
+        storageBucket: "thrift-6bd6d.firebasestorage.app",
+        messagingSenderId: "595724600327",
+        appId: "1:595724600327:web:e1a9d65d6e6ee68e0456a2",
+        measurementId: "G-7PGCTDYP38",
+      };
+
+      // Initialize Firebase
+      try {
+        console.log('🔥 Initializing Firebase for main app...');
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        // Force long-polling to avoid WebChannel transport issues in restricted networks
+        const db = initializeFirestore(app, { experimentalForceLongPolling: true, useFetchStreams: false });
+        // Enable offline persistence so writes succeed locally and sync later
+        try { await enableIndexedDbPersistence(db); } catch (e) { console.warn('IndexedDB persistence disabled or failed:', e?.message || e); }
+        const analytics = getAnalytics(app);
+        const storage = getStorage(app);
+        
+        // Make Firebase services available globally for user session manager
+        window.firebaseAuth = auth;
+        window.firebaseDb = db;
+        window.firebaseStorage = storage;
+        window.firebaseModules = {
+          onAuthStateChanged,
+          signOut,
+          updateProfile,
+          EmailAuthProvider,
+          reauthenticateWithCredential,
+          updatePassword,
+          deleteUser,
+          doc,
+          setDoc,
+          getDoc,
+          updateDoc,
+          collection,
+          query,
+          where,
+          getDocs,
+          addDoc,
+          deleteDoc,
+          orderBy,
+          serverTimestamp,
+          onSnapshot,
+          increment,
+          // Storage helpers
+          ref,
+          uploadBytes,
+          getDownloadURL
+        };
+        
+        console.log('✅ Firebase services initialized and made globally available');
+      } catch (error) {
+        console.error('❌ Firebase initialization failed:', error);
+      }
+    </script>
+    
     <script>
-      document.addEventListener('DOMContentLoaded', function() {
-        const loadEl = document.querySelector('#load');
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
-        // // The Firebase SDK is initialized and available here!
-        //
-        // firebase.auth().onAuthStateChanged(user => { });
-        // firebase.database().ref('/path/to/ref').on('value', snapshot => { });
-        // firebase.firestore().doc('/foo/bar').get().then(() => { });
-        // firebase.functions().httpsCallable('yourFunction')().then(() => { });
-        // firebase.messaging().requestPermission().then(() => { });
-        // firebase.storage().ref('/path/to/ref').getDownloadURL().then(() => { });
-        // firebase.analytics(); // call to activate
-        // firebase.analytics().logEvent('tutorial_completed');
-        // firebase.performance(); // call to activate
-        //
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
-
-        try {
-          let app = firebase.app();
-          let features = [
-            'auth', 
-            'database', 
-            'firestore',
-            'functions',
-            'messaging', 
-            'storage', 
-            'analytics', 
-            'remoteConfig',
-            'performance',
-          ].filter(feature => typeof app[feature] === 'function');
-          loadEl.textContent = `Firebase SDK loaded with ${features.join(', ')}`;
-        } catch (e) {
-          console.error(e);
-          loadEl.textContent = 'Error loading the Firebase SDK, check the console.';
+      // Handle logout functionality
+      async function handleLogout(event) {
+        event.preventDefault();
+        
+        if (window.userSession) {
+          await window.userSession.logout();
+        } else {
+          console.log('🚺 Logging out...');
+          window.location.href = 'auth.html';
         }
+      }
+      
+      // Handle profile completion
+      function completeProfile() {
+        if (window.userSession) {
+          window.userSession.switchToProfile();
+        }
+      }
+      
+      // Initialize authentication-dependent features
+      document.addEventListener('DOMContentLoaded', () => {
+        // Hide loading screen after a delay
+        setTimeout(() => {
+          const loadingScreen = document.getElementById('loadingScreen');
+          if (loadingScreen) {
+            loadingScreen.classList.add('hidden');
+          }
+          
+          const mainApp = document.getElementById('mainApp');
+          if (mainApp) {
+            mainApp.classList.remove('hidden');
+          }
+        }, 2000);
       });
     </script>
   </body>

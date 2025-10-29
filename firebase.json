@@ -1,7 +1,7 @@
 {
   "hosting": {
     "site": "campuskart01",
-    "public": ".",
+    "public": "backend/public",
     "ignore": [
       "firebase.json",
       "**/.*",
@@ -29,9 +29,16 @@
           { "key": "Cache-Control", "value": "no-cache" }
         ]
       }
-    ]
-  }
-  ,
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ],
+    "cleanUrls": true,
+    "trailingSlash": false
+  },
   "functions": {
     "source": "backend/functions"
   }

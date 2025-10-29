@@ -9,6 +9,7 @@
     "rules": "storage.rules"
   },
   "hosting": {
+    "site": "campuskart01",
     "public": "public",
     "ignore": [
       "firebase.json",
@@ -16,6 +17,10 @@
       "**/node_modules/**"
     ],
     "rewrites": [
+      {
+        "source": "/admin",
+        "destination": "/admin.html"
+      },
       {
         "source": "**",
         "destination": "/index.html"

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Setup</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .btn {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn:disabled {
+            background: #cccccc;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background: #dff0d8;
+            color: #3c763d;
+            border: 1px solid #d6e9c6;
+        }
+        .error {
+            background: #f2dede;
+            color: #a94442;
+            border: 1px solid #ebccd1;
+        }
+    </style>
+</head>
+<body>
+    <h1>Admin Setup</h1>
+    <p>This page will help you set up your admin account.</p>
+    
+    <div id="userInfo"></div>
+    <button id="signInBtn" class="btn" style="background:#4285f4; margin-bottom:12px;">Sign in with Google</button>
+    <button id="checkSignInBtn" class="btn" style="background:#888; margin-bottom:12px;">Check sign-in</button>
+    <button id="makeAdminBtn" class="btn" onclick="makeAdmin()" disabled>Make Me Admin</button>
+    <div id="status"></div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+    import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+    import { getFirestore, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+        console.log('Starting admin setup page...');
+
+        // Your Firebase config from firebase-config.js
+        const firebaseConfig = {
+            apiKey: "AIzaSyDUE6N-VexVOcWlyK9xHDTQYR5F42JGsGw",
+            authDomain: "thrift-6bd6d.firebaseapp.com",
+            projectId: "thrift-6bd6d",
+            storageBucket: "thrift-6bd6d.appspot.com",
+            messagingSenderId: "1055382186564",
+            appId: "1:1055382186564:web:c67fdd6f99414611f73916",
+            measurementId: "G-JHT6DL6E26"
+        };
+
+        // Initialize Firebase (or reuse existing global app if present)
+        console.log('Initializing Firebase...');
+        let app;
+        let auth;
+        let db;
+
+        if (window.firebaseApp && window.firebaseAuth && window.firebaseDb) {
+            console.log('Reusing existing global Firebase app');
+            app = window.firebaseApp;
+            auth = window.firebaseAuth;
+            db = window.firebaseDb;
+        } else {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            // expose globally for other pages if needed
+            window.firebaseApp = app;
+            window.firebaseAuth = auth;
+            window.firebaseDb = db;
+        }
+
+        console.log('Firebase initialized successfully');
+
+        // Expose firestone helpers
+        window.getDoc = getDoc;
+        window.doc = doc;
+        window.setDoc = setDoc;
+
+        const provider = new GoogleAuthProvider();
+        const signInBtn = document.getElementById('signInBtn');
+        const makeAdminBtn = document.getElementById('makeAdminBtn');
+        const userInfo = document.getElementById('userInfo');
+
+        // Wire sign-in button with popup + redirect fallback
+        import { signInWithRedirect, getRedirectResult } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+
+        async function startSignIn() {
+            try {
+                signInBtn.disabled = true;
+                await signInWithPopup(auth, provider);
+            } catch (err) {
+                console.warn('Popup sign-in failed, falling back to redirect:', err && err.code);
+                try {
+                    // Fallback to redirect flow which is less likely to be blocked
+                    await signInWithRedirect(auth, provider);
+                } catch (redirErr) {
+                    console.error('Redirect sign-in also failed', redirErr);
+                    signInBtn.disabled = false;
+                    document.getElementById('status').className = 'error';
+                    document.getElementById('status').textContent = 'Sign-in failed: ' + (redirErr.message || redirErr);
+                }
+            }
+        }
+
+        signInBtn.addEventListener('click', startSignIn);
+
+        // Handle redirect result (if any)
+        (async () => {
+            try {
+                const result = await getRedirectResult(auth);
+                if (result && result.user) {
+                    console.log('Redirect sign-in completed, user=', result.user.email);
+                }
+            } catch (e) {
+                // Not an error if no redirect result
+                console.warn('No redirect result or error:', e);
+            }
+        })();
+
+        // Check auth state
+        console.log('Setting onAuthStateChanged listener');
+        onAuthStateChanged(auth, async (user) => {
+            console.log('onAuthStateChanged fired. user =', user);
+            if (user) {
+                userInfo.innerHTML = `\n                    <p><strong>Logged in as:</strong> ${user.email}</p>\n                    <p><strong>User ID:</strong> ${user.uid}</p>\n                `;
+                makeAdminBtn.disabled = false;
+                signInBtn.style.display = 'none';
+                checkSignInBtn.style.display = 'none';
+                // show token claims for debug
+                try {
+                    const id = await user.getIdTokenResult(true);
+                    console.log('ID token claims:', id.claims);
+                    const statusEl = document.getElementById('status');
+                    statusEl.className = 'success';
+                    statusEl.textContent = 'Signed in as ' + user.email + '. Claims: ' + JSON.stringify(id.claims);
+                } catch (err) {
+                    console.warn('Could not get token result:', err);
+                }
+            } else {
+                userInfo.innerHTML = '<p>Please sign in to continue.</p>';
+                makeAdminBtn.disabled = true;
+                signInBtn.style.display = 'inline-block';
+                checkSignInBtn.style.display = 'inline-block';
+                const statusEl = document.getElementById('status');
+                statusEl.className = '';
+                statusEl.textContent = 'Not signed in.';
+            }
+        });
+
+        // Manual check button - helpful if auth exists in other tab/session
+        const checkSignInBtn = document.getElementById('checkSignInBtn');
+        checkSignInBtn.addEventListener('click', async () => {
+            console.log('Manual check: auth.currentUser =', auth.currentUser);
+            if (auth.currentUser) {
+                try {
+                    const id = await auth.currentUser.getIdTokenResult(true);
+                    console.log('Manual check token claims:', id.claims);
+                    document.getElementById('status').className = 'success';
+                    document.getElementById('status').textContent = 'Signed in as ' + auth.currentUser.email + '. Claims: ' + JSON.stringify(id.claims);
+                    makeAdminBtn.disabled = false;
+                } catch (err) {
+                    console.error('Error fetching token:', err);
+                }
+            } else {
+                alert('No current user detected. Please sign in using the button or sign in on the main site and try this check.');
+            }
+        });
+    </script>
+
+    <script>
+        async function makeAdmin() {
+            const status = document.getElementById('status');
+            const makeAdminBtn = document.getElementById('makeAdminBtn');
+            
+            try {
+                makeAdminBtn.disabled = true;
+                status.className = '';
+                status.textContent = 'Setting up admin privileges...';
+
+                const user = auth.currentUser;
+                if (!user) {
+                    throw new Error('Not logged in');
+                }
+
+                // Get user doc reference
+                const userRef = doc(db, 'users', user.uid);
+                const userDoc = await getDoc(userRef);
+
+                // Prepare user data
+                const userData = userDoc.exists() ? userDoc.data() : {};
+                userData.isAdmin = true;
+                userData.adminSetupAt = new Date().toISOString();
+
+                // Update user document
+                await setDoc(userRef, userData, { merge: true });
+
+                status.className = 'success';
+                status.innerHTML = `
+                    ✅ Success! You are now an admin.<br>
+                    Please wait a moment for the change to take effect.<br>
+                    <small>You may need to log out and log back in to see the changes.</small>
+                `;
+            } catch (error) {
+                console.error('Error:', error);
+                status.className = 'error';
+                status.textContent = '❌ Error: ' + error.message;
+                makeAdminBtn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

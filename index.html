@@ -821,8 +821,9 @@
           }
     </style>
 
-    <script src="user-session.js"></script>
-    <script src="app.js" defer></script>
+  <!-- Append a version query to bust long-lived CDN/browser caches after deploy -->
+  <script src="user-session.js?v=20251029"></script>
+  <script src="app.js?v=20251029" defer></script>
   <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
       import { 

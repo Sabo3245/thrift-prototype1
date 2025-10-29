@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Setup</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .btn {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn:disabled {
+            background: #cccccc;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background: #dff0d8;
+            color: #3c763d;
+            border: 1px solid #d6e9c6;
+        }
+        .error {
+            background: #f2dede;
+            color: #a94442;
+            border: 1px solid #ebccd1;
+        }
+    </style>
+</head>
+<body>
+    <h1>Admin Setup</h1>
+    <p>This page will help you set up your admin account.</p>
+    
+    <div id="userInfo"></div>
+    <button id="makeAdminBtn" class="btn" onclick="makeAdmin()" disabled>Make Me Admin</button>
+    <div id="status"></div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+        import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+        import { getFirestore, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+        // Your Firebase config from firebase-config.js
+        const firebaseConfig = {
+            apiKey: "AIzaSyDUE6N-VexVOcWlyK9xHDTQYR5F42JGsGw",
+            authDomain: "thrift-6bd6d.firebaseapp.com",
+            projectId: "thrift-6bd6d",
+            storageBucket: "thrift-6bd6d.appspot.com",
+            messagingSenderId: "1055382186564",
+            appId: "1:1055382186564:web:c67fdd6f99414611f73916",
+            measurementId: "G-JHT6DL6E26"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Expose to global scope for use in inline script
+        window.auth = auth;
+        window.db = db;
+        window.getDoc = getDoc;
+        window.doc = doc;
+        window.setDoc = setDoc;
+
+        // Check auth state
+        onAuthStateChanged(auth, (user) => {
+            const userInfo = document.getElementById('userInfo');
+            const makeAdminBtn = document.getElementById('makeAdminBtn');
+            
+            if (user) {
+                userInfo.innerHTML = `
+                    <p><strong>Logged in as:</strong> ${user.email}</p>
+                    <p><strong>User ID:</strong> ${user.uid}</p>
+                `;
+                makeAdminBtn.disabled = false;
+            } else {
+                userInfo.innerHTML = '<p>Please log in first at <a href="/index.html">home page</a>.</p>';
+                makeAdminBtn.disabled = true;
+            }
+        });
+    </script>
+
+    <script>
+        async function makeAdmin() {
+            const status = document.getElementById('status');
+            const makeAdminBtn = document.getElementById('makeAdminBtn');
+            
+            try {
+                makeAdminBtn.disabled = true;
+                status.className = '';
+                status.textContent = 'Setting up admin privileges...';
+
+                const user = auth.currentUser;
+                if (!user) {
+                    throw new Error('Not logged in');
+                }
+
+                // Get user doc reference
+                const userRef = doc(db, 'users', user.uid);
+                const userDoc = await getDoc(userRef);
+
+                // Prepare user data
+                const userData = userDoc.exists() ? userDoc.data() : {};
+                userData.isAdmin = true;
+                userData.adminSetupAt = new Date().toISOString();
+
+                // Update user document
+                await setDoc(userRef, userData, { merge: true });
+
+                status.className = 'success';
+                status.innerHTML = `
+                    ✅ Success! You are now an admin.<br>
+                    Please wait a moment for the change to take effect.<br>
+                    <small>You may need to log out and log back in to see the changes.</small>
+                `;
+            } catch (error) {
+                console.error('Error:', error);
+                status.className = 'error';
+                status.textContent = '❌ Error: ' + error.message;
+                makeAdminBtn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

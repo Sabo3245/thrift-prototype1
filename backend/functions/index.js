@@ -110,3 +110,37 @@ exports.moderateItem = functions.region('us-central1').firestore
       return null;
     }
   });
+
+// Sync users.{uid}.isAdmin to Authentication custom claims
+exports.syncAdminClaim = functions.region('us-central1').firestore
+  .document('users/{userId}')
+  .onWrite(async (change, context) => {
+    const userId = context.params.userId;
+    const before = change.before.exists ? change.before.data() : {};
+    const after = change.after.exists ? change.after.data() : {};
+
+    const beforeIsAdmin = !!before.isAdmin;
+    const afterIsAdmin = !!after.isAdmin;
+
+    // No change in isAdmin -> noop
+    if (beforeIsAdmin === afterIsAdmin) return null;
+
+    try {
+      if (afterIsAdmin) {
+        // grant admin claim
+        await admin.auth().setCustomUserClaims(userId, { admin: true });
+        console.log(`Granted admin claim to ${userId}`);
+      } else {
+        // remove admin claim
+        await admin.auth().setCustomUserClaims(userId, {});
+        console.log(`Removed admin claim from ${userId}`);
+      }
+
+      // record sync timestamp
+      await db.collection('users').doc(userId).update({ adminSyncedAt: admin.firestore.FieldValue.serverTimestamp() });
+      return null;
+    } catch (err) {
+      console.error('Error syncing admin claim for', userId, err);
+      return null;
+    }
+  });
