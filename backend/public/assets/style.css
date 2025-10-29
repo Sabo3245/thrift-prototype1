@@ -820,29 +820,15 @@ body {
 .logo-shape {
   width: 80px;
   height: 80px;
-  background: linear-gradient(45deg, var(--neon-purple), var(--neon-cyan));
+  background: transparent;
   border-radius: 50%;
   margin: 0 auto var(--space-16);
   position: relative;
-  animation: logoSpin 3s linear infinite, logoPulse 1.5s ease-in-out infinite;
+  animation: logoFloat 2s ease-in-out infinite alternate;
 }
 
 .logo-shape::before {
-  content: "";
-  position: absolute;
-  top: -4px;
-  left: -4px;
-  right: -4px;
-  bottom: -4px;
-  background: linear-gradient(
-    45deg,
-    var(--neon-pink),
-    var(--neon-green),
-    var(--neon-purple)
-  );
-  border-radius: 50%;
-  z-index: -1;
-  animation: borderGlow 2s ease-in-out infinite;
+  content: none;
 }
 
 .logo-text {

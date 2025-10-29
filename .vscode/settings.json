@@ -1,3 +1,14 @@
 {
-    "liveServer.settings.port": 5503
+    "liveServer.settings.port": 5505,
+    "liveServer.settings.donotShowInfoMsg": true,
+    "liveServer.settings.NoBrowser": false,
+    "liveServer.settings.ignoreFiles": [],
+    "liveServer.settings.donotVerifyTags": false,
+    "liveServer.settings.proxy": {
+        "enable": false
+    },
+    "liveServer.settings.file": "",
+    "liveServer.settings.root": "/backend/public",
+    "liveServer.settings.mount": [],
+    "liveServer.settings.wait": 100
 }
