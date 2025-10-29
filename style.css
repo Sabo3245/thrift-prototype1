@@ -14,7 +14,7 @@
   --color-slate-900: rgba(19, 52, 59, 1);
   --color-teal-300: rgba(50, 184, 198, 1);
   --color-teal-400: rgba(45, 166, 178, 1);
-  --color-teal-500: rgba(33, 128, 141, 1);f
+  --color-teal-500: rgba(33, 128, 141, 1);
   --color-teal-600: rgba(29, 116, 128, 1);
   --color-teal-700: rgba(26, 104, 115, 1);
   --color-teal-800: rgba(41, 150, 161, 1);
@@ -4505,4 +4505,113 @@ body.modal-open {
 .compact-item-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+
+/* --- Mobile Responsiveness Fixes for CampusKart --- */
+
+
+@media (max-width: 640px) {
+html {
+font-size: 14px;
+}
+
+
+body {
+overflow-x: hidden;
+}
+
+
+.container {
+padding: 0 10px;
+}
+
+
+h1, h2 {
+font-size: clamp(1.2rem, 6vw, 1.6rem);
+text-align: center;
+}
+
+
+.page-subtitle {
+font-size: 0.9rem;
+text-align: center;
+}
+
+
+.filters-container {
+display: flex;
+flex-direction: column;
+gap: 10px;
+}
+
+
+.filter-group {
+width: 100%;
+}
+
+
+.search-input-wrapper {
+display: flex;
+flex-direction: column;
+gap: 8px;
+}
+
+
+.search-input {
+width: 100%;
+font-size: 1rem;
+}
+
+
+.search-btn {
+width: 100%;
+}
+
+
+.item-card {
+width: 100%;
+margin: 0 auto 16px;
+}
+
+
+.nav-container {
+display: flex;
+flex-direction: column;
+text-align: center;
+}
+
+
+.nav-tabs {
+display: flex;
+flex-wrap: wrap;
+justify-content: center;
+gap: 6px;
+}
+
+
+.nav-tab {
+flex: 1 1 40%;
+margin: 4px;
+}
+
+
+.nav-tab span:not(.nav-icon) {
+display: none;
+}
+
+
+#fabButton {
+bottom: 1rem;
+right: 1rem;
+width: 55px;
+height: 55px;
+}
+
+
+.section-header {
+text-align: center;
+}
+
+
 }
