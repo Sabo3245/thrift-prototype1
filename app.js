@@ -1070,6 +1070,18 @@ class PostItem {
         submitBtn.disabled = !disclaimerCheckbox.checked;
       });
     }
+
+    const openTermsBtn = document.getElementById('openTermsBtn');
+    const termsModal = document.getElementById('termsModal');
+    
+    if (openTermsBtn && termsModal) {
+      // Open the modal
+      openTermsBtn.addEventListener('click', (e) => {
+        e.preventDefault(); // Stop the <a> tag from jumping
+        termsModal.classList.remove('hidden');
+        document.body.classList.add('modal-open');
+      });
+    }
   }
 
   async uploadImagesToStorage(uid) {
@@ -1248,6 +1260,15 @@ class Chat {
     this.activeFilter = 'all'; // NEW: Add this line to track the filter state
 
     this.bindEvents();
+
+    const chatBackButton = document.getElementById('chatBackButton');
+    const chatContainer = document.querySelector('.chat-container');
+    
+    if (chatBackButton && chatContainer) {
+      chatBackButton.addEventListener('click', () => {
+        chatContainer.classList.remove('chat-active');
+      });
+    }
     // Try to subscribe now (if user is already available)
     this.subscribeConversations();
     // And resubscribe on auth state changes
@@ -1426,6 +1447,8 @@ class Chat {
   openChat(chatId) {
     const convo = this.conversations.find((c) => c.id === chatId) || { id: chatId };
     this.activeConversation = convo;
+
+    document.querySelector('.chat-container')?.classList.add('chat-active');
 
     const chatUserName = document.getElementById('chatUserName');
     const chatUserStatus = document.getElementById('chatUserStatus');
@@ -2500,6 +2523,7 @@ function initializeGlobalEventListeners() {
       target.id === "closeModal" ||
       target.id === "cancelRemove" ||
       target.id === "cancelBoost" ||
+      target.id === "closeTermsModal" ||
       target.id === "cancelDeleteAccount" || // Merged
       target.classList.contains("modal-overlay")
     ) {
