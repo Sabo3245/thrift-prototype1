@@ -221,10 +221,31 @@ class AuthenticationManager {
       this.togglePasswordVisibility('signinPassword');
     });
 
+    document.getElementById('openTermsLink').addEventListener('click', (e) => {
+      e.preventDefault();
+      this.showModal('termsModal');
+    });
+
+    document.getElementById('openPrivacyLink').addEventListener('click', (e) => {
+      e.preventDefault();
+      this.showModal('privacyModal');
+    });
+
+    document.getElementById('closeTermsModal').addEventListener('click', () => {
+      this.hideModal('termsModal');
+    });
+    
+    document.getElementById('closePrivacyModal').addEventListener('click', () => {
+      this.hideModal('privacyModal');
+    });
+
     // Modal overlay click to close
     document.querySelectorAll('.modal-overlay').forEach(overlay => {
       overlay.addEventListener('click', () => {
-        this.hidePasswordResetModal();
+        const modal = overlay.closest('.modal');
+        if (modal) {
+          this.hideModal(modal.id);
+        }
       });
     });
   }
@@ -740,9 +761,26 @@ class AuthenticationManager {
     return errorMessages[errorCode] || 'An unexpected error occurred. Please try again';
   }
 
+  showModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+      modal.classList.remove('hidden');
+      document.body.classList.add('modal-open');
+    }
+  }
+
+  hideModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+      modal.classList.add('hidden');
+      document.body.classList.remove('modal-open');
+    }
+  }
+
   // Modal Management
+// Modal Management (Refactored)
   showPasswordResetModal() {
-    document.getElementById('resetPasswordModal').classList.remove('hidden');
+    this.showModal('resetPasswordModal'); // Use generic helper
     // Prefill email if available from sign-in form
     const signinEmail = document.getElementById('signinEmail').value.trim();
     if (signinEmail) {
@@ -751,7 +789,7 @@ class AuthenticationManager {
   }
 
   hidePasswordResetModal() {
-    document.getElementById('resetPasswordModal').classList.add('hidden');
+    this.hideModal('resetPasswordModal'); // Use generic helper
     document.getElementById('resetEmail').value = '';
   }
 

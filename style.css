@@ -1978,46 +1978,7 @@ body {
 }
 
 /* Responsive Design for Authentication */
-@media (max-width: 768px) {
-  .auth-body {
-    padding: var(--space-12);
-  }
 
-  .auth-container {
-    max-width: 100%;
-  }
-
-  .auth-card {
-    padding: var(--space-24);
-  }
-
-  .auth-title {
-    font-size: var(--font-size-2xl);
-  }
-
-  .auth-header .brand-logo {
-    width: 50px;
-    height: 50px;
-    font-size: var(--font-size-lg);
-  }
-
-  .form-row {
-    flex-direction: column;
-  }
-
-  .form-options {
-    flex-direction: column;
-    gap: var(--space-12);
-    align-items: flex-start;
-  }
-
-  .message-container {
-    top: var(--space-12);
-    right: var(--space-12);
-    left: var(--space-12);
-    max-width: none;
-  }
-}
 
 /* Enhanced Focus States for Auth Forms */
 .auth-form .form-group.focused .form-label {
@@ -3492,59 +3453,7 @@ body.modal-open {
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
-  .nav-container {
-    padding: var(--space-12) var(--space-16);
-  }
 
-  .nav-tabs {
-    gap: var(--space-4);
-  }
-
-  .nav-tab {
-    padding: var(--space-8) var(--space-12);
-    font-size: var(--font-size-sm);
-  }
-
-  .nav-tab span:last-child {
-    display: none;
-  }
-
-  .page-title {
-    font-size: var(--font-size-3xl);
-  }
-
-  .filters-container {
-    flex-direction: column;
-  }
-
-  .items-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .form-row {
-    flex-direction: column;
-  }
-
-  .profile-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .chat-container {
-    grid-template-columns: 1fr;
-    height: auto;
-  }
-
-  .chat-sidebar {
-    height: 200px;
-    overflow-y: auto;
-  }
-
-  .fab {
-    bottom: var(--space-20);
-    right: var(--space-20);
-  }
-}
 
 /* ================================== */
 /* === USER SESSION STYLES === */
@@ -3665,7 +3574,7 @@ body.modal-open {
 /* Responsive User Session Elements */
 @media (max-width: 768px) {
   .user-indicator {
-    display: none; /* Hide on mobile to save space */
+    align-items: right;
   }
 
   .profile-complete-prompt {
@@ -4507,111 +4416,288 @@ body.modal-open {
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
 }
 
+/* Makes the new "Terms & Conditions" link clickable and styled */
+.checkbox-label a {
+  color: var(--neon-cyan);
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.checkbox-label a:hover {
+  color: var(--neon-purple);
+}
+
+/* Styles for the new terms modal body */
+#termsModal .modal-body {
+  text-align: left;
+  max-height: 50vh; /* 50% of the viewport height */
+  overflow-y: auto; /* Adds a scrollbar if content is too long */
+  padding-right: 12px; /* Space for the scrollbar */
+  padding-left: 12px;
+}
+
+#termsModal .modal-body p,
+#termsModal .modal-body li {
+  color: var(--color-gray-300);
+  margin-bottom: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Custom scrollbar for the modal body */
+#termsModal .modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+#termsModal .modal-body::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+}
+
+#termsModal .modal-body::-webkit-scrollbar-thumb {
+  background: var(--neon-cyan);
+  border-radius: 10px;
+}
+
+/* Hides the new back button on desktop */
+#chatBackButton {
+  display: none;
+}
+
+/* --- Styles for Terms/Privacy Modals (Auth Page) --- */
+
+/* Makes the modal body scrollable and readable */
+#termsModal .modal-body,
+#privacyModal .modal-body {
+  text-align: left;
+  max-height: 60vh; /* 60% of the viewport height */
+  overflow-y: auto;   /* Adds a scrollbar if content is too long */
+  padding: 0 12px; /* Add some side padding */
+  color: var(--color-gray-300); /* Make text readable */
+  line-height: 1.6;
+}
+
+#termsModal .modal-body p,
+#privacyModal .modal-body p,
+#termsModal .modal-body li,
+#privacyModal .modal-body li {
+  color: var(--color-gray-300);
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+/* Custom scrollbar for these modals */
+#termsModal .modal-body::-webkit-scrollbar,
+#privacyModal .modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+#termsModal .modal-body::-webkit-scrollbar-track,
+#privacyModal .modal-body::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+}
+
+#termsModal .modal-body::-webkit-scrollbar-thumb,
+#privacyModal .modal-body::-webkit-scrollbar-thumb {
+  background: var(--neon-cyan);
+  border-radius: 10px;
+}
 
 /* --- Mobile Responsiveness Fixes for CampusKart --- */
 
+/* ========================================= */
+/* === CONSOLIDATED MOBILE STYLES (768px) === */
+/* ========================================= */
 
-@media (max-width: 640px) {
-html {
-font-size: 14px;
+@media (max-width: 768px) {
+
+  /* === 1. General Layout & Navigation === */
+  
+  .container {
+    padding: 0 12px; /* Add some side padding */
+  }
+
+  /* Hides the "CampusKart" text, just shows the logo */
+  .nav-brand .brand-text {
+    display: none;
+  }
+
+  /* Hides tab text, just shows icons */
+  .nav-tab span:not(.nav-icon) {
+    display: none;
+  }
+
+  .nav-tab {
+    padding: 10px; /* Makes icon buttons more square */
+  }
+  
+  .page-title {
+    font-size: 1.8rem; /* Smaller titles for mobile */
+  }
+  
+  .fab {
+    width: 50px;
+    height: 50px;
+    bottom: 20px;
+    right: 20px;
+  }
+
+  /* === 2. Marketplace (Your Requests) === */
+  
+  /* Fixes your 3-line filter problem */
+  .filters-container {
+    display: flex;
+    flex-direction: row; /* Forces them into a row */
+    gap: 8px;
+  }
+
+  .filter-group {
+    flex: 1; /* Each filter shares the space equally */
+    min-width: 0; /* Overrides the 200px min-width */
+  }
+
+  /* Gives you the 2-column grid you wanted */
+  .items-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px; /* A smaller gap for mobile */
+  }
+
+  /* === 3. Post Item Form === */
+  
+  /* Stacks form fields vertically */
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+  
+  /* Stacks upload previews in 2 columns */
+  .uploaded-images {
+     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+
+
+  /* === 4. Chat Page === */
+  
+  /* Stacks the conversation list on top of the chat window */
+  /* === 4. Chat Page (Mobile Master-Detail) === */
+  
+  .chat-container {
+    display: block;
+    height: 75vh; /* Or 80vh, whatever fits your layout */
+    position: relative; /* Needed for positioning children */
+    overflow: hidden; /* Hides the panel that slides out */
+  }
+
+  /* --- By default, show the List --- */
+  
+  .chat-sidebar {
+    height: 100%; /* Make list fill the container */
+    overflow-y: auto;
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    transition: transform 0.3s ease-in-out;
+    transform: translateX(0); /* On-screen */
+    opacity: 1; /* Override .glass-card's animation opacity: 0 */
+    animation: none; /* Disable the conflicting slideInUp animation */
+  }
+  
+  /* --- And hide the Chat Window --- */
+
+  .chat-window {
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: flex; /* This ensures it's laid out correctly */
+    flex-direction: column;
+    transition: transform 0.3s ease-in-out;
+    transform: translateX(100%); /* Off-screen to the right */
+    opacity: 1; /* Override .glass-card's animation opacity: 0 */
+    animation: none; /* Disable the conflicting slideInUp animation */
+  }
+  
+  /* --- State when a chat is active --- */
+
+  .chat-container.chat-active .chat-sidebar {
+    transform: translateX(-100%); /* Slide list off-screen left */
+  }
+  
+  .chat-container.chat-active .chat-window {
+    transform: translateX(0); /* Slide window on-screen */
+  }
+
+  /* Show the mobile back button */
+  #chatBackButton {
+    display: inline-flex; /* Or 'block' */
+  }
+  
+  .chat-header {
+    padding: 12px;
+  }
+  
+  .chat-avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+  }
+
+  /* === 5. Profile Page === */
+  
+  /* Stacks the main profile card */
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Makes your listings and hearted posts 2-column */
+  .listings-grid,
+  .hearted-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  /* === 6. Item Detail Page === */
+  
+  /* Stacks the image and item info */
+  .item-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .item-detail-right {
+    position: static; /* Removes sticky positioning */
+  }
+  
+  .item-detail-image {
+    height: 300px; /* A more mobile-friendly height */
+  }
 }
 
 
-body {
-overflow-x: hidden;
-}
+/* ========================================= */
+/* === STYLES FOR VERY SMALL PHONES (420px) === */
+/* ========================================= */
 
-
-.container {
-padding: 0 10px;
-}
-
-
-h1, h2 {
-font-size: clamp(1.2rem, 6vw, 1.6rem);
-text-align: center;
-}
-
-
-.page-subtitle {
-font-size: 0.9rem;
-text-align: center;
-}
-
-
-.filters-container {
-display: flex;
-flex-direction: column;
-gap: 10px;
-}
-
-
-.filter-group {
-width: 100%;
-}
-
-
-.search-input-wrapper {
-display: flex;
-flex-direction: column;
-gap: 8px;
-}
-
-
-.search-input {
-width: 100%;
-font-size: 1rem;
-}
-
-
-.search-btn {
-width: 100%;
-}
-
-
-.item-card {
-width: 100%;
-margin: 0 auto 16px;
-}
-
-
-.nav-container {
-display: flex;
-flex-direction: column;
-text-align: center;
-}
-
-
-.nav-tabs {
-display: flex;
-flex-wrap: wrap;
-justify-content: center;
-gap: 6px;
-}
-
-
-.nav-tab {
-flex: 1 1 40%;
-margin: 4px;
-}
-
-
-.nav-tab span:not(.nav-icon) {
-display: none;
-}
-
-
-#fabButton {
-bottom: 1rem;
-right: 1rem;
-width: 55px;
-height: 55px;
-}
-
-
-.section-header {
-text-align: center;
-}
-
-
+@media (max-width: 420px) {
+  
+  /* Switches to a 1-column grid on very small screens */
+  .items-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  /* Makes profile items 1-column too */
+  .listings-grid,
+  .hearted-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  /* Makes filters stack nicely */
+  .filters-container {
+    display: grid;
+    grid-template-columns: 1fr; /* Stacks to 1 column */
+    gap: 12px;
+  }
 }

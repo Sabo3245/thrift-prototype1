@@ -502,7 +502,7 @@ class UserSessionManager {
         <span class="user-welcome">Welcome, ${
           this.userData.firstName || "User"
         }!</span>
-        <span class="user-points">💎 ${this.userData.points || 0} points</span>
+        <span class="user-points">🟡 ${this.userData.points || 0} CampusKoins</span>
       `;
     }
   }

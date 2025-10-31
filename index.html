@@ -57,7 +57,6 @@
             <span class="nav-icon">💬</span>
             <span>Chat</span>
           </button>
-
           <button class="nav-tab" data-section="profile">
             <span class="nav-icon">👤</span>
             <span>Profile</span>
@@ -86,25 +85,11 @@
                   <div class="contact-details">
                     <span class="contact-label">Email Support</span>
                     <span class="contact-value"
-                      >admin@campuskart.example.com</span
+                      >help.campuskart@gmail.com</span
                     >
                   </div>
                 </div>
-                <div class="contact-item">
-                  <span class="contact-icon">📞</span>
-                  <div class="contact-details">
-                    <span class="contact-label">Phone Support</span>
-                    <span class="contact-value">+91 123-456-7890</span>
-                  </div>
-                </div>
-                <div class="contact-item">
-                  <span class="contact-icon">🕒</span>
-                  <div class="contact-details">
-                    <span class="contact-label">Office Hours</span>
-                    <span class="contact-value"
-                      >Mon-Fri, 10:00 AM - 5:00 PM</span
-                    >
-                  </div>
+
                 </div>
               </div>
             </div>
@@ -378,32 +363,11 @@
               </div>
               <div class="uploaded-images" id="uploadedImages"></div>
             </div>
-            <div class="form-tips-card">
-              <h4 class="tips-title">💡 Safety Tips & Disclaimer</h4>
-              <ul class="tips-list">
-                <li>
-                  <strong>Be Cautious:</strong> Don't share OTPs or personal
-                  details like bank account numbers.
-                </li>
-                <li>
-                  <strong>No Advance Payments:</strong> Never give money or the
-                  product to someone in advance.
-                </li>
-                <li>
-                  <strong>Meet Safely:</strong> Always be cautious while meeting
-                  a buyer or seller. Prefer public places on campus.
-                </li>
-                <li>
-                  <strong>Report Suspicious Users:</strong> Help keep the
-                  community safe by reporting any suspicious behavior to the
-                  admins.
-                </li>
-              </ul>
-            </div>
+            
             <div class="form-group form-group-checkbox">
               <input type="checkbox" id="disclaimerCheckbox" class="styled-checkbox" />
               <label for="disclaimerCheckbox" class="checkbox-label">
-                I have read and agree to the safety tips & disclaimer.
+                I have read and agree to the <a href="#" id="openTermsBtn">Terms & Conditions</a>.
               </label>
             </div>
             <button
@@ -439,6 +403,7 @@
 
             <div class="chat-window glass-card" id="chatWindow">
               <div class="chat-header">
+                <button class="btn btn--outline btn--sm" id="chatBackButton">← Back</button>
                 <div class="chat-user-info">
                   <div class="chat-avatar">👤</div>
                   <div class="chat-user-details">
@@ -736,6 +701,57 @@
           </div>
         </div>
       </div>
+      <div class="modal hidden" id="termsModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content glass-card">
+          <div class="modal-header">
+            <h3 class="modal-title">Terms & Conditions</h3>
+          </div>
+          <div class="modal-body">
+ 
+            <p>Welcome to CampusKart!</p>
+            <p>By using this platform, you agree to the following terms:</p>
+            <ul>
+              <li><strong>Eligibility</strong> 
+                   ⁠The Service is intended for use by students, faculty, and staff of participating campuses only. You must be 18 years or older or have consent from a legal guardian to create an account.
+              </li>
+              <li><strong>Account Registration</strong>
+⁠  ⁠You must provide accurate information during registration including your name, campus email, phone number, and hostel name.
+⁠  ⁠You are responsible for maintaining the confidentiality of your account credentials.</li>
+              <li><strong>Rules</strong> 
+  ⁠  ⁠Users are responsible for ensuring that their listings and conduct comply with all applicable campus and local laws.
+⁠    ⁠Prohibited items and content are strictly forbidden. Such listings will be removed without notice.
+⁠    ⁠CampusKart is not liable for transactions or interactions between users.
+</li>
+              <li><strong>Point System</strong>
+⁠  ⁠Each completed transaction may earn loyalty points for users, redeemable per current platform policy.
+⁠  ⁠Points are non-transferable and have no cash value.
+</li>
+              <li><strong>Intellectual Property</strong>
+⁠  ⁠The CampusKart brand, logos, and mascot images are protected. Users may not copy, distribute, or modify these assets.
+</li>
+              <li><strong>Disclaimer and Limitation of Liability</strong>
+ ⁠The Service is provided “as is” and “as available,” without warranty. CampusKart disclaims all liability for damages from use or inability to use the platform.
+</li>
+              <li><strong>Account Termination</strong>
+ ⁠CampusKart may suspend or terminate user accounts for breach of these Terms.
+</li>
+<li>
+  <strong>Changes to Terms</strong>
+ ⁠CampusKart reserves the right to update these Terms at any time. Users are encouraged to review them periodically.
+
+</li>
+            </ul>
+          </div>
+          <div class="modal-actions">
+            <button class="btn btn--primary" id="closeTermsModal">I Understand</button>
+          </div>
+        </div>
+      </div>
+      
+      <button class="fab" id="fabButton">
+        <span class="fab-icon">➕</span>
+...
       <button class="fab" id="fabButton">
         <span class="fab-icon">➕</span>
         <div class="fab-ripple"></div>
