@@ -126,9 +126,10 @@
                 <option value="">All Categories</option>
                 <option value="Clothes">Clothes</option>
                 <option value="Electronics">Electronics</option>
-                <option value="Books">Books</option>
+                <option value="Stationery">Stationery</option>
                 <option value="Cosmetics">Cosmetics</option>
                 <option value="Miscellaneous">Miscellaneous</option>
+                <option value="Food">Food</option>
               </select>
             </div>
             <div class="filter-group">
@@ -142,10 +143,10 @@
             </div>
             <div class="filter-group">
               <label class="filter-label">Hostel</label>
+              
               <select id="hostelFilter" class="filter-select">
                 <option value="">All Hostels</option>
-                <option value="Boys">Boys</option>
-                <option value="Girls">Girls</option>
+                <option value="myHostel">My Hostel</option>
               </select>
             </div>
           </div>
@@ -202,6 +203,7 @@
                   <div id="detailDescription" class="detail-value"></div>
                 </div>
                 <div class="detail-actions">
+                  <button class="btn btn--outline" id="copyUrlBtn">🔗 Share</button>
                   <button class="btn btn--primary" id="detailContactBtn">Contact Seller</button>
                 </div>
               </div>
@@ -244,9 +246,10 @@
                   <option value="">Select category...</option>
                   <option value="Clothes">Clothes</option>
                   <option value="Electronics">Electronics</option>
-                  <option value="Books">Books</option>
+                  <option value="Stationery">Stationery</option>
                   <option value="Cosmetics">Cosmetics</option>
                   <option value="Miscellaneous">Miscellaneous</option>
+                  <option value="Food">Food</option>
                 </select>
               </div>
               <div class="form-group">
@@ -289,16 +292,33 @@
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label">Hostel</label>
+                
                 <select
                   class="form-control animated-input"
                   id="itemHostel"
                   required
                 >
                   <option value="">Select hostel...</option>
-                  <option value="Boys">Boys</option>
-                  <option value="Girls">Girls</option>
+                  <option value="A">A</option>
+                  <option value="B">B</option>
+                  <option value="C">C</option>
+                  <option value="D">D</option>
+                  <option value="H">H</option>
+                  <option value="J">J</option>
+                  <option value="K">K</option>
+                  <option value="L">L</option>
+                  <option value="M">M</option>
+                  <option value="O">O</option>
+                  <option value="E">E</option>
+                  <option value="G">G</option>
+                  <option value="I">I</option>
+                  <option value="N">N</option>
+                  <option value="HOTEL-PG">HOTEL-PG</option>
+                  <option value="Q">Q</option>
+                  <option value="FRF">FRF</option>
+                  <option value="FRG">FRG</option>
                 </select>
-              </div>
+                </div>
             </div>
 
             <div class="clothing-checklist hidden" id="clothingChecklist">
@@ -834,6 +854,7 @@
             border-color: var(--neon-cyan);
             box-shadow: 0 0 8px var(--neon-cyan);
           }
+
     </style>
 
   <!-- Append a version query to bust long-lived CDN/browser caches after deploy -->

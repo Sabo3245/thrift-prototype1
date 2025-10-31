@@ -2578,9 +2578,25 @@ body {
   margin-bottom: var(--space-4);
 }
 
+
 .conversation-time {
   font-size: var(--font-size-xs);
   color: var(--color-gray-500);
+}
+
+.unread-bubble {
+  background-color: var(--neon-green);
+  color: var(--deep-navy); /* Dark text on light green bg */
+  font-size: 12px;
+  font-weight: bold;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  /* It will stack vertically inside .conversation-meta */
 }
 
 .unread-indicator {
