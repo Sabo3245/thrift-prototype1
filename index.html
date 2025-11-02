@@ -126,9 +126,10 @@
                 <option value="">All Categories</option>
                 <option value="Clothes">Clothes</option>
                 <option value="Electronics">Electronics</option>
-                <option value="Books">Books</option>
+                <option value="Stationery">Stationery</option>
                 <option value="Cosmetics">Cosmetics</option>
                 <option value="Miscellaneous">Miscellaneous</option>
+                <option value="Food">Food</option>
               </select>
             </div>
             <div class="filter-group">
@@ -142,10 +143,10 @@
             </div>
             <div class="filter-group">
               <label class="filter-label">Hostel</label>
+              
               <select id="hostelFilter" class="filter-select">
                 <option value="">All Hostels</option>
-                <option value="Boys">Boys</option>
-                <option value="Girls">Girls</option>
+                <option value="myHostel">My Hostel</option>
               </select>
             </div>
           </div>
@@ -202,8 +203,11 @@
                   <div id="detailDescription" class="detail-value"></div>
                 </div>
                 <div class="detail-actions">
+                  <button class="btn btn--outline" id="copyUrlBtn">🔗 Share</button>
+                  <button class="btn btn--outline btn--danger" id="reportItemBtn">🚩 Report Item</button>
                   <button class="btn btn--primary" id="detailContactBtn">Contact Seller</button>
                 </div>
+                
               </div>
             </div>
           </div>
@@ -244,9 +248,10 @@
                   <option value="">Select category...</option>
                   <option value="Clothes">Clothes</option>
                   <option value="Electronics">Electronics</option>
-                  <option value="Books">Books</option>
+                  <option value="Stationery">Stationery</option>
                   <option value="Cosmetics">Cosmetics</option>
                   <option value="Miscellaneous">Miscellaneous</option>
+                  <option value="Food">Food</option>
                 </select>
               </div>
               <div class="form-group">
@@ -289,16 +294,33 @@
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label">Hostel</label>
+                
                 <select
                   class="form-control animated-input"
                   id="itemHostel"
                   required
                 >
                   <option value="">Select hostel...</option>
-                  <option value="Boys">Boys</option>
-                  <option value="Girls">Girls</option>
+                  <option value="A">A</option>
+                  <option value="B">B</option>
+                  <option value="C">C</option>
+                  <option value="D">D</option>
+                  <option value="H">H</option>
+                  <option value="J">J</option>
+                  <option value="K">K</option>
+                  <option value="L">L</option>
+                  <option value="M">M</option>
+                  <option value="O">O</option>
+                  <option value="E">E</option>
+                  <option value="G">G</option>
+                  <option value="I">I</option>
+                  <option value="N">N</option>
+                  <option value="HOTEL-PG">HOTEL-PG</option>
+                  <option value="Q">Q</option>
+                  <option value="FRF">FRF</option>
+                  <option value="FRG">FRG</option>
                 </select>
-              </div>
+                </div>
             </div>
 
             <div class="clothing-checklist hidden" id="clothingChecklist">
@@ -801,7 +823,7 @@
         #itemDetail .item-detail-grid { grid-template-columns: 1fr; justify-content: initial; }
         #itemDetail .item-detail-right { position: static; max-width: 100%; }
       }
-      #itemDetail .item-detail-image { width: 100%; height: min(60vh, 560px); min-height: 280px; object-fit: cover; border-radius: 14px; box-shadow: 0 20px 40px rgba(0,0,0,.35); display: none; }
+      #itemDetail .item-detail-image { width: 100%; height: min(60vh, 560px); min-height: 280px; object-fit: contain;background-color: rgba(0, 0, 0, 0.2); border-radius: 14px; box-shadow: 0 20px 40px rgba(0,0,0,.35); display: none; }
       #itemDetail .item-detail-emoji { font-size: 120px; display: flex; align-items: center; justify-content: center; height: min(50vh, 420px); border-radius: 14px; background: rgba(255,255,255,0.05); }
       #itemDetail .item-detail-right { display: grid; gap: 12px; align-content: start; position: sticky; top: 100px; justify-self: end; width: 100%; max-width: 420px; }
       #itemDetail .detail-label { display: block; opacity: 0.85; font-weight: 600; color: var(--color-gray-300); margin-bottom: 4px; }
@@ -818,7 +840,7 @@
           #itemDetail .detail-thumbnail-img {
             width: 64px;
             height: 64px;
-            object-fit: cover;
+            object-fit: contain;background-color: rgba(0, 0, 0, 0.2);
             border-radius: 8px;
             cursor: pointer;
             border: 2px solid var(--glass-border);
@@ -834,6 +856,15 @@
             border-color: var(--neon-cyan);
             box-shadow: 0 0 8px var(--neon-cyan);
           }
+
+          .btn--danger {
+            color: #FF5459;
+            border-color: #FF5459;
+          }
+          .btn--danger:hover {
+            background: rgba(255, 84, 89, 0.1);
+          }
+
     </style>
 
   <!-- Append a version query to bust long-lived CDN/browser caches after deploy -->

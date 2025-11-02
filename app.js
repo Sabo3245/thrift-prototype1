@@ -149,75 +149,7 @@ const AppState = {
   currentBoostItemId: null,
 };
 
-// Sample data with enhanced features
-const sampleItems = [
-  {
-    id: 1,
-    title: "Vintage Denim Jacket",
-    category: "Clothes",
-    condition: "Used",
-    price: 1200,
-    originalPrice: 2500,
-    description: "Perfect condition vintage denim jacket, size M",
-    hostel: "Boys",
-    images: ["jacket1.jpg"],
-    icon: "👕",
-    isBoosted: false,
-    sellerName: "Rohan Sharma",
-    hearts: 0,
-    sellerId: "user1",
-    clothingChecklist: {
-      quality: "Good",
-      detailedCondition: "Minimal wear, no stains",
-      age: "1-2 years",
-    },
-  },
-  {
-    id: 2,
-    title: 'MacBook Pro 13"',
-    category: "Electronics",
-    condition: "Used",
-    price: 85000,
-    originalPrice: 120000,
-    description: "2019 MacBook Pro, excellent condition, 512GB SSD",
-    hostel: "Girls",
-    images: ["macbook1.jpg"],
-    icon: "💻",
-    isBoosted: true,
-    hearts: 3,
-    sellerId: "user2",
-  },
-  {
-    id: 3,
-    title: "Calculus Textbook",
-    category: "Books",
-    condition: "Used",
-    price: 800,
-    originalPrice: 1500,
-    description: "Engineering Mathematics textbook, minimal highlighting",
-    hostel: "Boys",
-    images: ["book1.jpg"],
-    icon: "📚",
-    isBoosted: false,
-    hearts: 1,
-    sellerId: "user1",
-  },
-  {
-    id: 4,
-    title: "Makeup Palette Set",
-    category: "Cosmetics",
-    condition: "Unused",
-    price: 2500,
-    originalPrice: 3200,
-    description: "Brand new eyeshadow palette, never opened",
-    hostel: "Girls",
-    images: ["makeup1.jpg"],
-    icon: "💄",
-    isBoosted: false,
-    hearts: 2,
-    sellerId: "user3",
-  },
-];
+
 
 // Utility Functions
 const utils = {
@@ -617,7 +549,22 @@ class Marketplace {
         !filters.category || item.category === filters.category;
       const matchesCondition =
         !filters.condition || item.condition === filters.condition;
-      const matchesHostel = !filters.hostel || item.hostel === filters.hostel;
+      let matchesHostel = true; // Default to true (for "All Hostels")
+
+      if (filters.hostel === 'myHostel') {
+        // User selected "My Hostel", get their data
+        const currentUser = window.userSession?.getCurrentUser?.();
+        const userData = window.userSession?.getUserData?.();
+        const userHostel = (currentUser && userData) ? userData.hostel : null;
+
+        if (userHostel) {
+          // User is logged in and has a hostel, so filter
+          matchesHostel = item.hostel === userHostel;
+        } else {
+          // User is not logged in or has no hostel. "My Hostel" filter should match nothing.
+          matchesHostel = false;
+        }
+      }
       return (
         matchesSearch && matchesCategory && matchesCondition && matchesHostel
       );
@@ -688,7 +635,7 @@ class Marketplace {
       <div class="item-image">
           ${
             primaryImage
-              ? `<img src="${primaryImage}" alt="${item.title}" class="item-img" style="width:100%;height:160px;object-fit:cover;border-radius:12px;"/>`
+              ? `<img src="${primaryImage}" alt="${item.title}" class="item-img" style="width:100%;height:160px;object-fit: contain;border-radius:12px;"/>`
               : `<span class="item-emoji">${item.icon || "📦"}</span>`
           }
           <button class="heart-btn ${isHearted ? "hearted" : ""}" data-id="${
@@ -1238,9 +1185,10 @@ class PostItem {
     const icons = {
       Clothes: "👕",
       Electronics: "💻",
-      Books: "📚",
+      Stationery: "📚", // CHANGED from "Books"
       Cosmetics: "💄",
       Miscellaneous: "📦",
+      Food: "🍔", // ADDED this line
     };
     return icons[category] || "📦";
   }
@@ -1359,6 +1307,7 @@ class Chat {
 
       const preview = c.lastMessage || (c.itemTitle ? `About: ${c.itemTitle}` : '');
 
+      const myUnreadCount = (c.unreadCounts && c.unreadCounts[me.uid]) ? c.unreadCounts[me.uid] : 0;
       const el = document.createElement('div');
       el.className = 'conversation-item';
       el.dataset.chatId = c.id;
@@ -1368,7 +1317,8 @@ class Chat {
           <div class="conversation-preview">${preview || ''}</div>
         </div>
         <div class="conversation-meta">
-          <div class="conversation-time">${c.lastMessageAt?.toDate?.()?.toLocaleString?.() || ''}</div>
+        <div class="conversation-time">${c.lastMessageAt?.toDate?.()?.toLocaleString?.() || ''}</div>
+          ${myUnreadCount > 0 ? `<span class="unread-bubble">${myUnreadCount}</span>` : ''}
         </div>
       `;
       el.addEventListener('click', () => this.openChat(c.id));
@@ -1444,18 +1394,19 @@ class Chat {
 
 // Replace the existing openChat function with this one
 // Replace the existing openChat function with this one
-  openChat(chatId) {
+ async openChat(chatId) {
     const convo = this.conversations.find((c) => c.id === chatId) || { id: chatId };
     this.activeConversation = convo;
 
     document.querySelector('.chat-container')?.classList.add('chat-active');
+    const me = this.auth?.currentUser;
 
     const chatUserName = document.getElementById('chatUserName');
     const chatUserStatus = document.getElementById('chatUserStatus');
     const chatInputContainer = document.getElementById('chatInputContainer');
 
     if (chatUserName) {
-      const me = this.auth?.currentUser;
+      
       const otherUid = (convo.participants || []).find((p) => p !== me?.uid);
       
       let name = 'Chat'; // Default name
@@ -1481,6 +1432,21 @@ class Chat {
     
     if (chatUserStatus) chatUserStatus.innerHTML = '<div style = " justify-content : left"class="status-indicator active"><span class="status-dot"></span><span class="status-text">Online</span></div>';
     if (chatInputContainer) chatInputContainer.classList.remove('hidden');
+
+    if (me && this.db && this.modules?.doc && this.modules?.setDoc) {
+      const { doc, setDoc } = this.modules;
+      const convoRef = doc(this.db, 'conversations', chatId);
+      try {
+        // Update the unread count for *this* user to 0
+        await setDoc(convoRef, {
+          unreadCounts: {
+            [me.uid]: 0 // Set *my* count to 0
+          }
+        }, { merge: true }); // 'merge: true' is critical so we don't wipe out the other user's count
+      } catch (error) {
+        console.warn("Could not clear unread count:", error);
+      }
+    }
 
     // Subscribe to active conversation doc and messages; update UI for sold state
     this.subscribeActiveConversation(chatId);
@@ -1804,13 +1770,12 @@ async markItemAsSold() {
     }
   }
 
-  async sendMessage() {
+ async sendMessage() {
     const chatInput = document.getElementById('chatInput');
     if (!chatInput) return;
     const text = chatInput.value.trim();
     if (!text) return;
 
-    if (!this.db || !this.modules) return;
     const convo = this.activeConversation;
     if (!convo?.id) return;
 
@@ -1836,7 +1801,11 @@ async markItemAsSold() {
       chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
-    const { collection, addDoc, serverTimestamp, doc, updateDoc } = this.modules;
+    // --- START MODIFICATION ---
+    // Get 'increment' and 'setDoc' from modules
+    const { collection, addDoc, serverTimestamp, doc, setDoc, increment } = this.modules;
+    // --- END MODIFICATION ---
+
     const msgsRef = collection(this.db, 'conversations', convo.id, 'messages');
 
     // Send the message first (critical)
@@ -1854,18 +1823,37 @@ async markItemAsSold() {
 
     // Update convo metadata (non-critical)
     try {
-      const convRef = doc(this.db, 'conversations', convo.id);
-      await updateDoc(convRef, {
+      // --- START: NEW LOGIC ---
+      // Find the *other* user
+      const otherUid = (convo.participants || []).find(p => p !== user.uid);
+      
+      let updateData = {
         lastMessage: text,
         lastMessageAt: serverTimestamp()
-      });
+      };
+
+      // If we found the other user, increment their unread count
+      if (otherUid && increment) {
+        // We will store unread counts in a map: { userId1: 2, userId2: 0 }
+        updateData.unreadCounts = {
+          [otherUid]: increment(1)
+        };
+      }
+      // --- END: NEW LOGIC ---
+
+      const convRef = doc(this.db, 'conversations', convo.id);
+      
+      // --- MODIFICATION: Use setDoc + merge for safety ---
+      // This will create or update the 'unreadCounts' map safely
+      await setDoc(convRef, updateData, { merge: true });
+      
     } catch (e) {
       console.warn('Message sent, but failed to update conversation metadata:', e);
-      // No error toast here; message already sent
     }
 
     chatInput.value = '';
   }
+ 
 }
 
 class Profile {
@@ -2426,6 +2414,43 @@ class ItemDetail {
         }
       });
     }
+
+    const copyBtn = document.getElementById('copyUrlBtn');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        // Pass the button element itself for visual feedback
+        this.copyItemUrl(copyBtn);
+      });
+    }
+  }
+
+  copyItemUrl(buttonElement) {
+    // This gets the full URL, including the ?item=... query parameter
+    const urlToCopy = window.location.href;
+    
+    // Use the modern clipboard API
+    navigator.clipboard.writeText(urlToCopy).then(() => {
+      // Success!
+      // Show your custom notification
+      utils.showNotification('Link copied to clipboard!', 'success');
+      
+      // Temporarily change button text for more feedback
+      const originalText = buttonElement.innerHTML;
+      buttonElement.innerHTML = 'Copied! ✅';
+      buttonElement.disabled = true;
+      
+      // Revert button text after 2.5 seconds
+      setTimeout(() => {
+        buttonElement.innerHTML = originalText;
+        buttonElement.disabled = false;
+      }, 2500);
+      
+    }).catch(err => {
+      // Failure
+      console.error('Failed to copy URL: ', err);
+      utils.showNotification('Could not copy link.', 'error');
+    });
   }
 
 showById(itemId) {
@@ -2515,6 +2540,33 @@ function initializeGlobalEventListeners() {
   document.body.addEventListener("click", async (e) => {
     const target = e.target;
     const modal = target.closest(".modal");
+
+    if (target.closest("#reportItemBtn")) {
+      e.preventDefault();
+      if (window.itemDetail?.currentItemId && window.firebaseDb && window.firebaseModules) {
+        if (!confirm("Are you sure you want to report this item to a moderator?")) {
+          return;
+        }
+        
+        const { doc, updateDoc, serverTimestamp } = window.firebaseModules;
+        const itemRef = doc(window.firebaseDb, 'items', window.itemDetail.currentItemId);
+        
+        try {
+          await updateDoc(itemRef, { 
+            flagged: true, 
+            flagReason: 'user_reported',
+            updatedAt: serverTimestamp() 
+          });
+          utils.showNotification('Item reported. A moderator will review it shortly.', 'success');
+          // Send user back to marketplace
+          window.history.pushState({ section: 'marketplace' }, 'Marketplace', window.location.pathname);
+          switchToSection('marketplace');
+        } catch (err) {
+          console.error("Failed to report item:", err);
+          utils.showNotification('Could not report item. Please try again.', 'error');
+        }
+      }
+    }
 
     // --- Modal Close Buttons ---
     if (

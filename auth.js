@@ -67,6 +67,57 @@ class AuthenticationManager {
     });
   }
 
+  async handleProfileCompletion() {
+    const submitBtn = document.getElementById('saveProfileCompletion');
+    const phone = document.getElementById('modalPhoneNumber').value.trim();
+    const hostel = document.getElementById('modalHostelName').value;
+    const uid = this.pendingCompletionUid;
+
+    // Validation
+    if (!phone) {
+      this.showMessage('Please enter your phone number', 'error');
+      return;
+    }
+    if (!hostel) {
+      this.showMessage('Please select your hostel', 'error');
+      return;
+    }
+    if (!uid) {
+      this.showMessage('Error: No user session found. Please try again.', 'error');
+      return;
+    }
+
+    try {
+      this.setLoadingState(submitBtn, true);
+      this.clearMessages();
+
+      console.log(`💾 Updating profile for UID: ${uid}`);
+      const userRef = this.modules.doc(this.db, 'users', uid);
+      
+      // Use setDoc with { merge: true } to update the existing document
+      await this.modules.setDoc(userRef, {
+        phone: phone,
+        hostel: hostel,
+        profileComplete: true // <-- Mark the profile as complete
+      }, { merge: true });
+
+      console.log('✅ Profile complete!');
+      this.showMessage('Profile updated! Welcome to CampusKart! 🎉', 'success');
+
+      // Now we redirect to the main app
+      setTimeout(() => {
+        console.log('➡️ Redirecting to marketplace...');
+        window.location.href = 'index.html';
+      }, 2000);
+
+    } catch (error) {
+      console.error('❌ Profile completion error:', error);
+      this.showMessage('Failed to save your details. Please try again.', 'error');
+    } finally {
+      this.setLoadingState(submitBtn, false);
+    }
+  }
+
   init() {
     console.log('🚀 Initializing AuthenticationManager...');
     
@@ -74,6 +125,7 @@ class AuthenticationManager {
     this.db = window.firebaseDb;
     this.googleProvider = window.googleProvider;
     this.modules = window.firebaseModules;
+    this.pendingCompletionUid = null;
 
     console.log('Firebase Auth:', this.auth);
     console.log('Firebase DB:', this.db);
@@ -100,7 +152,7 @@ class AuthenticationManager {
 
     this.setupEventListeners();
     this.initializeTabSystem();
-    this.checkAuthState();
+
     
     console.log('✅ AuthenticationManager initialization complete');
   }
@@ -195,6 +247,17 @@ class AuthenticationManager {
       console.log('✅ Google signin button listener added');
     } else {
       console.error('❌ Google signin button not found');
+    }
+
+    const saveProfileBtn = document.getElementById('saveProfileCompletion');
+    if (saveProfileBtn) {
+      saveProfileBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.handleProfileCompletion();
+      });
+      console.log('✅ Save profile completion listener added');
+    } else {
+      console.error('❌ Save profile completion button not found');
     }
 
     // Forgot Password Link
@@ -424,9 +487,20 @@ class AuthenticationManager {
         };
 
         await this.createUserDocument(user.uid, userData);
-        this.showMessage('Account created successfully with Google! Please complete your profile. 🎉', 'success');
+        console.log('Google user needs to complete profile');
+        this.pendingCompletionUid = user.uid; // Store the UID
+        
+        // Hide the main auth card and show the modal
+        const authCard = document.querySelector('.auth-card');
+        if (authCard) authCard.style.display = 'none';
+        this.showModal('completeProfileModal');
       } else if (userDoc.exists()) {
         console.log('🔄 Existing user signing in...');
+
+      console.log('➡️ Redirecting to marketplace...');  
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 2000);
         // Existing user signing in
         this.showMessage('Welcome back! Redirecting to marketplace... 🚀', 'success');
       } else {
@@ -438,10 +512,7 @@ class AuthenticationManager {
       }
 
       // Redirect after a short delay
-      console.log('➡️ Redirecting to marketplace...');
-      setTimeout(() => {
-        window.location.href = 'index.html';
-      }, 2000);
+
 
     } catch (error) {
       console.error('❌ Google authentication error:', error);
@@ -794,14 +865,7 @@ class AuthenticationManager {
   }
 
   // Check Authentication State
-  checkAuthState() {
-    this.auth.onAuthStateChanged((user) => {
-      if (user) {
-        // User is signed in, redirect to main app
-        window.location.href = 'index.html';
-      }
-    });
-  }
+
 
   // Loading Screen Management
   showLoadingScreen() {

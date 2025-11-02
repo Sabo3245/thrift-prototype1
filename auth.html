@@ -341,7 +341,62 @@
       </div>
     </div>
 
-
+    <div class="modal hidden" id="completeProfileModal">
+      <div class="modal-overlay" style="pointer-events: none;"></div>
+      
+      <div class="modal-content glass-card">
+        <div class="modal-header">
+          <h3 class="modal-title">Complete Your Profile</h3>
+          <p class="modal-message">
+            Just one last step! We need your phone and hostel to finish your setup.
+          </p>
+        </div>
+        <div class="modal-body">
+          <form id="completeProfileForm">
+            <div class="form-group">
+              <label class="form-label">Phone Number</label>
+              <input
+                type="tel"
+                id="modalPhoneNumber"
+                class="form-control animated-input"
+                placeholder="Enter your phone number"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Hostel Name</label>
+              <select id="modalHostelName" class="form-control animated-input" required>
+                <option value="">Select your hostel</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+                <option value="H">H</option>
+                <option value="J">J</option>
+                <option value="K">K</option>
+                <option value="L">L</option>
+                <option value="M">M</option>
+                <option value="O">O</option>
+                <option value="E">E</option>
+                <option value="G">G</option>
+                <option value="I">I</option>
+                <option value="N">N</option>
+                <option value="HOTEL-PG">HOTEL-PG</option>
+                <option value="Q">Q</option>
+                <option value="FRF">FRF</option>
+                <option value="FRG">FRG</option>
+              </select>
+            </div>
+          </form>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn--primary btn--full-width animated-btn" id="saveProfileCompletion">
+            <span class="btn-text">Save & Continue</span>
+            <span class="btn-loader hidden">🔄</span>
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- Firebase SDK -->
     <script type="module">

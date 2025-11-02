@@ -171,3 +171,57 @@ exports.grantAdminClaim = functions.region('us-central1').https.onCall(async (da
     throw new functions.https.HttpsError('internal', err.message);
   }
 });
+
+// ===================================================================
+// == NEW FUNCTION TO DELETE OLD ITEMS ==
+// ===================================================================
+
+/**
+ * This function is scheduled to run every day at 1:00 AM.
+ * It queries for items that are older than 7 days and still "available"
+ * and deletes them in a batch.
+ */
+exports.deleteOldItems = functions.pubsub
+  .schedule("0 1 * * *") // Uses "cron" syntax (1:00 AM every day)
+  .timeZone("Asia/Kolkata") // Set to your time zone
+  .onRun(async (context) => {
+    console.log("Running scheduled job: deleteOldItems");
+
+    // 1. Calculate the timestamp for 7 days ago
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    try {
+      // 2. Query for items that are unsold AND older than 7 days
+      // Note: Make sure the 'createdAt' field is a Timestamp in Firestore
+      const oldItemsQuery = db
+        .collection("items")
+        .where("status", "==", "available") // Only unsold items
+        .where("createdAt", "<=", sevenDaysAgo); // Older than 7 days
+
+      const snapshot = await oldItemsQuery.get();
+
+      if (snapshot.empty) {
+        console.log("No old items to delete.");
+        return null;
+      }
+
+      // 3. Create a "batch" to delete all items at once (very efficient)
+      const batch = db.batch();
+      let deletedCount = 0;
+
+      snapshot.docs.forEach((doc) => {
+        console.log(`Adding item to deletion batch: ${doc.id}`);
+        batch.delete(doc.ref);
+        deletedCount++;
+      });
+
+      // 4. Commit the batch deletion
+      await batch.commit();
+      console.log(`Successfully deleted ${deletedCount} old items.`);
+      return null;
+
+    } catch (error) {
+      console.error("Error deleting old items:", error);
+      return null;
+    }
+  });
