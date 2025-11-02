@@ -635,7 +635,7 @@ class Marketplace {
       <div class="item-image">
           ${
             primaryImage
-              ? `<img src="${primaryImage}" alt="${item.title}" class="item-img" style="width:100%;height:160px;object-fit:cover;border-radius:12px;"/>`
+              ? `<img src="${primaryImage}" alt="${item.title}" class="item-img" style="width:100%;height:160px;object-fit: contain;border-radius:12px;"/>`
               : `<span class="item-emoji">${item.icon || "📦"}</span>`
           }
           <button class="heart-btn ${isHearted ? "hearted" : ""}" data-id="${
@@ -2540,6 +2540,33 @@ function initializeGlobalEventListeners() {
   document.body.addEventListener("click", async (e) => {
     const target = e.target;
     const modal = target.closest(".modal");
+
+    if (target.closest("#reportItemBtn")) {
+      e.preventDefault();
+      if (window.itemDetail?.currentItemId && window.firebaseDb && window.firebaseModules) {
+        if (!confirm("Are you sure you want to report this item to a moderator?")) {
+          return;
+        }
+        
+        const { doc, updateDoc, serverTimestamp } = window.firebaseModules;
+        const itemRef = doc(window.firebaseDb, 'items', window.itemDetail.currentItemId);
+        
+        try {
+          await updateDoc(itemRef, { 
+            flagged: true, 
+            flagReason: 'user_reported',
+            updatedAt: serverTimestamp() 
+          });
+          utils.showNotification('Item reported. A moderator will review it shortly.', 'success');
+          // Send user back to marketplace
+          window.history.pushState({ section: 'marketplace' }, 'Marketplace', window.location.pathname);
+          switchToSection('marketplace');
+        } catch (err) {
+          console.error("Failed to report item:", err);
+          utils.showNotification('Could not report item. Please try again.', 'error');
+        }
+      }
+    }
 
     // --- Modal Close Buttons ---
     if (
