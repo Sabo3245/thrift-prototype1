@@ -12,7 +12,7 @@
       <div class="loading-container">
         <div class="animated-logo">
             <div class="logo-shape">
-              <img src="./logo.svg" alt="CampusKart Logo" style="width: 80px; height: 80px; object-fit: contain; display: block; margin: 0 auto;" />
+              <img src="./logoCart.png" alt="CampusKart Logo" style="width: 80px; height: 80px; object-fit: contain; display: block; margin: 0 auto;" />
             </div>
           <div class="logo-text">CampusKart</div>
         </div>
@@ -41,7 +41,7 @@
 
       <nav class="nav-container">
         <div class="nav-brand">
-          <div class="brand-logo" >CK</div>
+          <div class="brand-logo" ><img src="logoCart.png"alt="CampusKart Logo" style="scale:1" /></div>
           <span class="brand-text">CampusKart</span>
         </div>
         <div class="nav-tabs">
@@ -100,8 +100,8 @@
       <section id="marketplace" class="section active">
         <div class="container">
           <div class="section-header">
-            <h1 class="page-title">Discover Amazing Deals</h1>
-            <p class="page-subtitle">
+            <h1 class="page-title" id="marketplace-title">Discover Amazing Deals</h1>
+            <p class="page-subtitle" id="marketplace-subtitle">
               Find everything you need from fellow students
             </p>
           </div>
@@ -215,193 +215,171 @@
       </section>
 
       <section id="post" class="section">
-        <div class="container">
-          <div class="section-header">
-            <h1 class="page-title">Post Your Item</h1>
-            <p class="page-subtitle">
-              Share what you're selling with the community
-            </p>
-          </div>
+  <div class="container">
+    <div class="section-header">
+      <h1 class="page-title">Post Your Item</h1>
+      <p class="page-subtitle">
+        Share what you're selling with the community
+      </p>
+    </div>
 
-          <form class="post-form glass-card" id="postForm">
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Item Title</label>
-                <input
-                  type="text"
-                  class="form-control animated-input"
-                  id="itemTitle"
-                  placeholder="What are you selling?"
-                  required
-                />
-              </div>
-            </div>
+    <form class="post-form glass-card" id="postForm">
+      
+      <h4 class="form-section-header">1. Item Details</h4>
 
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Category</label>
-                <select
-                  class="form-control animated-input"
-                  id="itemCategory"
-                  required
-                >
-                  <option value="">Select category...</option>
-                  <option value="Clothes">Clothes</option>
-                  <option value="Electronics">Electronics</option>
-                  <option value="Stationery">Stationery</option>
-                  <option value="Cosmetics">Cosmetics</option>
-                  <option value="Miscellaneous">Miscellaneous</option>
-                  <option value="Food">Food</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Condition</label>
-                <select
-                  class="form-control animated-input"
-                  id="itemCondition"
-                  required
-                >
-                  <option value="">Select condition...</option>
-                  <option value="New">New</option>
-                  <option value="Used">Used</option>
-                  <option value="Unused">Unused</option>
-                </select>
-              </div>
-            </div>
+      <div class="form-group">
+        <label class="form-label">Item Title</label>
+        <input
+          type="text"
+          class="form-control animated-input"
+          id="itemTitle"
+          placeholder="What are you selling?"
+          required
+        />
+      </div>
 
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Current Price (₹)</label>
-                <input
-                  type="number"
-                  class="form-control animated-input"
-                  id="itemPrice"
-                  placeholder="Current selling price"
-                  required
-                />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Original Price (₹)</label>
-                <input
-                  type="number"
-                  class="form-control animated-input"
-                  id="itemOriginalPrice"
-                  placeholder="Original purchase price"
-                />
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Hostel</label>
-                
-                <select
-                  class="form-control animated-input"
-                  id="itemHostel"
-                  required
-                >
-                  <option value="">Select hostel...</option>
-                  <option value="A">A</option>
-                  <option value="B">B</option>
-                  <option value="C">C</option>
-                  <option value="D">D</option>
-                  <option value="H">H</option>
-                  <option value="J">J</option>
-                  <option value="K">K</option>
-                  <option value="L">L</option>
-                  <option value="M">M</option>
-                  <option value="O">O</option>
-                  <option value="E">E</option>
-                  <option value="G">G</option>
-                  <option value="I">I</option>
-                  <option value="N">N</option>
-                  <option value="HOTEL-PG">HOTEL-PG</option>
-                  <option value="Q">Q</option>
-                  <option value="FRF">FRF</option>
-                  <option value="FRG">FRG</option>
-                </select>
-                </div>
-            </div>
-
-            <div class="clothing-checklist hidden" id="clothingChecklist">
-              <h4 class="checklist-title">Clothing Details</h4>
-              <div class="form-row">
-                <div class="form-group">
-                  <label class="form-label">Quality</label>
-                  <select class="form-control" id="clothingQuality">
-                    <option value="">Select quality...</option>
-                    <option value="Excellent">Excellent</option>
-                    <option value="Good">Good</option>
-                    <option value="Fair">Fair</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Age</label>
-                  <select class="form-control" id="clothingAge">
-                    <option value="">Select age...</option>
-                    <option value="< 6 months">< 6 months</option>
-                    <option value="6-12 months">6-12 months</option>
-                    <option value="1-2 years">1-2 years</option>
-                    <option value="2+ years">2+ years</option>
-                  </select>
-                </div>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Detailed Condition</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="clothingCondition"
-                  placeholder="e.g., Minimal wear, no stains"
-                />
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Description</label>
-              <textarea
-                class="form-control animated-input"
-                id="itemDescription"
-                rows="4"
-                placeholder="Describe your item in detail"
-                required
-              ></textarea>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Upload Photos</label>
-              <div class="upload-area" id="uploadArea">
-                <div class="upload-content">
-                  <span class="upload-icon">📸</span>
-                  <span class="upload-text">Click or drag photos here</span>
-                  <input
-                    type="file"
-                    id="itemPhotos"
-                    multiple
-                    accept="image/*"
-                    class="upload-input"
-                  />
-                </div>
-              </div>
-              <div class="uploaded-images" id="uploadedImages"></div>
-            </div>
-            
-            <div class="form-group form-group-checkbox">
-              <input type="checkbox" id="disclaimerCheckbox" class="styled-checkbox" />
-              <label for="disclaimerCheckbox" class="checkbox-label">
-                I have read and agree to the <a href="#" id="openTermsBtn">Terms & Conditions</a>.
-              </label>
-            </div>
-            <button
-              type="submit"
-              class="btn btn--primary btn--full-width animated-btn"
-            >
-              <span class="btn-text">Post Item</span>
-              <span class="btn-loader hidden">🔄</span>
-            </button>
-          </form>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select
+            class="form-control animated-input"
+            id="itemCategory"
+            required
+          >
+            <option value="">Select category...</option>
+            <option value="Clothes">Clothes</option>
+            <option value="Electronics">Electronics</option>
+            <option value="Stationery">Stationery</option>
+            <option value="Cosmetics">Cosmetics</option>
+            <option value="Miscellaneous">Miscellaneous</option>
+            <option value="Food">Food</option>
+          </select>
         </div>
-      </section>
+        <div class="form-group">
+          <label class="form-label">Condition</label>
+          <select
+            class="form-control animated-input"
+            id="itemCondition"
+            required
+          >
+            <option value="">Select condition...</option>
+            <option value="New">New</option>
+            <option value="Used">Used</option>
+            <option value="Unused">Unused</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea
+          class="form-control animated-input"
+          id="itemDescription"
+          rows="4"
+          placeholder="Describe your item in detail"
+          required
+        ></textarea>
+      </div>
+
+
+
+      <hr class="form-divider" />
+
+      <h4 class="form-section-header">2. Price & Location</h4>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Current Price (₹)</label>
+          <input
+            type="number"
+            class="form-control animated-input"
+            id="itemPrice"
+            placeholder="Current selling price"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Original Price (₹)</label>
+          <input
+            type="number"
+            class="form-control animated-input"
+            id="itemOriginalPrice"
+            placeholder="Original purchase price"
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Hostel</label>
+          <select
+            class="form-control animated-input"
+            id="itemHostel"
+            required
+          >
+            <option value="">Select hostel...</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="D">D</option>
+            <option value="H">H</option>
+            <option value="J">J</option>
+            <option value="K">K</option>
+            <option value="L">L</option>
+            <option value="M">M</option>
+            <option value="O">O</option>
+            <option value="E">E</option>
+            <option value="G">G</option>
+            <option value="I">I</option>
+            <option value="N">N</option>
+            <option value="HOTEL-PG">HOTEL-PG</option>
+            <option value="Q">Q</option>
+            <option value="FRF">FRF</option>
+            <option value="FRG">FRG</option>
+          </select>
+        </div>
+      </div>
+
+      <hr class="form-divider" />
+
+      <h4 class="form-section-header">3. Photos (up to 5)</h4>
+
+      <div class="form-group">
+        <div class="upload-area" id="uploadArea">
+          <div class="upload-content">
+            <span class="upload-icon">📸</span>
+            <span class="upload-text">Click or drag photos here</span>
+            <input
+              type="file"
+              id="itemPhotos"
+              multiple
+              accept="image/*"
+              class="upload-input"
+            />
+          </div>
+        </div>
+        <div class="uploaded-images" id="uploadedImages"></div>
+      </div>
+      
+      <hr class="form-divider" />
+
+      <div class="form-group form-group-checkbox">
+        <input type="checkbox" id="disclaimerCheckbox" class="styled-checkbox" />
+        <label for="disclaimerCheckbox" class="checkbox-label">
+          I have read and agree to the <a href="#" id="openTermsBtn">Terms & Conditions</a>.
+        </label>
+      </div>
+
+      <button
+        type="submit"
+        class="btn btn--primary btn--full-width animated-btn"
+        disabled >
+        <span class="btn-text">Post Item</span>
+        <span class="btn-loader hidden">🔄</span>
+      </button>
+    </form>
+  </div>
+</section>
 
       <section id="chat" class="section">
         <div class="container">
@@ -546,10 +524,19 @@
             <div class="account-settings glass-card">
               <h3 class="card-title">Settings</h3>
               <div class="settings-actions-list">
-               <button class="nav-tab" data-section="help">
-                <span class="nav-icon">🆘</span>
-                <span>Help</span>
-              </button>
+
+                <div class="setting-action-item toggle-item">
+                  <span>☀️ Light / 🌙 Dark Mode</span>
+                  <div class="toggle-switch">
+                    <input type="checkbox" id="themeToggle" class="toggle-input">
+                    <label for="themeToggle" class="toggle-label"></label>
+                  </div>
+                </div>
+
+               <a href="#" id="settingsHelpBtn" class="setting-action-item" data-section="help">
+              <span>🆘 Help</span>
+              <span>&gt;</span>
+            </a>
                 <a href="#" id="logoutBtn" class="setting-action-item">
                     <span>&#x1F6AA; Logout</span>
       <span>&gt;</span>
@@ -1006,5 +993,7 @@
         }, 2000);
       });
     </script>
+
+    <script src="theme.js" defer></script>
   </body>
 </html>

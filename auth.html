@@ -7,348 +7,106 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body class="auth-body">
-    <!-- Loading Screen -->
-    <div id="loadingScreen" class="loading-screen hidden">
-      <div class="loading-container">
-        <div class="animated-logo">
-          <div class="logo-shape"></div>
-          <div class="logo-text">CampusKart</div>
+    <div class="auth-main-content">
+      <div id="loadingScreen" class="loading-screen hidden">
+        <div class="loading-container">
+          <div class="animated-logo">
+            <div class="logo-shape"></div>
+            <div class="logo-text">CampusKart</div>
+          </div>
+          <div class="loading-text">Authenticating...</div>
         </div>
-        <div class="loading-text">Authenticating...</div>
       </div>
-    </div>
 
-    <!-- Background Particles -->
-    <div class="auth-particles">
-      <div class="particle"></div>
-      <div class="particle"></div>
-      <div class="particle"></div>
-      <div class="particle"></div>
-      <div class="particle"></div>
-    </div>
+      <div class="auth-particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+      </div>
 
-    <!-- Main Authentication Container -->
-    <div class="auth-container">
-      <div class="auth-card glass-card">
-        <!-- Header -->
-        <div class="auth-header"> 
-          <div class="brand-logo">CK</div>
-          <h1 class="auth-title">Welcome to CampusKart</h1>
-          <p class="auth-subtitle">Join the college thrift community</p>
-        </div>
+      <div class="auth-container">
+        <div class="auth-card glass-card">
+          <div class="auth-header">
+            <div class="brand-logo">CK</div>
+            <h1 class="auth-title">CampusKart Login</h1>
+            <p class="auth-subtitle">Please use your Thapar University email</p>
+          </div>
 
-        <!-- Tab Navigation -->
-        <div class="auth-tabs">
-          <button class="auth-tab active" data-tab="signup">Sign Up</button>
-          <button class="auth-tab" data-tab="signin">Sign In</button>
-          <div class="tab-indicator"></div>
-        </div>
-
-        <!-- Sign Up Form -->
-        <div id="signup-form" class="auth-form-container active">
-          <form class="auth-form" id="signupForm">
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">First Name</label>
-                <input
-                  type="text"
-                  id="firstName"
-                  class="form-control animated-input"
-                  placeholder="Enter your first name"
-                  required
-                />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Last Name</label>
-                <input
-                  type="text"
-                  id="lastName"
-                  class="form-control animated-input"
-                  placeholder="Enter your last name"
-                  required
-                />
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Email Address</label>
-              <input
-                type="email"
-                id="signupEmail"
-                class="form-control animated-input"
-                placeholder="Enter your email"
-                required
-              />
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Password</label>
-              <div class="password-input-wrapper">
-                <input
-                  type="password"
-                  id="signupPassword"
-                  class="form-control animated-input"
-                  placeholder="Create a strong password"
-                  required
-                />
-                <button type="button" class="password-toggle" id="toggleSignupPassword">
-                  👁️
-                </button>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Phone Number</label>
-              <input
-                type="tel"
-                id="phoneNumber"
-                class="form-control animated-input"
-                placeholder="Enter your phone number"
-                required
-              />
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Hostel Name</label>
-              <select id="hostelName" class="form-control animated-input" required>
-                <option value="">Select your hostel</option>
-                <option value="A">A</option>
-                <option value="B">B</option>
-                <option value="C">C</option>
-                <option value="D">D</option>
-                <option value="H">H</option>
-                <option value="J">J</option>
-                <option value="K">K</option>
-                <option value="L">L</option>
-                <option value="M">M</option>
-                <option value="O">O</option>
-                <option value="E">E</option>
-                <option value="G">G</option>
-                <option value="I">I</option>
-                <option value="N">N</option>
-                <option value="HOTEL-PG">HOTEL-PG</option>
-                <option value="Q">Q</option>
-                <option value="FRF">FRF</option>
-                <option value="FRG">FRG</option>
-              </select>
-            </div>
-
-            <div class="terms-checkbox">
-              <input type="checkbox" id="agreeTerms" required />
-              <label for="agreeTerms" class="terms-label">
-                I agree to the <a href="#" class="terms-link" id="openTermsLink">Terms of Service</a> 
-                and <a href="#" class="terms-link" id="openPrivacyLink">Privacy Policy</a>
-              </label>
-            </div>
-
-            <button type="submit" class="btn btn--primary btn--full-width animated-btn" id="signupBtn">
-              <span class="btn-text">Create Account</span>
-              <span class="btn-loader hidden">🔄</span>
-            </button>
-
-            <div class="auth-divider">
-              <span class="divider-text">or continue with</span>
-            </div>
-
-            <button type="button" class="btn btn--outline btn--full-width google-btn" id="googleSignupBtn">
+          <div class="auth-form-container active" style="padding-top: 20px">
+            <button
+              type="button"
+              class="btn btn--primary btn--full-width google-btn"
+              id="googleThaparLoginBtn"
+            >
               <span class="btn-text">
                 <span class="google-icon">🔍</span>
-                Sign up with Google
+                Login through Thapar email
               </span>
               <span class="btn-loader hidden">🔄</span>
             </button>
-          </form>
+            <p
+              style="
+                text-align: center;
+                font-size: 12px;
+                opacity: 0.7;
+                margin-top: 20px;
+              "
+            >
+              You must use your @thapar.edu email address.
+            </p>
+          </div>
+
+          <div
+            class="terms-agreement"
+            style="
+              text-align: center;
+              font-size: 12px;
+              padding: 20px;
+              opacity: 0.8;
+            "
+          >
+            By logging in, you agree to the
+            <a href="#" class="terms-link" id="openTermsLink"
+              >Terms of Service</a
+            >
+            and
+            <a href="#" class="terms-link" id="openPrivacyLink"
+              >Privacy Policy</a
+            >.
+          </div>
         </div>
 
-        <!-- Sign In Form -->
-        <div id="signin-form" class="auth-form-container">
-          <form class="auth-form" id="signinForm">
-            <div class="form-group">
-              <label class="form-label">Email Address</label>
-              <input
-                type="email"
-                id="signinEmail"
-                class="form-control animated-input"
-                placeholder="Enter your email"
-                required
-              />
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Password</label>
-              <div class="password-input-wrapper">
-                <input
-                  type="password"
-                  id="signinPassword"
-                  class="form-control animated-input"
-                  placeholder="Enter your password"
-                  required
-                />
-                <button type="button" class="password-toggle" id="toggleSigninPassword">
-                  👁️
-                </button>
-              </div>
-            </div>
-
-            <div class="form-options">
-              <label class="remember-checkbox">
-                <input type="checkbox" id="rememberMe" />
-                <span class="checkmark"></span>
-                Remember me
-              </label>
-              <a href="#" class="forgot-password-link" id="forgotPasswordLink">
-                Forgot Password?
-              </a>
-            </div>
-
-            <button type="submit" class="btn btn--primary btn--full-width animated-btn" id="signinBtn">
-              <span class="btn-text">Sign In</span>
-              <span class="btn-loader hidden">🔄</span>
-            </button>
-
-            <div class="auth-divider">
-              <span class="divider-text">or continue with</span>
-            </div>
-
-            <button type="button" class="btn btn--outline btn--full-width google-btn" id="googleSigninBtn">
-              <span class="btn-text">
-                <span class="google-icon">🔍</span>
-                Sign in with Google
-              </span>
-              <span class="btn-loader hidden">🔄</span>
-            </button>
-          </form>
-        </div>
-      </div>
-
-      <!-- Footer -->
-      <div class="auth-footer">
-        <p class="footer-text">
-          Secure authentication powered by Firebase 🔒
-        </p>
-      </div>
-    </div>
-
-    <!-- Error/Success Messages -->
-    <div class="message-container" id="messageContainer"></div>
-
-    <!-- Password Reset Modal -->
-    <div class="modal hidden" id="resetPasswordModal">
-      <div class="modal-overlay"></div>
-      <div class="modal-content glass-card">
-        <div class="modal-header">
-          <div class="reset-icon">🔑</div>
-          <h3 class="modal-title">Reset Password</h3>
-          <p class="modal-message">
-            Enter your email address and we'll send you a reset link
+        <div class="auth-footer">
+          <p class="footer-text">
+            Secure authentication powered by Firebase 🔒
           </p>
         </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <input
-              type="email"
-              id="resetEmail"
-              class="form-control animated-input"
-              placeholder="Enter your email"
-              required
-            />
-          </div>
-        </div>
-        <div class="modal-actions">
-          <button class="btn btn--outline" id="cancelReset">Cancel</button>
-          <button class="btn btn--primary" id="sendResetEmail">
-            <span class="btn-text">Send Reset Link</span>
-            <span class="btn-loader hidden">🔄</span>
-          </button>
-        </div>
       </div>
     </div>
+    <div class="message-container" id="messageContainer"></div>
 
-    </div> <div class="modal hidden" id="termsModal">
+    <div class="modal hidden" id="termsModal">
       <div class="modal-overlay"></div>
       <div class="modal-content glass-card">
-        <div class="modal-header">
-          <h3 class="modal-title">Terms of Service</h3>
         </div>
-          <div class="modal-body">
- 
-            <p>Welcome to CampusKart!</p>
-            <p>By using this platform, you agree to the following terms:</p>
-            <ul>
-              <li><strong>Eligibility</strong> 
-                   ⁠The Service is intended for use by students, faculty, and staff of participating campuses only. You must be 18 years or older or have consent from a legal guardian to create an account.
-              </li>
-              <li><strong>Account Registration</strong>
-⁠  ⁠You must provide accurate information during registration including your name, campus email, phone number, and hostel name.
-⁠  ⁠You are responsible for maintaining the confidentiality of your account credentials.</li>
-              <li><strong>Rules</strong> 
-  ⁠  ⁠Users are responsible for ensuring that their listings and conduct comply with all applicable campus and local laws.
-⁠    ⁠Prohibited items and content are strictly forbidden. Such listings will be removed without notice.
-⁠    ⁠CampusKart is not liable for transactions or interactions between users.
-</li>
-              <li><strong>Point System</strong>
-⁠  ⁠Each completed transaction may earn loyalty points for users, redeemable per current platform policy.
-⁠  ⁠Points are non-transferable and have no cash value.
-</li>
-              <li><strong>Intellectual Property</strong>
-⁠  ⁠The CampusKart brand, logos, and mascot images are protected. Users may not copy, distribute, or modify these assets.
-</li>
-              <li><strong>Disclaimer and Limitation of Liability</strong>
- ⁠The Service is provided “as is” and “as available,” without warranty. CampusKart disclaims all liability for damages from use or inability to use the platform.
-</li>
-              <li><strong>Account Termination</strong>
- ⁠CampusKart may suspend or terminate user accounts for breach of these Terms.
-</li>
-<li>
-  <strong>Changes to Terms</strong>
- ⁠CampusKart reserves the right to update these Terms at any time. Users are encouraged to review them periodically.
-
-</li>
-            </ul>
-          </div>
-        <div class="modal-actions">
-          <button class="btn btn--primary" id="closeTermsModal">I Understand</button>
-        </div>
-      </div>
     </div>
 
     <div class="modal hidden" id="privacyModal">
       <div class="modal-overlay"></div>
       <div class="modal-content glass-card">
-        <div class="modal-header">
-          <h3 class="modal-title">Privacy Policy</h3>
         </div>
-        <div class="modal-body">
-          <ul>
-            <li><strong>Information Collection</strong>
-                We collect personal information required for registration such as your name, email, phone number, and hostel name. Log data from device use (IP address, device info, etc.) may also be gathered.
-            </li>
-            <li><strong>Disclosure of Information</strong>
-⁠  ⁠Personal data will not be sold or shared with third parties except as necessary to operate CampusKart or as required by law.
-</li>
-            <li><strong>Security</strong>
-⁠  ⁠CampusKart adopts reasonable security measures as mandated under Indian IT Rules to protect your data from unauthorized access.
-</li>
-            <li><strong>Policy Changes</strong>
-⁠  ⁠The Privacy Policy may be updated occasionally. Continued use of the Service after changes implies acceptance.
-</li>
-
-          </ul>
-        </div>
-        <div class="modal-actions">
-          <button class="btn btn--primary" id="closePrivacyModal">I Understand</button>
-        </div>
-      </div>
     </div>
 
     <div class="modal hidden" id="completeProfileModal">
-      <div class="modal-overlay" style="pointer-events: none;"></div>
-      
+      <div class="modal-overlay" style="pointer-events: none"></div>
       <div class="modal-content glass-card">
         <div class="modal-header">
           <h3 class="modal-title">Complete Your Profile</h3>
           <p class="modal-message">
-            Just one last step! We need your phone and hostel to finish your setup.
+            Just one last step! We need your phone and hostel to finish your
+            setup.
           </p>
         </div>
         <div class="modal-body">
@@ -365,7 +123,11 @@
             </div>
             <div class="form-group">
               <label class="form-label">Hostel Name</label>
-              <select id="modalHostelName" class="form-control animated-input" required>
+              <select
+                id="modalHostelName"
+                class="form-control animated-input"
+                required
+              >
                 <option value="">Select your hostel</option>
                 <option value="A">A</option>
                 <option value="B">B</option>
@@ -390,7 +152,10 @@
           </form>
         </div>
         <div class="modal-actions">
-          <button class="btn btn--primary btn--full-width animated-btn" id="saveProfileCompletion">
+          <button
+            class="btn btn--primary btn--full-width animated-btn"
+            id="saveProfileCompletion"
+          >
             <span class="btn-text">Save & Continue</span>
             <span class="btn-loader hidden">🔄</span>
           </button>
@@ -398,28 +163,28 @@
       </div>
     </div>
 
-    <!-- Firebase SDK -->
     <script type="module">
       // Import Firebase modules using the same version as index.html
-      import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-      import { 
-        getAuth, 
-        createUserWithEmailAndPassword, 
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import {
+        getAuth,
+        createUserWithEmailAndPassword,
         signInWithEmailAndPassword,
         signInWithPopup,
         GoogleAuthProvider,
         sendPasswordResetEmail,
         updateProfile,
-        onAuthStateChanged
-      } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-      import { 
-        getFirestore, 
-        doc, 
-        setDoc, 
+        onAuthStateChanged,
+        signOut,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+      import {
+        getFirestore,
+        doc,
+        setDoc,
         getDoc,
         collection,
-        addDoc
-      } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+        addDoc,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
       // Firebase configuration from your existing setup
       const firebaseConfig = {
@@ -434,24 +199,25 @@
 
       // Initialize Firebase with error handling
       try {
-        console.log('🔥 Initializing Firebase...');
+        console.log("🔥 Initializing Firebase...");
         const app = initializeApp(firebaseConfig);
-        console.log('✅ Firebase app initialized:', app);
-        
+        console.log("✅ Firebase app initialized:", app);
+
         const auth = getAuth(app);
-        console.log('✅ Auth initialized:', auth);
-        
+        console.log("✅ Auth initialized:", auth);
+
         const db = getFirestore(app);
-        console.log('✅ Firestore initialized:', db);
-        
+        console.log("✅ Firestore initialized:", db);
+
         // Configure Google Provider with proper scopes
         const googleProvider = new GoogleAuthProvider();
-        googleProvider.addScope('email');
-        googleProvider.addScope('profile');
+        googleProvider.addScope("email");
+        googleProvider.addScope("profile");
         googleProvider.setCustomParameters({
-          prompt: 'select_account'
+          prompt: "select_account",
+          hd: "thapar.edu",
         });
-        console.log('✅ Google provider configured:', googleProvider);
+        console.log("✅ Google provider configured:", googleProvider);
 
         // Make Firebase services available globally
         window.firebaseAuth = auth;
@@ -464,26 +230,27 @@
           sendPasswordResetEmail,
           updateProfile,
           onAuthStateChanged,
+          signOut,
           doc,
           setDoc,
           getDoc,
           collection,
-          addDoc
+          addDoc,
         };
-        
-        console.log('✅ Firebase setup complete!');
-        
+
+        console.log("✅ Firebase setup complete!");
+
         // Signal that Firebase is ready
         window.firebaseReady = true;
-        window.dispatchEvent(new CustomEvent('firebaseReady'));
-        
+        window.dispatchEvent(new CustomEvent("firebaseReady"));
       } catch (error) {
-        console.error('❌ Firebase initialization failed:', error);
+        console.error("❌ Firebase initialization failed:", error);
         window.firebaseError = error;
       }
     </script>
 
-    <!-- Authentication Logic -->
     <script src="auth.js"></script>
+
+    <script src="theme.js" defer></script>
   </body>
 </html>
