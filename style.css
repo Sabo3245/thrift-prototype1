@@ -633,7 +633,7 @@ textarea.animated-input {
 .item-card .heart-btn.hearted {
   background: var(--color-red-400);
   border-color: var(--color-red-400);
-  color: var(--color-white);
+  
 }
 .item-card-content {
   padding: var(--space-16);
@@ -799,9 +799,9 @@ textarea.animated-input {
   gap: var(--space-16);
   margin-bottom: 0; /* Handled by form-group */
 }
-.form-group {
+.form-row .form-group {
   flex: 1;
-  margin-bottom: var(--space-16);
+  /* We remove the margin from here... */
 }
 .upload-area {
   border: 2px dashed var(--color-border);
@@ -1060,11 +1060,12 @@ textarea.animated-input {
   border-radius: var(--radius-full);
   
   /* --- Style Fix --- */
-  /* Apply theme-aware colors from the .form-control style */
-  background-color: var(--color-surface);
+  /* Use --color-secondary for background to contrast container */
+  background-color: var(--color-secondary);
   color: var(--color-text);
   border: 1px solid var(--color-border);
-  padding: var(--space-10) var(--space-16); /* Adjusted padding for chat */
+  /* Increased padding for a taller, more comfortable input */
+  padding: var(--space-12) var(--space-20); 
 }
 
 .chat-input::placeholder {
@@ -1190,6 +1191,7 @@ textarea.animated-input {
   text-align: center;
   color: var(--color-text-secondary);
   padding: var(--space-32);
+  grid-column: 1 / -1;
 }
 .listings-grid,
 .hearted-grid {
@@ -1688,6 +1690,7 @@ body {
     height: 50px;
     bottom: 20px;
     right: 20px;
+    display:none !important;
   }
 
   /* --- Marketplace --- */
@@ -1722,12 +1725,24 @@ body {
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
   }
 
-  /* --- Chat Page (Mobile Master-Detail) --- */
+/* --- Chat Page (Mobile Master-Detail) --- */
+  
+  /* Hide the "Messages" header on mobile */
+  #chat .section-header {
+    display: none;
+  }
+  
   .chat-container {
     display: block;
-    height: 75vh;
-    position: relative;
-    overflow: hidden;
+    overflow: hidden; /* Keeps the slide effect */
+    
+    /* --- NEW STYLES --- */
+    /* Fix the container to the viewport */
+    position: fixed; 
+    top: 130px; /* Start it right below your nav bar */
+    bottom: 0; /* Fill the rest of the screen */
+    left: 0;
+    right: 0;
   }
   .chat-sidebar {
     height: 100%;
@@ -1989,9 +2004,12 @@ body {
   color: var(--color-red-400);
 }
 .heart-btn.hearted {
-  background: var(--color-red-400);
+  /* Use the light red background from the hover state */
+  background: rgba(var(--color-red-400-rgb), 0.1);
+  /* Keep the red border */
   border-color: var(--color-red-400);
-  color: var(--color-white);
+  /* Make the heart icon (the text) red */
+  color: var(--color-red-4An-error-occurred-while-generating-a-response-please-try-again);
 }
 
 .boost-btn:hover {
@@ -2568,4 +2586,55 @@ body {
   height: 18px;
   margin-right: var(--space-12); /* Adds space between logo and text */
   vertical-align: middle; /* <-- ADD THIS LINE */
+}
+
+/* =================================== */
+/* === 20. QUANTITY INPUT STYLES  === */
+/* =================================== */
+
+.quantity-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quantity-display {
+  text-align: center;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  background-color: var(--color-secondary) !important; /* Override for light mode */
+  max-width: 80px; /* Keep it constrained */
+  border-color: var(--color-border);
+  /* Remove spinner arrows for text input */
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.quantity-display:focus {
+  /* Remove focus ring as it's readonly */
+   outline: none;
+   box-shadow: none;
+   border-color: var(--color-border);
+}
+
+.quantity-display::-webkit-outer-spin-button,
+.quantity-display::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.quantity-btn {
+  width: 44px; /* Approx height of form input */
+  height: 44px;
+  padding: 0;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  border-color: var(--color-border);
+}
+
+.quantity-btn:disabled {
+   opacity: 0.5;
+   background: var(--color-secondary);
+   cursor: not-allowed;
 }

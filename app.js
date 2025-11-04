@@ -608,17 +608,24 @@ class Marketplace {
   }
 
   filterItems() {
-    AppState.filteredItems = AppState.originalItems.filter((item) => {
+      AppState.filteredItems = AppState.originalItems.filter((item) => {
       // Only show active (approved) items in the marketplace
       const matchesActive = item.isActive !== false;
+      
+      // --- ADD THIS LINE ---
+      const matchesStatus = item.status === 'available';
+
       const { searchQuery, filters } = AppState;
       const matchesSearch =
         !searchQuery ||
         item.title.toLowerCase().includes(searchQuery) ||
         item.description.toLowerCase().includes(searchQuery);
-      if (!matchesActive) return false;
+      
+      // --- MODIFY THIS LINE ---
+      if (!matchesActive || !matchesStatus) return false;
+
       const matchesCategory =
-        !filters.category || item.category === filters.category;
+        !filters.category || item.category === filters.category; 
       const matchesCondition =
         !filters.condition || item.condition === filters.condition;
       let matchesHostel = true; // Default to true (for "All Hostels")
@@ -691,9 +698,7 @@ class Marketplace {
     card.className = `item-card glass-card${item.isBoosted ? " boosted" : ""}`;
     card.style.animationDelay = `${index * 0.1}s`;
 
-    const savings = item.originalPrice
-      ? utils.calculateSavings(item.originalPrice, item.price)
-      : null;
+    
     const isUserItem =
       !!item.sellerId &&
       item.sellerId === window.userSession?.getCurrentUser?.()?.uid;
@@ -718,21 +723,17 @@ class Marketplace {
       <div class="item-card-content">
         <h3 class="item-title">${item.title}</h3>
         <div class="item-prices">
-            <div class="item-price">${utils.formatPrice(item.price)}</div>
-            ${
-              item.originalPrice
-                ? `<div class="item-original-price">${utils.formatPrice(
-                    item.originalPrice
-                  )}</div>`
-                : ""
-            }
-            ${savings ? `<div class="item-savings">Save ₹${savings}</div>` : ""}
-        </div>
+    <div class="item-price">${utils.formatPrice(item.price)}</div>
+</div>
         <div class="item-details">
-            <span class="item-tag">${item.category}</span>
-            <span class="item-tag">${item.condition}</span>
-            <span class="item-tag">${item.hostel}</span>
-        </div>
+    <span class="item-tag">${item.category}</span>
+    ${
+      (item.category === 'Food' && item.quantity > 0)
+        ? `<span class="item-tag">Qty: ${item.quantity}</span>`
+        : `<span class="item-tag">${item.condition}</span>`
+    }
+    <span class="item-tag">${item.hostel}</span>
+</div>
         <div class="item-seller-info">
             <span class="seller-label">Sold by:</span>
             <span class="seller-name" data-seller-name="${item.sellerName || "Anonymous"}">${item.sellerName || "Anonymous"}</span>
@@ -1057,6 +1058,38 @@ class PostItem {
     this.renderPreviews();
   }
 
+  updateQuantity(amount) {
+  const quantityDisplay = document.getElementById('itemQuantity');
+  const minusBtn = document.getElementById('quantity-minus');
+  if (!quantityDisplay || !minusBtn) return;
+
+  let currentQty = parseInt(quantityDisplay.value, 10);
+  currentQty = Math.max(1, currentQty + amount); // Never go below 1
+
+  quantityDisplay.value = currentQty;
+  minusBtn.disabled = (currentQty === 1);
+}
+
+handleCategoryChange() {
+  const category = document.getElementById('itemCategory').value;
+  const conditionGroup = document.getElementById('condition-form-group');
+  const quantityGroup = document.getElementById('quantity-form-group');
+  const conditionInput = document.getElementById('itemCondition');
+
+  if (!conditionGroup || !quantityGroup || !conditionInput) return;
+
+  if (category === 'Food') {
+    conditionGroup.classList.add('hidden');
+    conditionInput.required = false;
+    quantityGroup.classList.remove('hidden');
+  } else {
+    conditionGroup.classList.remove('hidden');
+    conditionInput.required = true;
+    quantityGroup.classList.add('hidden');
+    this.updateQuantity(-1000); // Resets quantity to 1
+  }
+}
+
   bindEvents() {
     const form = document.getElementById("postForm");
     if (form) {
@@ -1065,8 +1098,6 @@ class PostItem {
         this.submitForm();
       });
     }
-
-
 
     // Add a delegated event listener for remove buttons on previews
     document
@@ -1077,6 +1108,9 @@ class PostItem {
           this.removePreview(index);
         }
       });
+    document.getElementById('itemCategory')?.addEventListener('change', () => this.handleCategoryChange());
+document.getElementById('quantity-plus')?.addEventListener('click', () => this.updateQuantity(1));
+document.getElementById('quantity-minus')?.addEventListener('click', () => this.updateQuantity(-1));
 
     const disclaimerCheckbox = document.getElementById("disclaimerCheckbox");
     // Select the button inside the postForm
@@ -1163,26 +1197,36 @@ class PostItem {
       const imageUrls = await this.uploadImagesToStorage(currentUser.uid);
 
       const categoryVal = document.getElementById("itemCategory").value;
-      const newItem = {
-        title: document.getElementById("itemTitle").value.trim(),
-        category: categoryVal,
-        condition: document.getElementById("itemCondition").value,
-        price: parseInt(document.getElementById("itemPrice").value, 10),
-        originalPrice:
-          parseInt(document.getElementById("itemOriginalPrice").value, 10) ||
-          null,
-        description: document.getElementById("itemDescription").value.trim(),
-        hostel: document.getElementById("itemHostel").value,
-        images: imageUrls,
-        icon: this.getCategoryIcon(categoryVal),
-        sellerId: currentUser.uid,
-        sellerEmail: currentUser.email || "",
-        sellerName:
-          window.userSession?.getUserData?.().displayName ||
-          currentUser.displayName ||
-          "Anonymous",
-        status: "available",
-      };
+      // Define condition and quantity based on category
+let itemCondition = null;
+let itemQuantity = 1;
+
+if (categoryVal === 'Food') {
+  itemCondition = 'N/A'; // Food doesn't have a condition
+  itemQuantity = parseInt(document.getElementById("itemQuantity").value, 10) || 1;
+} else {
+  itemCondition = document.getElementById("itemCondition").value;
+}
+
+const newItem = {
+  title: document.getElementById("itemTitle").value.trim(),
+  category: categoryVal,
+  condition: itemCondition,
+  quantity: itemQuantity, // ADDED
+  price: parseInt(document.getElementById("itemPrice").value, 10),
+  // originalPrice is REMOVED
+  description: document.getElementById("itemDescription").value.trim(),
+  hostel: document.getElementById("itemHostel").value,
+  images: imageUrls,
+  icon: this.getCategoryIcon(categoryVal),
+  sellerId: currentUser.uid,
+  sellerEmail: currentUser.email || "",
+  sellerName:
+    window.userSession?.getUserData?.().displayName ||
+    currentUser.displayName ||
+    "Anonymous",
+  status: "available",
+};
 
 
       if (window.firebaseDb && window.firebaseModules) {
@@ -1643,120 +1687,102 @@ async awardPoints(userId) {
 
 // app.js
 
+// Replace the entire markItemAsSold function in the Chat class
 async markItemAsSold() {
-    const me = this.auth?.currentUser;
-    const convo = this.activeConversation || {};
-    const markAsSoldBtn = document.getElementById('markAsSoldBtn');
+  const me = this.auth?.currentUser;
+  const convo = this.activeConversation || {};
+  const markAsSoldBtn = document.getElementById('markAsSoldBtn');
 
-    if (!me || !convo?.id || !this.db || !this.modules || !markAsSoldBtn) return;
-    
-    if (convo.itemSold || markAsSoldBtn.disabled) {
-        utils.showNotification('Item is already marked as sold.', 'warning');
-        return;
+  if (!me || !convo?.id || !this.db || !this.modules || !markAsSoldBtn) return;
+  
+  if (convo.itemSold || markAsSoldBtn.disabled) {
+    utils.showNotification('Item is already marked as sold.', 'warning');
+    return;
+  }
+  
+  const originalText = markAsSoldBtn.textContent;
+  markAsSoldBtn.disabled = true;
+  markAsSoldBtn.textContent = 'Processing...';
+
+  const buyerId = convo.buyerId || (convo.participants || []).find((p) => p !== me.uid);
+  if (!buyerId) {
+    utils.showNotification('Cannot determine buyer', 'error');
+    markAsSoldBtn.disabled = false;
+    markAsSoldBtn.textContent = originalText;
+    return;
+  }
+
+  const { collection, addDoc, serverTimestamp } = this.modules;
+
+  try {
+    // 1. Get all item data needed for the function
+    const itemRef = doc(this.db, 'items', String(convo.itemId));
+    const itemSnap = await this.modules.getDoc(itemRef);
+    if (!itemSnap.exists()) {
+        throw new Error("This item no longer exists in the database.");
     }
-    
-    const originalText = markAsSoldBtn.textContent;
-    markAsSoldBtn.disabled = true;
-    markAsSoldBtn.textContent = 'Processing...';
+    const itemData = itemSnap.data();
 
-    const buyerId = convo.buyerId || (convo.participants || []).find((p) => p !== me.uid);
-    if (!buyerId) {
-        utils.showNotification('Cannot determine buyer', 'error');
+    // 2. Create the "sale event" document. This is the *only* write operation.
+    const saleEvent = {
+      // Data for the function
+      itemId: String(convo.itemId),
+      sellerId: me.uid,
+      buyerId: buyerId,
+      conversationId: convo.id, // Pass the convo ID
+      // Item data to log
+      price: itemData.price || 0,
+      itemTitle: itemData.title || "Item",
+      category: itemData.category || "Miscellaneous",
+      // Timestamp
+      createdAt: serverTimestamp(),
+    };
+    
+    const saleEventsRef = collection(this.db, 'saleEvents');
+    await addDoc(saleEventsRef, saleEvent);
+    
+    // 3. Optimistically update UI (the function will handle the rest)
+    // We can't show "Sold!" immediately, as it might be a food item
+    
+    // Logic from the 'Food' fix
+    const currentQuantity = itemData.quantity || 1;
+    if (itemData.category === 'Food' && currentQuantity > 1) {
+        // Food item with quantity > 1
+        utils.showNotification('Sale recorded! Item quantity updated.', 'success');
+        // We don't disable the button because it can be sold again
         markAsSoldBtn.disabled = false;
         markAsSoldBtn.textContent = originalText;
-        return;
-    }
-
-    const { doc, updateDoc, query, where, collection, getDocs, serverTimestamp, addDoc } = this.modules;
-
-    let criticalFailed = false;
-    let warnings = [];
-    const itemTitle = convo.itemTitle || 'Item';
-    const price = convo.itemPrice || null;
-
-    // 1) Update item status to sold (critical)
-    try {
-        if (convo.itemId) {
-            const itemRef = doc(this.db, 'items', String(convo.itemId));
-            await updateDoc(itemRef, { status: 'sold', soldToId: buyerId, updatedAt: serverTimestamp() });
+        
+        // --- OPTIONAL: Optimistically update local quantity ---
+        const itemIndex = AppState.originalItems.findIndex(i => i.id === String(convo.itemId));
+        if (itemIndex > -1) {
+            AppState.originalItems[itemIndex].quantity -= 1;
         }
-    } catch (e) {
-        criticalFailed = true;
-        console.error('Item status update failed:', e);
-    }
 
-    // 2) Award points to BOTH seller and buyer
-    let sellerAwardedSuccessfully = false;
-    let buyerAwardedSuccessfully = false;
-    if (!criticalFailed) {
-        try {
-            await this.awardPoints(me.uid);
-            sellerAwardedSuccessfully = true;
-        } catch (e) { warnings.push('Seller point award failed.'); }
-        try {
-            await this.awardPoints(buyerId);
-            buyerAwardedSuccessfully = true;
-        } catch (e) { warnings.push('Buyer point award failed.'); }
-    }
-
-    // 3) Update all related conversations
-    const updatePayload = { itemSold: true, soldToId: buyerId, soldAt: serverTimestamp() };
-    try {
-        if (convo.itemId) {
-            const convRef = collection(this.db, 'conversations');
-            const q = query(convRef, where('itemId', '==', String(convo.itemId)));
-            const snap = await getDocs(q);
-            const updates = snap.docs.map(d => updateDoc(d.ref, updatePayload));
-            await Promise.allSettled(updates);
-        } else {
-            await updateDoc(doc(this.db, 'conversations', convo.id), updatePayload);
-        }
-        this.activeConversation = { ...this.activeConversation, ...updatePayload };
-    } catch (e) {
-        warnings.push('Conversation state update encountered issues.');
-    }
-    
-    // 4) Create transaction records
-    if (!criticalFailed) {
-        const txRef = collection(this.db, 'transactions');
-        const transactionPromises = [];
-
-        // Seller Transaction: Assigned to the SELLER
-        transactionPromises.push(addDoc(txRef, {
-            userId: me.uid, // <-- Correctly uses the seller's ID
-            type: 'sale',
-            itemId: String(convo.itemId || ''),
-            itemTitle,
-            price,
-            counterpartId: buyerId,
-            createdAt: serverTimestamp(),
-            pointsAwarded: sellerAwardedSuccessfully ? 5 : 0
-        }));
-      
-        // Buyer Transaction: Assigned to the BUYER
-        transactionPromises.push(addDoc(txRef, { 
-            userId: buyerId, // <-- Correctly uses the buyer's ID
-            type: 'purchase',
-            itemId: String(convo.itemId || ''),
-            itemTitle,
-            price,
-            counterpartId: me.uid,
-            createdAt: serverTimestamp(),
-            pointsAwarded: buyerAwardedSuccessfully ? 5 : 0
-        }));
-      
-        await Promise.allSettled(transactionPromises);
-    }
-
-    // 5) Final Notification and UI Cleanup
-    if (criticalFailed) {
-        markAsSoldBtn.disabled = false;
-        markAsSoldBtn.textContent = originalText;
-        utils.showNotification('Failed to mark item as sold. Please try again.', 'error');
     } else {
-        utils.showNotification('Item marked as sold! Points awarded. 🎉', 'success');
+        // Normal item or last food item
+        utils.showNotification('Item marked as sold! Points will be awarded. 🎉', 'success');
+
+        // --- OPTIONAL: Optimistically update local item state ---
+        const itemIndex = AppState.originalItems.findIndex(i => i.id === String(convo.itemId));
+        if (itemIndex > -1) {
+            AppState.originalItems[itemIndex].status = 'sold';
+        }
+        
+        // Update the UI
+        this.activeConversation.itemSold = true; // Optimistic update
         this.updateSoldUI();
     }
+    
+    // Re-filter the marketplace to hide the sold item (if it was fully sold)
+    window.marketplace?.filterItems();
+
+  } catch (error) {
+    console.error('Failed to create sale event:', error);
+    utils.showNotification(`Sale failed: ${error.message}`, 'error');
+    markAsSoldBtn.disabled = false;
+    markAsSoldBtn.textContent = originalText;
+  }
 }
 
   subscribeMessages(conversationId) {
@@ -1943,7 +1969,7 @@ class Profile {
     const cancelEditNameBtn = document.getElementById("cancelEditName");
     const logoutBtn = document.getElementById("logoutBtn");
     const deleteAccountBtn = document.getElementById("deleteAccountBtn");
-    const settingsHelpBtn = document.getElementById("settingsHelpBtn");
+    const settingsHelpBtn = document.getElementById("openHelpBtn");
     const changePasswordBtn = document.getElementById("changePasswordBtn");
     const notificationSettingsBtn = document.getElementById(
       "notificationSettingsBtn"
@@ -2254,14 +2280,7 @@ updateStats(transactionCount, moneySaved) {
       1000
     );
 
-    // --- 3. MONEY SAVED (Now reliable) ---
-    utils.animateValue(
-      document.getElementById("moneySaved"),
-      0,
-      moneySaved, // <-- USES THE RELIABLE VALUE PASSED AS AN ARGUMENT
-      1000,
-      (val) => `₹${utils.formatPrice(val).replace('₹', '')}`
-    );
+    
     
     // Update the points progress bar
     const pointsProgress = document.getElementById("pointsProgress");
@@ -2409,29 +2428,9 @@ async loadTransactionHistory() {
         const allTransactions = [];
         snapshot.forEach((d) => allTransactions.push({ id: d.id, ...d.data() }));
 
-        let totalMoneySaved = 0;
-        // This loop now runs on all fetched transactions
-        for (const transaction of allTransactions) {
-            if (transaction.type === 'purchase' && transaction.itemId) {
-                try {
-                    const itemRef = doc(window.firebaseDb, 'items', String(transaction.itemId));
-                    const itemSnap = await getDoc(itemRef);
-                    if (itemSnap.exists()) {
-                        const itemData = itemSnap.data();
-                        if (itemData.originalPrice && itemData.price) {
-                            const savings = itemData.originalPrice - itemData.price;
-                            if (savings > 0) totalMoneySaved += savings;
-                        }
-                    }
-                } catch (e) {
-                    console.warn(`Could not fetch details for sold item ${transaction.itemId}:`, e);
-                }
-            }
-        }
-
         if (allTransactions.length === 0) {
             container.innerHTML = `<div class="empty-state"><p>No transactions yet.</p></div>`;
-            this.updateStats(0, 0); // <-- UPDATE STATS WITH 0s
+            this.updateStats(0); // <-- UPDATE STATS WITH 0s
             return;
         }
 
@@ -2455,12 +2454,12 @@ async loadTransactionHistory() {
         container.innerHTML = html;
 
         // Finally, update the stats with the correct, calculated data
-        this.updateStats(allTransactions.length, totalMoneySaved);
+        this.updateStats(allTransactions.length);
 
     } catch (e) {
         console.error('Failed to load transactions:', e);
         container.innerHTML = `<div class="empty-state"><p>Failed to load transactions.</p></div>`;
-        this.updateStats(0, 0); // <-- UPDATE STATS WITH 0s ON ERROR
+        this.updateStats(0); // <-- UPDATE STATS WITH 0s ON ERROR
     }
 }
 }
@@ -2550,6 +2549,8 @@ showById(itemId) {
     const priceEl = document.getElementById('detailPrice');
     const statusEl = document.getElementById('detailStatus');
     const descEl = document.getElementById('detailDescription');
+    const quantWrapperEl = document.getElementById('detailQuantity-wrapper');
+    const quantEl = document.getElementById('detailQuantity');
     
     // --- Image Gallery Elements ---
     const mainImgEl = document.getElementById('detailMainImage');
@@ -2563,6 +2564,15 @@ showById(itemId) {
     if (priceEl) priceEl.textContent = utils.formatPrice(item.price || 0);
     if (statusEl) statusEl.textContent = item.condition || '';
     if (descEl) descEl.textContent = item.description || '';
+    // Logic for Food vs. Non-Food items
+if (item.category === 'Food' && item.quantity > 0) {
+  if (quantEl) quantEl.textContent = item.quantity;
+  if (quantWrapperEl) quantWrapperEl.classList.remove('hidden');
+  if (statusEl) statusEl.textContent = 'N/A'; // Hide condition
+} else {
+  if (quantWrapperEl) quantWrapperEl.classList.add('hidden');
+  if (statusEl) statusEl.textContent = item.condition || ''; // Show condition
+}
 
     // --- Image Gallery Logic ---
     const allImages = Array.isArray(item.images) && item.images.length > 0 ? item.images : [];
@@ -2760,8 +2770,7 @@ function initializeGlobalEventListeners() {
         document.body.classList.remove('modal-open');
       }
     }
-
-    if (target.closest("#settingsHelpBtn")) {
+if (target.closest("#openHelpBtn")) {
       e.preventDefault();
       switchToSection('help');
     }
