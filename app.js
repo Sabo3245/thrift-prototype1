@@ -149,6 +149,78 @@ const AppState = {
   currentBoostItemId: null,
 };
 
+const sampleItems = [
+  {
+    id: "item1",
+    title: "Barely Used C++ Textbook",
+    category: "Stationery",
+    condition: "Used",
+    price: 500,
+    originalPrice: 1200,
+    description: "Latest edition textbook for CS101. No highlighting or marks. Bought last semester.",
+    hostel: "A",
+    images: [],
+    icon: "📚",
+    sellerId: "sampleUser1",
+    sellerName: "Rohan Kumar",
+    sellerEmail: "rohan@example.com",
+    status: "available",
+    createdAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+    updatedAt: new Date(Date.now() - 86400000).toISOString(),
+    isBoosted: true,
+    isActive: true,
+    approved: true,
+    flagged: false,
+    hearts: 2,
+  },
+  {
+    id: "item2",
+    title: "Gaming Mouse",
+    category: "Electronics",
+    condition: "New",
+    price: 1500,
+    originalPrice: 2500,
+    description: "Brand new gaming mouse, unopened box. Got it as a gift, but I already have one.",
+    hostel: "B",
+    images: [],
+    icon: "💻",
+    sellerId: "sampleUser2",
+    sellerName: "Priya Sharma",
+    sellerEmail: "priya@example.com",
+    status: "available",
+    createdAt: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
+    updatedAt: new Date(Date.now() - 172800000).toISOString(),
+    isBoosted: false,
+    isActive: true,
+    approved: true,
+    flagged: false,
+    hearts: 5,
+  },
+  {
+    id: "item3",
+    title: "Hoodie (Size M)",
+    category: "Clothes",
+    condition: "Used",
+    price: 300,
+    originalPrice: 1000,
+    description: "Comfortable black hoodie. Used for one winter. Good condition.",
+    hostel: "C",
+    images: [],
+    icon: "👕",
+    sellerId: "sampleUser3",
+    sellerName: "Ankit Singh",
+    sellerEmail: "ankit@example.com",
+    status: "available",
+    createdAt: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
+    updatedAt: new Date(Date.now() - 259200000).toISOString(),
+    isBoosted: false,
+    isActive: true,
+    approved: true,
+    flagged: false,
+    hearts: 1,
+  }
+];
+
 
 
 // Utility Functions
@@ -642,39 +714,43 @@ class Marketplace {
       item.id
     }" title="Heart this item">${isHearted ? "❤️" : "🤍"}</button>
       </div>
-      <h3 class="item-title">${item.title}</h3>
-      <div class="item-prices">
-          <div class="item-price">${utils.formatPrice(item.price)}</div>
-          ${
-            item.originalPrice
-              ? `<div class="item-original-price">${utils.formatPrice(
-                  item.originalPrice
-                )}</div>`
-              : ""
-          }
-          ${savings ? `<div class="item-savings">Save ₹${savings}</div>` : ""}
+
+      <div class="item-card-content">
+        <h3 class="item-title">${item.title}</h3>
+        <div class="item-prices">
+            <div class="item-price">${utils.formatPrice(item.price)}</div>
+            ${
+              item.originalPrice
+                ? `<div class="item-original-price">${utils.formatPrice(
+                    item.originalPrice
+                  )}</div>`
+                : ""
+            }
+            ${savings ? `<div class="item-savings">Save ₹${savings}</div>` : ""}
+        </div>
+        <div class="item-details">
+            <span class="item-tag">${item.category}</span>
+            <span class="item-tag">${item.condition}</span>
+            <span class="item-tag">${item.hostel}</span>
+        </div>
+        <div class="item-seller-info">
+            <span class="seller-label">Sold by:</span>
+            <span class="seller-name" data-seller-name="${item.sellerName || "Anonymous"}">${item.sellerName || "Anonymous"}</span>
+        </div>
+        <div class="item-actions">
+            <button class="btn btn--primary btn--sm contact-btn" data-id="${
+              item.id
+            }">Contact Seller</button>
+            ${
+              isUserItem
+                ? `
+                <button class="boost-btn" data-id="${item.id}" title="Boost post">🚀</button>
+                <button class="remove-btn" data-id="${item.id}" title="Remove post">🗑️</button>`
+                : ""
+            }
+        </div>
       </div>
-      <div class="item-details">
-          <span class="item-tag">${item.category}</span>
-          <span class="item-tag">${item.condition}</span>
-          <span class="item-tag">${item.hostel}</span>
-      </div>
-      <div class="item-seller-info">
-          <span class="seller-label">Sold by:</span>
-          <span class="seller-name" data-seller-name="${item.sellerName || "Anonymous"}">${item.sellerName || "Anonymous"}</span>
-      </div>
-      <div class="item-actions">
-          <button class="btn btn--primary btn--sm contact-btn" data-id="${
-            item.id
-          }">Contact Seller</button>
-          ${
-            isUserItem
-              ? `
-              <button class="boost-btn" data-id="${item.id}" title="Boost post">🚀</button>
-              <button class="remove-btn" data-id="${item.id}" title="Remove post">🗑️</button>`
-              : ""
-          }
-      </div>`;
+      `;
 
     card.addEventListener("click", (e) => this.handleCardClick(e, item.id));
     return card;
@@ -990,11 +1066,7 @@ class PostItem {
       });
     }
 
-    document.getElementById("itemCategory")?.addEventListener("change", (e) => {
-      document
-        .getElementById("clothingChecklist")
-        ?.classList.toggle("hidden", e.target.value !== "Clothes");
-    });
+
 
     // Add a delegated event listener for remove buttons on previews
     document
@@ -1112,13 +1184,6 @@ class PostItem {
         status: "available",
       };
 
-      if (newItem.category === "Clothes") {
-        newItem.clothingChecklist = {
-          quality: document.getElementById("clothingQuality").value,
-          age: document.getElementById("clothingAge").value,
-          detailedCondition: document.getElementById("clothingCondition").value,
-        };
-      }
 
       if (window.firebaseDb && window.firebaseModules) {
         const { collection, addDoc, serverTimestamp, doc, getDoc } = window.firebaseModules;
@@ -2585,6 +2650,11 @@ function initializeGlobalEventListeners() {
       }
     }
 
+    if (target.closest("#settingsHelpBtn")) {
+      e.preventDefault();
+      switchToSection('help');
+    }
+
     // --- Profile Page Actions (Merged from master) ---
     if (target.closest(".avatar-edit") || target.closest("#editNameBtn")) {
       e.preventDefault();
@@ -2676,6 +2746,8 @@ class App {
     this.help.init();
     this.itemDetail.init();
 
+    this.personalizeHeaders()
+
     initializeGlobalEventListeners();
 
     this.handleUrlRouting(); // Check URL on initial load
@@ -2711,6 +2783,26 @@ class App {
     } else {
       // No item ID, just show the marketplace (which is the default)
       switchToSection('marketplace');
+    }
+  }
+
+  // --- ADD THIS NEW METHOD TO THE App CLASS (e.g., after the constructor) ---
+  personalizeHeaders() {
+    const titleEl = document.getElementById('marketplace-title');
+    const subtitleEl = document.getElementById('marketplace-subtitle');
+    
+    if (!titleEl || !subtitleEl) return; // Failsafe
+
+    const user = window.userSession?.getCurrentUser?.();
+    const userData = window.userSession?.getUserData?.();
+
+    if (user && userData?.displayName) {
+      titleEl.textContent = `Welcome back, ${userData.displayName}!`;
+      subtitleEl.textContent = "Ready to find your next amazing deal?";
+    } else {
+      // Default text if user is not logged in
+      titleEl.textContent = "Discover Amazing Deals";
+      subtitleEl.textContent = "Find everything you need from fellow students";
     }
   }
 
