@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>CampusKart — Admin Review</title>
+    <link rel="icon" type="image/svg" href="logoCart.png">
     <link rel="stylesheet" href="style.css" />
     <style>
       body { background-color: #0a192f; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; }
@@ -55,7 +56,7 @@
       #userPanel input{padding:6px 10px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:4px;color:#ffffff;margin-left:8px;}
       #userPanel label{color:#cbd5e1;font-size:14px;}
       .empty-state{text-align:center;padding:40px;color:#8892b0;}
-      .admin-tabs{display:flex;gap:8px;margin:20px 0;border-bottom:2px solid rgba(255,255,255,0.1);}
+      .admin-tabs{display:flex;flex-wrap: wrap;gap:8px;margin:20px 0;border-bottom:2px solid rgba(255,255,255,0.1);}
       .admin-tab{background:none;border:none;color:#8892b0;padding:12px 20px;cursor:pointer;font-size:15px;border-bottom:3px solid transparent;transition:all 0.2s;}
       .admin-tab:hover{color:#ffffff;background:rgba(255,255,255,0.05);}
       .admin-tab.active{color:#00e5ff;border-bottom-color:#00e5ff;}
@@ -80,56 +81,91 @@
       .marketplace-item-title{font-size:16px;font-weight:500;color:#ffffff;margin-bottom:4px;}
       .marketplace-item-price{color:#00ff88;font-weight:500;font-size:14px;}
       .marketplace-item-seller{color:#8892b0;font-size:13px;margin-top:4px;}
+      
+      /* --- NEW NOTIFICATION FORM STYLES --- */
+      .notification-form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        max-width: 600px;
+      }
+      #notificationMessage {
+        min-height: 150px;
+        padding: 12px;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 6px;
+        color: #ffffff;
+        font-size: 15px;
+        font-family: inherit;
+      }
+      #postNotificationBtn {
+        align-self: flex-start;
+        background-color: #00e5ff;
+        color: #0a192f;
+        font-weight: 500;
+      }
     </style>
   </head>
   <body>
     <div class="admin-container">
-  <div id="content">
-    <h1>Admin Dashboard</h1>
-    
-    <div class="admin-tabs">
-      <button class="admin-tab active" data-tab="pending">Pending Items</button>
-      
-      <button class="admin-tab" data-tab="flagged">Flagged Items</button>
-      
-      <button class="admin-tab" data-tab="marketplace">Marketplace Posts</button>
-      <button class="admin-tab" data-tab="users">All Users</button>
-    </div>
-
-<div id="pendingSection" class="tab-content active">
-      <h2>Pending Approval</h2>
-      <div id="itemsList">
+      <div id="content" style="display: none;">
+        <h1>Admin Dashboard</h1>
+        
+        <div class="admin-tabs">
+          <button class="admin-tab active" data-tab="pending">Pending Items</button>
+          <button class="admin-tab" data-tab="flagged">Flagged Items</button>
+          <button class="admin-tab" data-tab="marketplace">Marketplace Posts</button>
+          <button class="admin-tab" data-tab="users">All Users</button>
+          <button class="admin-tab" data-tab="notifications">Post Notification</button>
         </div>
-    </div>
 
-    <div id="flaggedSection" class="tab-content">
-      <h2>Reported / Flagged Items</h2>
-      <div id="flaggedItemsList">
+        <div id="pendingSection" class="tab-content active">
+          <h2>Pending Approval</h2>
+          <div id="itemsList"></div>
         </div>
-    </div>
 
-    <div id="marketplaceSection" class="tab-content">
-      <h2>All Marketplace Posts</h2>
-      <div id="marketplaceList">
+        <div id="flaggedSection" class="tab-content">
+          <h2>Reported / Flagged Items</h2>
+          <div id="flaggedItemsList"></div>
         </div>
-    </div>
 
-    <div id="usersSection" class="tab-content">
-      <h2>All Users</h2>
-      <div class="user-stats">
-        <div>Total Users: <strong id="totalUsers">0</strong></div>
-        <div>Banned: <strong id="bannedUsers">0</strong></div>
-        <div>Admins: <strong id="adminUsers">0</strong></div>
+        <div id="marketplaceSection" class="tab-content">
+          <h2>All Marketplace Posts</h2>
+          <div id="marketplaceList"></div>
+        </div>
+
+        <div id="usersSection" class="tab-content">
+          <h2>All Users</h2>
+          <div class="user-stats">
+            <div>Total Users: <strong id="totalUsers">0</strong></div>
+            <div>Banned: <strong id="bannedUsers">0</strong></div>
+            <div>Admins: <strong id="adminUsers">0</strong></div>
+          </div>
+          <div id="usersList"></div>
+        </div>
+
+        <div id="notificationsSection" class="tab-content">
+          <h2>Post a New Notification</h2>
+          <p style="color: #8892b0; max-width: 600px; margin-bottom: 16px;">
+            This will be sent to all users and appear in their profile's notification tab.
+          </p>
+          <div class="notification-form">
+            <textarea id="notificationMessage" placeholder="Type your message... (e.g., 'Scheduled maintenance tomorrow from 2-3 AM.')"></textarea>
+            <button id="postNotificationBtn" class="btn btn--primary" style="background-color: #00e5ff; color: #0a192f; font-weight: 500;">
+              Post Notification
+            </button>
+          </div>
+        </div>
+        
+        <button id="signOutBtn" class="sign-out-btn">Sign Out</button>
       </div>
-      <div id="usersList">
-        </div>
+      <div id="notAdmin" style="display:none">
+        <h1>Access Denied</h1>
+        <p>You must be an admin to view this page.</p>
+        <button id="signOutBtn" class="sign-out-btn">Sign Out</button>
+      </div>
     </div>
-    
-    <button id="signOutBtn" class="sign-out-btn">Sign Out</button>
-  </div>
-  <div id="notAdmin" style="display:none">
-    </div>
-</div>
 
     <script type="module" src="admin.js"></script>
   </body>

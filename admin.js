@@ -17,7 +17,8 @@ import {
   getDocs,
   serverTimestamp,
   deleteField,
-  deleteDoc, // <-- ADDED DELETE FUNCTION
+  deleteDoc,
+  addDoc, // <-- IMPORT ADD_DOC
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // Use same firebaseConfig as main app
@@ -35,47 +36,104 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+let currentAdminUser = null; // <-- Store the admin user
+
 const itemsList = document.getElementById("itemsList");
-const marketplaceList = document.getElementById("marketplaceList"); 
+const marketplaceList = document.getElementById("marketplaceList");
 const usersList = document.getElementById("usersList");
 const notAdmin = document.getElementById("notAdmin");
 const content = document.getElementById("content");
 const signOutBtn = document.getElementById("signOutBtn");
+const postNotificationBtn = document.getElementById("postNotificationBtn"); // <-- Get new button
 
 signOutBtn.addEventListener("click", async () => {
   await signOut(auth);
-  window.location.href = 'auth.html';
+  window.location.href = "auth.html";
 });
+
+// --- NEW: Add event listener for posting notifications ---
+postNotificationBtn.addEventListener("click", async () => {
+  const messageEl = document.getElementById("notificationMessage");
+  const message = messageEl.value.trim();
+
+  if (!message) {
+    alert("Please enter a notification message.");
+    return;
+  }
+
+  if (!currentAdminUser) {
+    alert("Error: Admin user not identified. Please refresh.");
+    return;
+  }
+
+  if (
+    !confirm(
+      "Are you sure you want to post this notification to all users?"
+    )
+  ) {
+    return;
+  }
+
+  try {
+    postNotificationBtn.disabled = true;
+    postNotificationBtn.textContent = "Posting...";
+
+    const announcementsRef = collection(db, "announcements");
+    await addDoc(announcementsRef, {
+      message: message,
+      createdAt: serverTimestamp(),
+      postedBy: currentAdminUser.email || "Admin",
+    });
+
+    alert("Notification posted successfully!");
+    messageEl.value = ""; // Clear the text area
+  } catch (error) {
+    console.error("Error posting notification:", error);
+    alert("Failed to post notification. Check console for errors.");
+  } finally {
+    postNotificationBtn.disabled = false;
+    postNotificationBtn.textContent = "Post Notification";
+  }
+});
+// --- END NEW LISTENER ---
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
-    window.location.href = 'auth.html';
+    // MODIFIED: Redirect to auth.html but tell it we're from the admin page
+    window.location.href = "auth.html?from=admin"; 
     return;
   }
+
+  currentAdminUser = user; // <-- Store the admin user
 
   const idTokenRes = await getIdTokenResult(user, true).catch(() => ({}));
   const claims = idTokenRes?.claims || {};
   if (!claims.admin) {
-    notAdmin.style.display = 'block';
-    content.style.display = 'none';
+    notAdmin.style.display = "block";
+    content.style.display = "none";
     return;
   }
 
   // Admin: subscribe to pending/flagged items
-  notAdmin.style.display = 'none';
-  content.style.display = 'block';
+  notAdmin.style.display = "none";
+  content.style.display = "block";
 
-  const itemsRef = collection(db, 'items');
+  const itemsRef = collection(db, "items");
   // This query is for the "Pending" (newly submitted) items
-  const q = query(itemsRef, where('isActive', '==', false), where('flagged', '==', false));
+  const q = query(
+    itemsRef,
+    where("isActive", "==", false),
+    where("flagged", "==", false)
+  );
   onSnapshot(q, (snap) => {
     const rows = [];
     snap.forEach((d) => rows.push({ id: d.id, ...d.data() }));
-    renderItems(rows, 'itemsList'); // Render pending items
+    renderItems(rows, "itemsList"); // Render pending items
   });
 });
 
 function renderItems(items, listElementId) {
+  // ... (this function is unchanged)
   const listEl = document.getElementById(listElementId);
   if (!listEl) return;
 
@@ -117,9 +175,9 @@ function renderItems(items, listElementId) {
   });
 }
 
-// --- GLOBAL FUNCTIONS (attached to window) ---
-
+// --- GLOBAL FUNCTIONS (unchanged) ---
 window.approveItem = async function(itemId) {
+  // ... (unchanged)
   try {
     const itemRef = doc(db, 'items', itemId);
     await updateDoc(itemRef, {
@@ -136,6 +194,7 @@ window.approveItem = async function(itemId) {
 }
 
 window.rejectItem = async function(itemId) {
+  // ... (unchanged)
   try {
     const itemRef = doc(db, 'items', itemId);
     await updateDoc(itemRef, {
@@ -152,6 +211,7 @@ window.rejectItem = async function(itemId) {
 }
 
 window.deleteItem = async function(itemId) {
+  // ... (unchanged)
   if (!confirm('Are you sure you want to PERMANENTLY DELETE this item? This cannot be undone.')) {
     return;
   }
@@ -167,6 +227,7 @@ window.deleteItem = async function(itemId) {
 }
 
 window.banUser = async function(uid) {
+  // ... (unchanged)
   if (!uid) return alert('No uid');
   if (!confirm('Are you sure you want to BAN this user?')) return;
   try {
@@ -177,6 +238,7 @@ window.banUser = async function(uid) {
 }
 
 window.unbanUser = async function(uid) {
+  // ... (unchanged)
   if (!uid) return alert('No uid');
   try {
     const userRef = doc(db, 'users', uid);
@@ -185,38 +247,41 @@ window.unbanUser = async function(uid) {
   } catch (e) { console.error(e); alert('Error unbanning user'); }
 }
 
-// Tab switching
-const tabs = document.querySelectorAll('.admin-tab');
-const tabContents = document.querySelectorAll('.tab-content');
+// --- Tab switching (UPDATED) ---
+const tabs = document.querySelectorAll(".admin-tab");
+const tabContents = document.querySelectorAll(".tab-content");
 
-tabs.forEach(tab => {
-  tab.addEventListener('click', () => {
+tabs.forEach((tab) => {
+  tab.addEventListener("click", () => {
     const targetTab = tab.dataset.tab;
-    
+
     // Update active tab
-    tabs.forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-    
+    tabs.forEach((t) => t.classList.remove("active"));
+    tab.classList.add("active");
+
     // Show corresponding content
-    tabContents.forEach(content => content.classList.remove('active'));
-    
-    if (targetTab === 'pending') {
-      document.getElementById('pendingSection').classList.add('active');
+    tabContents.forEach((content) => content.classList.remove("active"));
+
+    if (targetTab === "pending") {
+      document.getElementById("pendingSection").classList.add("active");
       // Already handled by live onSnapshot
-    } else if (targetTab === 'flagged') { // <-- NEW TAB LOGIC
-      document.getElementById('flaggedSection').classList.add('active');
+    } else if (targetTab === "flagged") {
+      document.getElementById("flaggedSection").classList.add("active");
       loadFlaggedItems();
-    } else if (targetTab === 'marketplace') {
-      document.getElementById('marketplaceSection').classList.add('active');
+    } else if (targetTab === "marketplace") {
+      document.getElementById("marketplaceSection").classList.add("active");
       loadMarketplacePosts();
-    } else if (targetTab === 'users') {
-      document.getElementById('usersSection').classList.add('active');
+    } else if (targetTab === "users") {
+      document.getElementById("usersSection").classList.add("active");
       loadAllUsers();
+    } else if (targetTab === "notifications") {
+      // <-- NEW LOGIC
+      document.getElementById("notificationsSection").classList.add("active");
     }
   });
 });
 
-// --- NEW FUNCTION TO LOAD FLAGGED ITEMS ---
+// ... (Rest of the functions: loadFlaggedItems, loadMarketplacePosts, loadAllUsers, deactivateItem, makeUserAdmin, escapeHtml are all unchanged) ...
 async function loadFlaggedItems() {
   const flaggedItemsList = document.getElementById('flaggedItemsList');
   flaggedItemsList.innerHTML = '<div class="empty-state">Loading...</div>';
@@ -243,10 +308,7 @@ async function loadFlaggedItems() {
   }
 }
 
-// Load all marketplace posts (active items)
 async function loadMarketplacePosts() {
-  // ... (This function remains unchanged)
-
   marketplaceList.innerHTML = '<div class="empty-state">Loading...</div>';
   
   try {
@@ -288,10 +350,7 @@ async function loadMarketplacePosts() {
   }
 }
 
-// Load all users
 async function loadAllUsers() {
-  // ... (This function remains unchanged)
-
   usersList.innerHTML = '<div class="empty-state">Loading...</div>';
   
   try {
@@ -356,7 +415,6 @@ async function loadAllUsers() {
   }
 }
 
-// Deactivate marketplace item
 window.deactivateItem = async function(itemId) {
   if (!confirm('Deactivate this item? This will mark it as "flagged" and hide it.')) return;
   try {
@@ -376,7 +434,6 @@ window.deactivateItem = async function(itemId) {
   }
 };
 
-// Make user admin
 window.makeUserAdmin = async function(uid) {
   if (!confirm('Grant admin privileges to this user?')) return;
   try {
