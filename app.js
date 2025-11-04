@@ -1938,11 +1938,16 @@ class Profile {
 
   // Binds clicks to all the interactive elements in the profile section
   bindEvents() {
-    const avatarEditBtn = document.querySelector(".avatar-edit"); // The pencil icon
+    const avatarEditBtn = document.querySelector(".avatar-edit");
     const saveEditNameBtn = document.getElementById("saveEditName");
     const cancelEditNameBtn = document.getElementById("cancelEditName");
     const logoutBtn = document.getElementById("logoutBtn");
     const deleteAccountBtn = document.getElementById("deleteAccountBtn");
+    const settingsHelpBtn = document.getElementById("settingsHelpBtn");
+    const changePasswordBtn = document.getElementById("changePasswordBtn");
+    const notificationSettingsBtn = document.getElementById(
+      "notificationSettingsBtn"
+    );
 
     // NEW: Make the pencil icon open the Edit Name modal
     if (avatarEditBtn) {
@@ -1982,6 +1987,17 @@ class Profile {
         e.preventDefault();
         const modal = document.getElementById("deleteAccountModal");
         modal?.classList.remove("hidden");
+      });
+    }
+
+    if (notificationSettingsBtn) {
+      notificationSettingsBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        // utils.showNotification("Notification settings coming soon!", "info"); // <-- OLD
+        
+        // NEW LOGIC:
+        window.notifications?.loadNotifications(); // Load data
+        switchToSection("notifications"); // Switch view
       });
     }
   }
@@ -2601,6 +2617,101 @@ showById(itemId) {
   }
 }
 
+class Notifications {
+  constructor() {
+    this.container = document.getElementById("notificationListContainer");
+    this.db = window.firebaseDb;
+    this.modules = window.firebaseModules;
+  }
+
+  init() {
+    const backBtn = document.getElementById("backToProfileBtn");
+    if (backBtn) {
+      backBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        switchToSection("profile");
+      });
+    }
+  }
+
+async loadNotifications() {
+    // --- FIX: Grab the database and modules here, not in the constructor ---
+    this.db = window.firebaseDb;
+    this.modules = window.firebaseModules;
+    // -----------------------------------------------------------------
+    
+    if (!this.container) return;
+    if (!this.db || !this.modules) {
+      this.container.innerHTML = `<div class="empty-state"><p>Error: Could not connect to database.</p></div>`;
+      return;
+    }
+
+    this.container.innerHTML = `<div class="empty-state"><p>Loading notifications...</p></div>`;
+
+    const { collection, query, orderBy, getDocs } = this.modules;
+
+    try {
+      const annRef = collection(this.db, "announcements");
+      const q = query(annRef, orderBy("createdAt", "desc"));
+      const snapshot = await getDocs(q);
+
+      if (snapshot.empty) {
+        this.container.innerHTML = `<div class="empty-state"><p>No new notifications from the admin team.</p></div>`;
+        return;
+      }
+
+      const notifications = [];
+      snapshot.forEach((doc) => {
+        notifications.push(doc.data());
+      });
+
+      this.renderNotifications(notifications);
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+      // --- FIX: Display the real Firebase error for easier debugging ---
+      if (error.code === 'permission-denied' || error.code === 'failed-precondition') {
+         this.container.innerHTML = `<div class="empty-state"><p>Security Error: Could not load notifications. (Check Firestore Rules)</p></div>`;
+      } else {
+         this.container.innerHTML = `<div class="empty-state"><p>Failed to load notifications.</p></div>`;
+      }
+    }
+  }
+
+  renderNotifications(notifications) {
+    let html = "";
+    let currentDate = "";
+
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+
+    for (const notif of notifications) {
+      const date = notif.createdAt?.toDate?.();
+      if (!date) continue;
+      
+      const dateString = date.toLocaleDateString('en-US', options);
+
+      // If the date is different from the last one, add a new date header
+      if (dateString !== currentDate) {
+        currentDate = dateString;
+        html += `<h3 class="notification-date-header">${currentDate}</h3>`;
+      }
+
+  // Add the notification item
+      html += `
+        <div class="notification-item">
+          <p class="notification-message">${this.escapeHtml(notif.message)}</p>
+          <span class="notification-meta">Posted by Team CampusKart</span>
+        </div>
+      `;
+    }
+
+    this.container.innerHTML = html;
+  }
+
+  escapeHtml(s) { 
+    return String(s||'').replace(/[&<>"']/g, (c)=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"})[c]); 
+  }
+}
+
 function initializeGlobalEventListeners() {
   document.body.addEventListener("click", async (e) => {
     const target = e.target;
@@ -2721,6 +2832,7 @@ class App {
     this.profile = new Profile();
     this.help = new Help();
     this.itemDetail = new ItemDetail();
+    this.notifications = new Notifications();
   }
 
   // --- APP INITIALIZATION (FIXED) ---
@@ -2734,6 +2846,7 @@ class App {
     window.profile = this.profile;
     window.help = this.help;
     window.itemDetail = this.itemDetail;
+    window.notifications = this.notifications;
 
     this.navigation.init();
 
@@ -2745,6 +2858,7 @@ class App {
     this.profile.init(); // Now this runs AFTER items are loaded
     this.help.init();
     this.itemDetail.init();
+    this.notifications.init()
 
     this.personalizeHeaders()
 
@@ -2760,7 +2874,7 @@ class App {
     console.log("App initialized successfully");
   }
 
-  // --- START: ADD THIS NEW METHOD ---
+
   // This method checks the URL when the page first loads
   handleUrlRouting() {
     const params = new URLSearchParams(window.location.search);
@@ -2786,7 +2900,7 @@ class App {
     }
   }
 
-  // --- ADD THIS NEW METHOD TO THE App CLASS (e.g., after the constructor) ---
+ 
   personalizeHeaders() {
     const titleEl = document.getElementById('marketplace-title');
     const subtitleEl = document.getElementById('marketplace-subtitle');
@@ -2806,7 +2920,7 @@ class App {
     }
   }
 
-  // --- START: ADD THIS NEW METHOD ---
+
   // This handles the browser's back/forward buttons
   setupPopstateListener() {
     window.onpopstate = (event) => {

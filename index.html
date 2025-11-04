@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CampusKart - College Marketplace</title>
-    <link rel="icon" type="image/svg" href="logo.svg">
+    <title>CampusKart</title>
+    <link rel="icon" type="image/svg" href="logoCart.png">
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -64,6 +64,21 @@
           <div class="nav-indicator"></div>
         </div>
       </nav>
+      <section id="notifications" class="section">
+        <div class="container">
+        <section id="notifications" class="section">
+        <div class="container">
+          <div class="section-header" style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px;">
+            <button class="btn btn--outline" id="backToProfileBtn" style="justify-self: start;">
+              ← Back to Profile
+            </button>
+            <h1 class="page-title" style="margin-bottom: 0; justify-self: center;">Notifications</h1>
+            </div>
+          <div id="notificationListContainer" class="glass-card" style="padding: 20px 32px; max-width: 900px; margin: 0 auto;">
+            <div class="empty-state">Loading notifications...</div>
+          </div>
+        </div>
+      </section>
       <section id="help" class="section">
         <div class="container">
           <div class="section-header">
@@ -99,7 +114,7 @@
 
       <section id="marketplace" class="section active">
         <div class="container">
-          <div class="section-header">
+          <div class="section-header" style="text-align: center;">
             <h1 class="page-title" id="marketplace-title">Discover Amazing Deals</h1>
             <p class="page-subtitle" id="marketplace-subtitle">
               Find everything you need from fellow students
@@ -439,10 +454,11 @@
 
       <section id="profile" class="section">
         <div class="container">
-          <div class="section-header">
-            <h1 class="page-title">Your Profile</h1>
-            <p class="page-subtitle">Manage your account and listings</p>
-          </div>
+          <div class="section-header" >
+            <h1 class="page-title" id="marketplace-title">Your Profile</h1>
+            <p class="page-subtitle" id="marketplace-subtitle">
+              Manager Your Account and Listings
+            </p>
 
           <div class="profile-grid">
             <div class="profile-card glass-card">
@@ -526,7 +542,7 @@
               <div class="settings-actions-list">
 
                 <div class="setting-action-item toggle-item">
-                  <span>☀️ Light / 🌙 Dark Mode</span>
+                  <span>🌙 Dark Mode/ ☀️ Light </span>
                   <div class="toggle-switch">
                     <input type="checkbox" id="themeToggle" class="toggle-input">
                     <label for="themeToggle" class="toggle-label"></label>
@@ -539,10 +555,6 @@
             </a>
                 <a href="#" id="logoutBtn" class="setting-action-item">
                     <span>&#x1F6AA; Logout</span>
-      <span>&gt;</span>
-    </a>
-    <a href="#" id="changePasswordBtn" class="setting-action-item">
-      <span>&#x1F510; Privacy - Change Password</span>
       <span>&gt;</span>
     </a>
     <a
@@ -760,7 +772,7 @@
       
       <button class="fab" id="fabButton">
         <span class="fab-icon">➕</span>
-...
+
       <button class="fab" id="fabButton">
         <span class="fab-icon">➕</span>
         <div class="fab-ripple"></div>

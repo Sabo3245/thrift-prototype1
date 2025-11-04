@@ -55,9 +55,9 @@
   --color-primary: var(--color-teal-500);
   --color-primary-hover: var(--color-teal-600);
   --color-primary-active: var(--color-teal-700);
-  --color-secondary: rgba(var(--color-brown-600-rgb), 0.12);
-  --color-secondary-hover: rgba(var(--color-brown-600-rgb), 0.2);
-  --color-secondary-active: rgba(var(--color-brown-600-rgb), 0.25);
+  --color-secondary: rgba(var(--color-slate-500-rgb), 0.08); 
+  --color-secondary-hover: rgba(var(--color-slate-500-rgb), 0.12);
+  --color-secondary-active: rgba(var(--color-slate-500-rgb), 0.15);
   --color-border: rgba(var(--color-brown-600-rgb), 0.2);
   --color-btn-primary-text: var(--color-cream-50);
   --color-error: var(--color-red-500);
@@ -1650,8 +1650,8 @@ body.modal-open {
 
 @media (max-width: 768px) {
   /* --- Base & Nav --- */
-  body {
-    padding-top: calc(var(--nav-height) + 10px); /* Extra space for smaller nav */
+body {
+    padding-top: 130px; /* Increased padding for the taller 2-line mobile nav */
   }
   .nav-container {
     height: auto;
@@ -1808,9 +1808,31 @@ body.modal-open {
 }
 
 /* Loader class for buttons */
+/* Loader class for buttons */
 .btn-loader {
   display: none;
   animation: rotate 1s linear infinite;
+
+  width: 18px;  /* Spinner size */
+  height: 18px;
+  border-radius: 50%;
+  
+  /* This is the default "light" spinner (for dark buttons).
+    It has a faint white track and a solid white spinner.
+  */
+  border: 3px solid rgba(255, 255, 255, 0.3); 
+  border-top-color: #FFF; 
+}
+
+/* This rule targets loaders inside the .google-btn (which is light)
+  OR inside a .btn--primary WHEN in dark mode 
+  (since your dark mode buttons have dark text).
+*/
+.google-btn .btn-loader,
+[data-color-scheme="dark"] .btn--primary .btn-loader {
+  /* This is the "dark" spinner */
+  border: 3px solid rgba(0, 0, 0, 0.2); 
+  border-top-color: var(--color-slate-900); 
 }
 
 .btn-loader.hidden {
@@ -2307,9 +2329,12 @@ body.modal-open {
   --color-primary: var(--color-teal-500);
   --color-primary-hover: var(--color-teal-600);
   --color-primary-active: var(--color-teal-700);
-  --color-secondary: rgba(var(--color-brown-600-rgb), 0.12);
-  --color-secondary-hover: rgba(var(--color-brown-600-rgb), 0.2);
-  --color-border: rgba(var(--color-brown-600-rgb), 0.2);
+
+/* Using a *very light warm brown* to match the cream theme */
+  --color-secondary: rgba(var(--color-brown-600-rgb), 0.05); 
+  --color-secondary-hover: rgba(var(--color-brown-600-rgb), 0.1);
+  /* Also fixing the border to match */
+  --color-border: rgba(var(--color-brown-600-rgb), 0.15);
   --color-btn-primary-text: var(--color-cream-50);
   --color-error: var(--color-red-500);
   --color-success: var(--color-teal-500);
@@ -2477,4 +2502,70 @@ body.modal-open {
   border-color: var(--color-red-500);
   color: var(--color-red-500);
   transform: scale(1.1);
+}
+
+.notification-date-header{
+  margin-bottom: 10px;
+}
+
+/* =================================== */
+/* === 18. MODAL SCROLLBAR STYLES  === */
+/* (Matching minimalist style from Sec 12) */
+/* =================================== */
+
+/* 1. Make the modal bodies scrollable */
+#termsModal .modal-body,
+#privacyModal .modal-body {
+  max-height: 60vh; 
+  overflow-y: auto; 
+  padding-right: 10px; /* Make padding smaller to match inset */
+
+  /* --- For Firefox --- */
+  scrollbar-width: thin;
+  /* Use border color for thumb, transparent for track */
+  scrollbar-color: var(--color-border) transparent; 
+}
+
+/* --- For WebKit browsers (Chrome, Safari, Edge) --- */
+
+#termsModal .modal-body::-webkit-scrollbar,
+#privacyModal .modal-body::-webkit-scrollbar {
+  width: 8px; /* Set the width */
+}
+
+/* 2. Make the track transparent */
+#termsModal .modal-body::-webkit-scrollbar-track,
+#privacyModal .modal-body::-webkit-scrollbar-track {
+  background: transparent; /* Match profile/chat style */
+}
+
+/* 3. Style the thumb */
+#termsModal .modal-body::-webkit-scrollbar-thumb,
+#privacyModal .modal-body::-webkit-scrollbar-thumb {
+  background-color: var(--color-border); /* Use border color */
+  border-radius: var(--radius-full);
+  /* Create the "inset" look */
+  border: 2px solid var(--color-surface); 
+}
+
+/* 4. Style the thumb on hover */
+#termsModal .modal-body::-webkit-scrollbar-thumb:hover,
+#privacyModal .modal-body::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-text-secondary); /* Darken on hover */
+}
+
+
+/* =================================== */
+/* === 19. GOOGLE BUTTON LOGO      === */
+/* =================================== */
+
+/* =================================== */
+/* === 19. GOOGLE BUTTON LOGO      === */
+/* =================================== */
+
+.google-logo-svg {
+  width: 18px;
+  height: 18px;
+  margin-right: var(--space-12); /* Adds space between logo and text */
+  vertical-align: middle; /* <-- ADD THIS LINE */
 }

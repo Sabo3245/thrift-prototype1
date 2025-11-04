@@ -265,13 +265,21 @@ class AuthenticationManager {
   // handleSignIn() was here, but you don't have that button anymore.
   // We'll leave the Google Auth as the only login.
 
-  async handleThaparGoogleAuth() {
+async handleThaparGoogleAuth() {
     const submitBtn = document.getElementById("googleThaparLoginBtn");
 
+    // NEW: Flag to prevent finally block from resetting button on redirect
+    let isRedirecting = false;
+
+    // NEW: Check for 'from=admin' parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const fromAdmin = urlParams.get('from') === 'admin';
+    
+    if(fromAdmin) {
+        console.log("ADMIN LOGIN FLOW DETECTED");
+    }
+
     console.log(`🔍 Starting Google Thapar login process...`);
-    console.log("Firebase Auth:", this.auth);
-    console.log("Google Provider:", this.googleProvider);
-    console.log("SignInWithPopup function:", this.modules.signInWithPopup);
 
     try {
       this.setLoadingState(submitBtn, true);
@@ -298,8 +306,9 @@ class AuthenticationManager {
         displayName: user.displayName,
       });
 
-      // --- THAPAR EMAIL VERIFICATION ---
-      if (!user.email || !user.email.endsWith("@thapar.edu")) {
+      // --- THAPAR EMAIL VERIFICATION (MODIFIED) ---
+      // Only run this check if we are NOT in the admin flow
+      if (!fromAdmin && (!user.email || !user.email.endsWith("@thapar.edu"))) {
         console.error("❌ Access Denied: Invalid email domain.", user.email);
         this.showMessage(
           "Access Denied. Please use your @thapar.edu email address to log in.",
@@ -310,12 +319,49 @@ class AuthenticationManager {
         if (this.auth && this.modules.signOut) {
           await this.modules.signOut(this.auth);
         }
-
-        this.setLoadingState(submitBtn, false); // Make sure to reset button state
-        return; // Stop the login process
+        
+        return; // Let finally block reset the button
       }
       // --- END VERIFICATION ---
 
+      // --- NEW: ADMIN CHECK AND REDIRECT ---
+      // If we are in the admin flow, we MUST check for admin claims
+      if (fromAdmin) {
+        let isAdmin = false;
+        try {
+          // Force refresh of the token to get latest claims
+          const idTokenRes = await user.getIdTokenResult(true); 
+          isAdmin = !!idTokenRes?.claims?.admin;
+        } catch (e) {
+          console.warn("Could not get admin claims", e);
+        }
+
+        if (isAdmin) {
+          console.log("➡️ Admin login successful, redirecting to admin dashboard...");
+          this.showMessage("Admin login successful. Redirecting...", "success");
+          
+          isRedirecting = true; // NEW: Set redirect flag
+          
+          // Redirect to admin.html
+          setTimeout(() => {
+            window.location.href = "admin.html";
+          }, 1500);
+        } else {
+          // User tried admin flow but is NOT an admin
+          console.error("❌ Access Denied: Not an admin.", user.email);
+          this.showMessage(
+            "Access Denied. You do not have admin privileges.",
+            "error"
+          );
+          if (this.auth && this.modules.signOut) {
+            await this.modules.signOut(this.auth);
+          }
+        }
+        return; // Stop execution here for admin flow (finally will run)
+      }
+      
+      // --- REGULAR USER FLOW (Unchanged) ---
+      // This code will only be reached if 'fromAdmin' is false
       console.log("✅ Email domain verified:", user.email);
       console.log("🔍 Checking if user exists in Firestore...");
       const userDoc = await this.modules.getDoc(
@@ -340,6 +386,8 @@ class AuthenticationManager {
 
         await this.createUserDocument(user.uid, userData);
         console.log("Thapar user needs to complete profile");
+        
+        isRedirecting = true; // NEW: Set flag
         this.pendingCompletionUid = user.uid; // Store the UID
 
         // Hide the main auth card and show the modal
@@ -350,11 +398,12 @@ class AuthenticationManager {
         // Existing user signing in
         console.log("🔄 Existing Thapar user signing in...");
         
-        // --- THIS IS THE UPDATED LINE ---
         this.showMessage(
           "✨ Welcome back! Let's get thrifting... 🚀",
           "success"
         );
+
+        isRedirecting = true; // NEW: Set redirect flag
 
         // Redirect after a short delay
         setTimeout(() => {
@@ -396,7 +445,10 @@ class AuthenticationManager {
         );
       }
     } finally {
-      this.setLoadingState(submitBtn, false);
+      // MODIFIED: Only reset button if not redirecting
+      if (!isRedirecting) {
+        this.setLoadingState(submitBtn, false);
+      }
     }
   }
 
