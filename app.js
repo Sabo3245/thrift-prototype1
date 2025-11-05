@@ -401,6 +401,7 @@ const utils = {
 };
 
 function switchToSection(sectionName) {
+  window.scrollTo(0, 0);
   document.querySelectorAll(".nav-tab").forEach((tab) => {
     tab.classList.toggle("active", tab.dataset.section === sectionName);
   });
@@ -477,12 +478,10 @@ class LoadingScreen {
   }
 
   hide() {
-    this.loadingScreen.style.animation = "fadeOut 1s ease-out forwards";
-    setTimeout(() => {
-      this.loadingScreen.style.display = "none";
-      document.getElementById("mainApp").classList.remove("hidden");
-      window.app.init(); // This will now correctly call the async init
-    }, 1000);
+// We no longer hide the loading screen here.
+    // user-session.js will handle that.
+    // We just initialize the app.
+    window.app.init();
   }
 }
 
@@ -497,13 +496,13 @@ class Navigation {
       const navTab = e.target.closest(".nav-tab");
       if (navTab) {
         e.preventDefault();
-        switchToSection(navTab.dataset.section);
+        window.app.navigateToSection(navTab.dataset.section);
         utils.createRipple(e, navTab);
       }
       const fabButton = e.target.closest("#fabButton");
       if (fabButton) {
         e.preventDefault();
-        switchToSection("post");
+        window.app.navigateToSection("post");
         utils.createRipple(e, fabButton);
       }
     });
@@ -795,7 +794,7 @@ class Marketplace {
     }
     try {
       await window.chat.startConversationForItem(item);
-      switchToSection('chat');
+      window.app.navigateToSection('chat');
     } catch (e) {
       console.error('Failed to start conversation:', e);
       utils.showNotification('Could not start chat. Please try again.', 'error');
@@ -1276,7 +1275,7 @@ const newItem = {
       this.renderPreviews(); // Clear previews from UI
       window.marketplace?.filterItems();
 
-      setTimeout(() => switchToSection("marketplace"), 500);
+      setTimeout(() => window.app.navigateToSection("marketplace"), 500);
     } catch (error) {
       console.error("Failed to post item:", error);
       utils.showNotification(
@@ -1414,7 +1413,10 @@ class Chat {
                       || c.sellerEmail;
       }
 
-      const preview = c.lastMessage || (c.itemTitle ? `About: ${c.itemTitle}` : '');
+      // New logic: Prioritize the item title in the requested format
+      const preview = c.itemTitle 
+                      ? `Product: ${c.itemTitle}` 
+                      : (c.lastMessage || 'Conversation started');
 
       const myUnreadCount = (c.unreadCounts && c.unreadCounts[me.uid]) ? c.unreadCounts[me.uid] : 0;
       const el = document.createElement('div');
@@ -1426,7 +1428,7 @@ class Chat {
           <div class="conversation-preview">${preview || ''}</div>
         </div>
         <div class="conversation-meta">
-        <div class="conversation-time">${c.lastMessageAt?.toDate?.()?.toLocaleString?.() || ''}</div>
+        <div class="conversation-time">${c.lastMessageAt?.toDate?.()?.toLocaleTimeString?.([], { hour: '2-digit', minute: '2-digit' }) || ''}</div>
           ${myUnreadCount > 0 ? `<span class="unread-bubble">${myUnreadCount}</span>` : ''}
         </div>
       `;
@@ -1538,8 +1540,12 @@ class Chat {
         chatAvatar.textContent = initials;
       }
     }
+    if (chatUserStatus) {
+      const itemTitle = convo.itemTitle || "Item"; // Get the item title
+      // Set the text content (this is secure and uses existing styles)
+      chatUserStatus.textContent = `Product: ${itemTitle}`; 
+    }
     
-    if (chatUserStatus) chatUserStatus.innerHTML = '<div style = " justify-content : left"class="status-indicator active"><span class="status-dot"></span><span class="status-text">Online</span></div>';
     if (chatInputContainer) chatInputContainer.classList.remove('hidden');
 
     if (me && this.db && this.modules?.doc && this.modules?.setDoc) {
@@ -1712,7 +1718,7 @@ async markItemAsSold() {
     return;
   }
 
-  const { collection, addDoc, serverTimestamp } = this.modules;
+  const { collection, addDoc, serverTimestamp, doc, getDoc } = this.modules;
 
   try {
     // 1. Get all item data needed for the function
@@ -2264,21 +2270,17 @@ updateStats(transactionCount, moneySaved) {
     const userData = window.userSession?.getUserData?.() || {};
     const currentPoints = userData.points || 0;
 
-    // --- 1. POINTS ---
-    utils.animateValue(
-      document.getElementById("userPoints"),
-      0,
-      currentPoints,
-      1000
-    );
-    
+// --- 1. POINTS ---
+    const userPointsEl = document.getElementById("userPoints");
+    if (userPointsEl) {
+      userPointsEl.textContent = currentPoints;
+    }
+
     // --- 2. TOTAL TRANSACTIONS (Now reliable) ---
-    utils.animateValue(
-      document.getElementById("totalTransactions"),
-      0,
-      transactionCount, // <-- USES THE RELIABLE COUNT PASSED AS AN ARGUMENT
-      1000
-    );
+    const totalTransactionsEl = document.getElementById("totalTransactions");
+    if (totalTransactionsEl) {
+      totalTransactionsEl.textContent = transactionCount;
+    }
 
     
     
@@ -2318,7 +2320,7 @@ updateStats(transactionCount, moneySaved) {
     if (userListings.length === 0) {
       myListingsContainer.innerHTML = `
         <div class="empty-state">
-            <p>🛍️ You haven't posted anything yet. Start selling to see your items here!</p>
+            <p> You haven't posted anything yet. Start selling to see your items here!</p>
         </div>
       `;
       emptyNotice.style.display = "block";
@@ -2368,7 +2370,7 @@ updateStats(transactionCount, moneySaved) {
     if (AppState.userProfile.heartedPosts.length === 0) {
       heartedPostsContainer.innerHTML = `
           <div class="empty-state">
-              <p>💖 Items you heart will appear here</p>
+              <p> Items you heart will appear here</p>
           </div>
       `;
       return;
@@ -2480,8 +2482,7 @@ class ItemDetail {
     if (backBtn) {
       backBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        window.history.pushState({ section: 'marketplace' }, 'Marketplace', window.location.pathname);
-        switchToSection('marketplace');
+        window.app.navigateToSection('marketplace');
       });
     }
 
@@ -2639,7 +2640,7 @@ class Notifications {
     if (backBtn) {
       backBtn.addEventListener("click", (e) => {
         e.preventDefault();
-        switchToSection("profile");
+        window.app.navigateToSection("profile");
       });
     }
   }
@@ -2772,7 +2773,7 @@ function initializeGlobalEventListeners() {
     }
 if (target.closest("#openHelpBtn")) {
       e.preventDefault();
-      switchToSection('help');
+      window.app.navigateToSection('help');
     }
 
     // --- Profile Page Actions (Merged from master) ---
@@ -2884,27 +2885,50 @@ class App {
   }
 
 
-  // This method checks the URL when the page first loads
+  navigateToSection(sectionName) {
+    // Don't create a new history entry if we're already there
+    if (sectionName === AppState.currentSection) return; 
+
+    let newUrl = window.location.pathname;
+    const state = { section: sectionName };
+
+    // Create a new URL like "?section=profile"
+    // The marketplace will just be the base URL
+    if (sectionName !== 'marketplace') {
+      newUrl += `?section=${sectionName}`;
+    }
+    
+    // Create a new browser history entry
+    window.history.pushState(state, '', newUrl);
+    
+    // Now, visually switch the section
+    switchToSection(sectionName);
+  }
+
+// This method checks the URL when the page first loads
   handleUrlRouting() {
     const params = new URLSearchParams(window.location.search);
     const itemId = params.get('item');
+    const section = params.get('section'); // <-- NEW
     
     if (itemId) {
+      // Item logic takes priority
       console.log(`URL routing: Found item ID ${itemId}`);
-      // App.init() already 'await'ed the item load, so our data is ready
       const itemExists = AppState.originalItems.some(i => String(i.id) === String(itemId));
 
       if (itemExists) {
-        // This function will automatically switch to the itemDetail section
         window.itemDetail.showById(itemId);
       } else {
         console.warn(`Item ${itemId} not found. Clearing URL.`);
-        // Clear the bad item ID from the URL
         window.history.replaceState({ section: 'marketplace' }, 'Marketplace', window.location.pathname);
         switchToSection('marketplace');
       }
+    } else if (section) {
+      // NEW: Handle section routing
+      console.log(`URL routing: Found section ${section}`);
+      switchToSection(section);
     } else {
-      // No item ID, just show the marketplace (which is the default)
+      // Default: show the marketplace
       switchToSection('marketplace');
     }
   }
@@ -2930,15 +2954,19 @@ class App {
   }
 
 
-  // This handles the browser's back/forward buttons
+// This handles the browser's back/forward buttons
   setupPopstateListener() {
     window.onpopstate = (event) => {
       const state = event.state;
+      
       if (state && state.itemId) {
-        // User clicked 'forward' to an item page
+        // Handle item detail page
         window.itemDetail.showById(state.itemId);
+      } else if (state && state.section) {
+        // Handle other sections (profile, chat, post, help)
+        switchToSection(state.section);
       } else {
-        // User clicked 'back' to the marketplace
+        // Default state (null state) is the marketplace
         switchToSection('marketplace');
       }
     };

@@ -68,7 +68,7 @@
         <div class="container">
           <div class="section-header" style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px;">
             <button class="btn btn--outline" id="backToProfileBtn" style="justify-self: start;">
-              ← Back to Profile
+              ← Back
             </button>
             <h1 class="page-title" style="margin-bottom: 0; justify-self: center;">Notifications</h1>
             </div>
@@ -452,7 +452,11 @@
                   placeholder="Type your message..."
                   class="chat-input"
                 />
-                <button class="chat-send-btn" id="chatSendBtn">📤</button>
+                <button class="chat-send-btn" id="chatSendBtn" aria-label="Send message">
+  <svg class="send-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
+    <path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+  </svg>
+</button>
               </div>
             </div>
           </div>
@@ -485,10 +489,7 @@
                     <span class="stat-number" id="totalTransactions">3</span>
                     <span class="stat-label">Transactions</span>
                   </div>
-                  <div class="stat">
-                    <span class="stat-number" id="moneySaved">₹0</span>
-                    <span class="stat-label">Money Saved</span>
-                  </div>
+
                 </div>
               </div>
             </div>
@@ -975,42 +976,7 @@
       }
     </script>
     
-    <script>
-      // Handle logout functionality
-      async function handleLogout(event) {
-        event.preventDefault();
-        
-        if (window.userSession) {
-          await window.userSession.logout();
-        } else {
-          console.log('🚺 Logging out...');
-          window.location.href = 'auth.html';
-        }
-      }
-      
-      // Handle profile completion
-      function completeProfile() {
-        if (window.userSession) {
-          window.userSession.switchToProfile();
-        }
-      }
-      
-      // Initialize authentication-dependent features
-      document.addEventListener('DOMContentLoaded', () => {
-        // Hide loading screen after a delay
-        setTimeout(() => {
-          const loadingScreen = document.getElementById('loadingScreen');
-          if (loadingScreen) {
-            loadingScreen.classList.add('hidden');
-          }
-          
-          const mainApp = document.getElementById('mainApp');
-          if (mainApp) {
-            mainApp.classList.remove('hidden');
-          }
-        }, 2000);
-      });
-    </script>
+
 
     <script src="theme.js" defer></script>
   </body>

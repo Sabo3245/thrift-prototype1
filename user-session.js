@@ -238,6 +238,23 @@ class UserSessionManager {
         this.currentUser = user;
         await this.loadUserData();
         this.updateUI();
+
+          const loadingScreen = document.getElementById("loadingScreen");
+  if (loadingScreen) {
+    loadingScreen.style.animation = "fadeOut 1s ease-out forwards";
+    setTimeout(() => {
+      loadingScreen.style.display = "none";
+    }, 1000);
+  }
+
+  const mainApp = document.getElementById("mainApp");
+  if (mainApp) {
+    mainApp.classList.remove("hidden");
+  }
+
+  // Start the app (this was in app.js's hide() function)
+  window.app.init();
+  // --- END OF NEW BLOCK ---
       } else {
         console.log("👤 No user signed in");
         this.currentUser = null;
@@ -726,17 +743,16 @@ class UserSessionManager {
     }, 1500);
   }
 
-  showAuthRedirectMessage() {
-    const loadingScreen = document.getElementById("loadingScreen");
-    if (loadingScreen) {
-      loadingScreen.classList.remove("hidden");
-
-      const loadingText = loadingScreen.querySelector(".loading-text");
-      if (loadingText) {
-        loadingText.textContent = "Please sign in to continue...";
-      }
+showAuthRedirectMessage() {
+  const loadingScreen = document.getElementById("loadingScreen");
+  if (loadingScreen) {
+    // Just update the text. Don't un-hide it.
+    const loadingText = loadingScreen.querySelector(".loading-text");
+    if (loadingText) {
+      loadingText.textContent = "Please sign in to continue...";
     }
   }
+}
 
   async logout() {
     try {
