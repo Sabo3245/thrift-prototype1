@@ -37,6 +37,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 let currentAdminUser = null; // <-- Store the admin user
+let allFetchedUsers = [];
 
 const itemsList = document.getElementById("itemsList");
 const marketplaceList = document.getElementById("marketplaceList");
@@ -350,8 +351,55 @@ async function loadMarketplacePosts() {
   }
 }
 
+// --- NEW: Function to render the user list ---
+function renderUserList(users) {
+  // Clear the list
+  usersList.innerHTML = ''; 
+
+  if (!users || users.length === 0) {
+    usersList.innerHTML = '<div class="empty-state">No users match your search.</div>';
+    return;
+  }
+  
+  // Render the provided users
+  users.forEach(user => {
+    const userCard = document.createElement('div');
+    userCard.className = 'user-card';
+    
+    const badges = [];
+    if (user.isAdmin) badges.push('<span class="badge badge-admin">ADMIN</span>');
+    if (user.banned) badges.push('<span class="badge badge-banned">BANNED</span>');
+    if (user.strikes > 0) badges.push(`<span class="badge badge-strikes">${user.strikes} Strikes</span>`);
+    
+    userCard.innerHTML = `
+      <div class="user-header">
+    <div>
+      <div class="user-name">${escapeHtml(user.displayName || user.email || 'Unknown User')}</div>
+      <div class="user-email">${escapeHtml(user.email || user.uid)}</div>
+
+      <div class="user-phone" style="color:#cbd5e1; font-size:14px; margin-top: 4px;">
+        Phone: ${escapeHtml(user.phone || 'Not Provided')}
+      </div>
+
+    </div>
+  </div>
+      <div class="user-badges">${badges.join('')}</div>
+      <div style="color:#8892b0;font-size:13px;margin-top:8px;">UID: <code>${user.uid}</code></div>
+      <div class="user-actions">
+        ${!user.banned ? `<button class="btn btn--danger" onclick="banUser('${user.uid}')">Ban User</button>` : ''}
+        ${user.banned ? `<button class="btn btn--primary" onclick="unbanUser('${user.uid}')">Unban User</button>` : ''}
+        ${!user.isAdmin ? `<button class="btn" onclick="makeUserAdmin('${user.uid}')">Make Admin</button>` : ''}
+      </div>
+    `;
+    
+    usersList.appendChild(userCard);
+  });
+}
+// --- END NEW FUNCTION ---
+
 async function loadAllUsers() {
   usersList.innerHTML = '<div class="empty-state">Loading...</div>';
+  document.getElementById('userSearchInput').value = ''; // Clear search bar
   
   try {
     const usersRef = collection(db, 'users');
@@ -365,11 +413,11 @@ async function loadAllUsers() {
     let totalUsers = 0;
     let bannedCount = 0;
     let adminCount = 0;
-    const users = [];
+    allFetchedUsers = []; // Clear the cache
     
     snapshot.forEach(docSnap => {
       const userData = docSnap.data();
-      users.push({ uid: docSnap.id, ...userData });
+      allFetchedUsers.push({ uid: docSnap.id, ...userData }); // Populate the cache
       totalUsers++;
       if (userData.banned) bannedCount++;
       if (userData.isAdmin) adminCount++;
@@ -380,40 +428,32 @@ async function loadAllUsers() {
     document.getElementById('bannedUsers').textContent = bannedCount;
     document.getElementById('adminUsers').textContent = adminCount;
     
-    // Render users
-    usersList.innerHTML = '';
-    users.forEach(user => {
-      const userCard = document.createElement('div');
-      userCard.className = 'user-card';
-      
-      const badges = [];
-      if (user.isAdmin) badges.push('<span class="badge badge-admin">ADMIN</span>');
-      if (user.banned) badges.push('<span class="badge badge-banned">BANNED</span>');
-      if (user.strikes > 0) badges.push(`<span class="badge badge-strikes">${user.strikes} Strikes</span>`);
-      
-      userCard.innerHTML = `
-        <div class="user-header">
-          <div>
-            <div class="user-name">${escapeHtml(user.displayName || user.email || 'Unknown User')}</div>
-            <div class="user-email">${escapeHtml(user.email || user.uid)}</div>
-          </div>
-        </div>
-        <div class="user-badges">${badges.join('')}</div>
-        <div style="color:#8892b0;font-size:13px;margin-top:8px;">UID: <code>${user.uid}</code></div>
-        <div class="user-actions">
-          ${!user.banned ? `<button class="btn btn--danger" onclick="banUser('${user.uid}')">Ban User</button>` : ''}
-          ${user.banned ? `<button class="btn btn--primary" onclick="unbanUser('${user.uid}')">Unban User</button>` : ''}
-          ${!user.isAdmin ? `<button class="btn" onclick="makeUserAdmin('${user.uid}')">Make Admin</button>` : ''}
-        </div>
-      `;
-      
-      usersList.appendChild(userCard);
-    });
+    // Render the full list using the new function
+    renderUserList(allFetchedUsers);
+
   } catch (e) {
     console.error('Error loading users:', e);
     usersList.innerHTML = '<div class="empty-state">Error loading users</div>';
   }
 }
+
+// --- NEW: Add event listener for user search ---
+document.getElementById("userSearchInput").addEventListener("input", (e) => {
+  const searchTerm = e.target.value.toLowerCase().trim();
+  
+  if (!searchTerm) {
+    renderUserList(allFetchedUsers); // Show all users if search is empty
+    return;
+  }
+
+  const filteredUsers = allFetchedUsers.filter(user => {
+    const email = (user.email || '').toLowerCase();
+    const uid = (user.uid || '').toLowerCase();
+    return email.includes(searchTerm) || uid.includes(searchTerm);
+  });
+
+  renderUserList(filteredUsers);
+});
 
 window.deactivateItem = async function(itemId) {
   if (!confirm('Deactivate this item? This will mark it as "flagged" and hide it.')) return;

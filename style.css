@@ -631,7 +631,7 @@ textarea.animated-input {
   color: var(--color-text-secondary);
 }
 .item-card .heart-btn.hearted {
-  background: var(--color-red-400);
+
   border-color: var(--color-red-400);
   
 }
@@ -690,7 +690,7 @@ textarea.animated-input {
   font-weight: 500;
 }
 .item-actions {
-  margin-top: var(--space-16);
+
   display: flex;
   gap: var(--space-12);
   align-items: center;
@@ -1085,10 +1085,20 @@ textarea.animated-input {
   border: none;
   border-radius: 50%;
   color: var(--color-btn-primary-text);
-  font-size: var(--font-size-lg);
+  /* font-size: var(--font-size-lg); <-- No longer needed for icon */
   cursor: pointer;
   padding: 0;
   transition: all 0.3s ease;
+
+  /* Added to perfectly center the SVG icon */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-send-btn .send-icon {
+  /* This specific SVG path is a bit off-center, this balances it */
+  margin-left: 2px;
 }
 .chat-send-btn:hover {
   background: var(--color-primary-hover);
@@ -1726,6 +1736,16 @@ body {
   }
 
 /* --- Chat Page (Mobile Master-Detail) --- */
+
+  /* Fix for mobile chat experience */
+.chat-input {
+  font-size: 16px; /* Prevents auto-zoom on tap */
+}
+
+.chat-window {
+  /* Adds a "safe area" at the bottom */
+  padding-bottom: 60px; 
+}
   
   /* Hide the "Messages" header on mobile */
   #chat .section-header {
@@ -1971,7 +1991,7 @@ body {
   /* This pushes the actions to the very bottom of the card */
   margin-top: auto;
   padding-top: var(--space-16);
-  border-top: 1px solid var(--color-border);
+
   display: flex;
   gap: var(--space-8);
   align-items: center;
