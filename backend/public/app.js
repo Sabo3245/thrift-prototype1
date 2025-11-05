@@ -149,75 +149,79 @@ const AppState = {
   currentBoostItemId: null,
 };
 
-// Sample data with enhanced features
 const sampleItems = [
   {
-    id: 1,
-    title: "Vintage Denim Jacket",
+    id: "item1",
+    title: "Barely Used C++ Textbook",
+    category: "Stationery",
+    condition: "Used",
+    price: 500,
+    originalPrice: 1200,
+    description: "Latest edition textbook for CS101. No highlighting or marks. Bought last semester.",
+    hostel: "A",
+    images: [],
+    icon: "📚",
+    sellerId: "sampleUser1",
+    sellerName: "Rohan Kumar",
+    sellerEmail: "rohan@example.com",
+    status: "available",
+    createdAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+    updatedAt: new Date(Date.now() - 86400000).toISOString(),
+    isBoosted: true,
+    isActive: true,
+    approved: true,
+    flagged: false,
+    hearts: 2,
+  },
+  {
+    id: "item2",
+    title: "Gaming Mouse",
+    category: "Electronics",
+    condition: "New",
+    price: 1500,
+    originalPrice: 2500,
+    description: "Brand new gaming mouse, unopened box. Got it as a gift, but I already have one.",
+    hostel: "B",
+    images: [],
+    icon: "💻",
+    sellerId: "sampleUser2",
+    sellerName: "Priya Sharma",
+    sellerEmail: "priya@example.com",
+    status: "available",
+    createdAt: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
+    updatedAt: new Date(Date.now() - 172800000).toISOString(),
+    isBoosted: false,
+    isActive: true,
+    approved: true,
+    flagged: false,
+    hearts: 5,
+  },
+  {
+    id: "item3",
+    title: "Hoodie (Size M)",
     category: "Clothes",
     condition: "Used",
-    price: 1200,
-    originalPrice: 2500,
-    description: "Perfect condition vintage denim jacket, size M",
-    hostel: "Boys",
-    images: ["jacket1.jpg"],
+    price: 300,
+    originalPrice: 1000,
+    description: "Comfortable black hoodie. Used for one winter. Good condition.",
+    hostel: "C",
+    images: [],
     icon: "👕",
+    sellerId: "sampleUser3",
+    sellerName: "Ankit Singh",
+    sellerEmail: "ankit@example.com",
+    status: "available",
+    createdAt: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
+    updatedAt: new Date(Date.now() - 259200000).toISOString(),
     isBoosted: false,
-    sellerName: "Rohan Sharma",
-    hearts: 0,
-    sellerId: "user1",
-    clothingChecklist: {
-      quality: "Good",
-      detailedCondition: "Minimal wear, no stains",
-      age: "1-2 years",
-    },
-  },
-  {
-    id: 2,
-    title: 'MacBook Pro 13"',
-    category: "Electronics",
-    condition: "Used",
-    price: 85000,
-    originalPrice: 120000,
-    description: "2019 MacBook Pro, excellent condition, 512GB SSD",
-    hostel: "Girls",
-    images: ["macbook1.jpg"],
-    icon: "💻",
-    isBoosted: true,
-    hearts: 3,
-    sellerId: "user2",
-  },
-  {
-    id: 3,
-    title: "Calculus Textbook",
-    category: "Books",
-    condition: "Used",
-    price: 800,
-    originalPrice: 1500,
-    description: "Engineering Mathematics textbook, minimal highlighting",
-    hostel: "Boys",
-    images: ["book1.jpg"],
-    icon: "📚",
-    isBoosted: false,
+    isActive: true,
+    approved: true,
+    flagged: false,
     hearts: 1,
-    sellerId: "user1",
-  },
-  {
-    id: 4,
-    title: "Makeup Palette Set",
-    category: "Cosmetics",
-    condition: "Unused",
-    price: 2500,
-    originalPrice: 3200,
-    description: "Brand new eyeshadow palette, never opened",
-    hostel: "Girls",
-    images: ["makeup1.jpg"],
-    icon: "💄",
-    isBoosted: false,
-    hearts: 2,
-    sellerId: "user3",
-  },
+  }
 ];
+
+
 
 // Utility Functions
 const utils = {
@@ -397,6 +401,7 @@ const utils = {
 };
 
 function switchToSection(sectionName) {
+  window.scrollTo(0, 0);
   document.querySelectorAll(".nav-tab").forEach((tab) => {
     tab.classList.toggle("active", tab.dataset.section === sectionName);
   });
@@ -473,12 +478,10 @@ class LoadingScreen {
   }
 
   hide() {
-    this.loadingScreen.style.animation = "fadeOut 1s ease-out forwards";
-    setTimeout(() => {
-      this.loadingScreen.style.display = "none";
-      document.getElementById("mainApp").classList.remove("hidden");
-      window.app.init(); // This will now correctly call the async init
-    }, 1000);
+// We no longer hide the loading screen here.
+    // user-session.js will handle that.
+    // We just initialize the app.
+    window.app.init();
   }
 }
 
@@ -493,13 +496,13 @@ class Navigation {
       const navTab = e.target.closest(".nav-tab");
       if (navTab) {
         e.preventDefault();
-        switchToSection(navTab.dataset.section);
+        window.app.navigateToSection(navTab.dataset.section);
         utils.createRipple(e, navTab);
       }
       const fabButton = e.target.closest("#fabButton");
       if (fabButton) {
         e.preventDefault();
-        switchToSection("post");
+        window.app.navigateToSection("post");
         utils.createRipple(e, fabButton);
       }
     });
@@ -604,20 +607,42 @@ class Marketplace {
   }
 
   filterItems() {
-    AppState.filteredItems = AppState.originalItems.filter((item) => {
+      AppState.filteredItems = AppState.originalItems.filter((item) => {
       // Only show active (approved) items in the marketplace
       const matchesActive = item.isActive !== false;
+      
+      // --- ADD THIS LINE ---
+      const matchesStatus = item.status === 'available';
+
       const { searchQuery, filters } = AppState;
       const matchesSearch =
         !searchQuery ||
         item.title.toLowerCase().includes(searchQuery) ||
         item.description.toLowerCase().includes(searchQuery);
-      if (!matchesActive) return false;
+      
+      // --- MODIFY THIS LINE ---
+      if (!matchesActive || !matchesStatus) return false;
+
       const matchesCategory =
-        !filters.category || item.category === filters.category;
+        !filters.category || item.category === filters.category; 
       const matchesCondition =
         !filters.condition || item.condition === filters.condition;
-      const matchesHostel = !filters.hostel || item.hostel === filters.hostel;
+      let matchesHostel = true; // Default to true (for "All Hostels")
+
+      if (filters.hostel === 'myHostel') {
+        // User selected "My Hostel", get their data
+        const currentUser = window.userSession?.getCurrentUser?.();
+        const userData = window.userSession?.getUserData?.();
+        const userHostel = (currentUser && userData) ? userData.hostel : null;
+
+        if (userHostel) {
+          // User is logged in and has a hostel, so filter
+          matchesHostel = item.hostel === userHostel;
+        } else {
+          // User is not logged in or has no hostel. "My Hostel" filter should match nothing.
+          matchesHostel = false;
+        }
+      }
       return (
         matchesSearch && matchesCategory && matchesCondition && matchesHostel
       );
@@ -672,9 +697,7 @@ class Marketplace {
     card.className = `item-card glass-card${item.isBoosted ? " boosted" : ""}`;
     card.style.animationDelay = `${index * 0.1}s`;
 
-    const savings = item.originalPrice
-      ? utils.calculateSavings(item.originalPrice, item.price)
-      : null;
+    
     const isUserItem =
       !!item.sellerId &&
       item.sellerId === window.userSession?.getCurrentUser?.()?.uid;
@@ -688,46 +711,46 @@ class Marketplace {
       <div class="item-image">
           ${
             primaryImage
-              ? `<img src="${primaryImage}" alt="${item.title}" class="item-img" style="width:100%;height:160px;object-fit:cover;border-radius:12px;"/>`
+              ? `<img src="${primaryImage}" alt="${item.title}" class="item-img" style="width:100%;height:160px;object-fit: contain;border-radius:12px;"/>`
               : `<span class="item-emoji">${item.icon || "📦"}</span>`
           }
           <button class="heart-btn ${isHearted ? "hearted" : ""}" data-id="${
       item.id
     }" title="Heart this item">${isHearted ? "❤️" : "🤍"}</button>
       </div>
-      <h3 class="item-title">${item.title}</h3>
-      <div class="item-prices">
-          <div class="item-price">${utils.formatPrice(item.price)}</div>
-          ${
-            item.originalPrice
-              ? `<div class="item-original-price">${utils.formatPrice(
-                  item.originalPrice
-                )}</div>`
-              : ""
-          }
-          ${savings ? `<div class="item-savings">Save ₹${savings}</div>` : ""}
+
+      <div class="item-card-content">
+        <h3 class="item-title">${item.title}</h3>
+        <div class="item-prices">
+    <div class="item-price">${utils.formatPrice(item.price)}</div>
+</div>
+        <div class="item-details">
+    <span class="item-tag">${item.category}</span>
+    ${
+      (item.category === 'Food' && item.quantity > 0)
+        ? `<span class="item-tag">Qty: ${item.quantity}</span>`
+        : `<span class="item-tag">${item.condition}</span>`
+    }
+    <span class="item-tag">${item.hostel}</span>
+</div>
+        <div class="item-seller-info">
+            <span class="seller-label">Sold by:</span>
+            <span class="seller-name" data-seller-name="${item.sellerName || "Anonymous"}">${item.sellerName || "Anonymous"}</span>
+        </div>
+        <div class="item-actions">
+            <button class="btn btn--primary btn--sm contact-btn" data-id="${
+              item.id
+            }">Contact Seller</button>
+            ${
+              isUserItem
+                ? `
+                <button class="boost-btn" data-id="${item.id}" title="Boost post">🚀</button>
+                <button class="remove-btn" data-id="${item.id}" title="Remove post">🗑️</button>`
+                : ""
+            }
+        </div>
       </div>
-      <div class="item-details">
-          <span class="item-tag">${item.category}</span>
-          <span class="item-tag">${item.condition}</span>
-          <span class="item-tag">${item.hostel}</span>
-      </div>
-      <div class="item-seller-info">
-          <span class="seller-label">Sold by:</span>
-          <span class="seller-name" data-seller-name="${item.sellerName || "Anonymous"}">${item.sellerName || "Anonymous"}</span>
-      </div>
-      <div class="item-actions">
-          <button class="btn btn--primary btn--sm contact-btn" data-id="${
-            item.id
-          }">Contact Seller</button>
-          ${
-            isUserItem
-              ? `
-              <button class="boost-btn" data-id="${item.id}" title="Boost post">🚀</button>
-              <button class="remove-btn" data-id="${item.id}" title="Remove post">🗑️</button>`
-              : ""
-          }
-      </div>`;
+      `;
 
     card.addEventListener("click", (e) => this.handleCardClick(e, item.id));
     return card;
@@ -771,7 +794,7 @@ class Marketplace {
     }
     try {
       await window.chat.startConversationForItem(item);
-      switchToSection('chat');
+      window.app.navigateToSection('chat');
     } catch (e) {
       console.error('Failed to start conversation:', e);
       utils.showNotification('Could not start chat. Please try again.', 'error');
@@ -988,25 +1011,36 @@ class PostItem {
   }
 
   initUploadArea() {
-    const uploadArea = document.getElementById("uploadArea");
-    const fileInput = document.getElementById("itemPhotos");
+  const uploadArea = document.getElementById("uploadArea");
+  const fileInput = document.getElementById("itemPhotos");
 
-    if (uploadArea && fileInput) {
-      uploadArea.addEventListener("click", () => fileInput.click());
+  if (!uploadArea || !fileInput) return;
 
-      fileInput.addEventListener("change", (e) => {
-        // Limit to 5 total images
-        const newFiles = Array.from(e.target.files).slice(
-          0,
-          5 - this.selectedFiles.length
-        );
-        this.selectedFiles.push(...newFiles);
-        this.renderPreviews();
-        // Reset the input so the user can select the same file again if they remove it
-        fileInput.value = "";
-      });
-    }
+  // Prevent multiple event bindings
+  if (!this._uploadBound) {
+    // Cache handler refs so they can be removed if needed later
+    this._handleFileChange = (e) => {
+      const newFiles = Array.from(e.target.files).slice(
+        0,
+        5 - this.selectedFiles.length
+      );
+      this.selectedFiles.push(...newFiles);
+      this.renderPreviews();
+
+      // Reset the input so user can reselect same file
+      fileInput.value = "";
+    };
+
+    this._handleUploadClick = () => fileInput.click();
+
+    uploadArea.addEventListener("click", this._handleUploadClick);
+    fileInput.addEventListener("change", this._handleFileChange);
+
+    // Mark as initialized
+    this._uploadBound = true;
   }
+}
+
 
   renderPreviews() {
     const uploadedImagesContainer = document.getElementById("uploadedImages");
@@ -1034,20 +1068,49 @@ class PostItem {
     this.renderPreviews();
   }
 
-  bindEvents() {
-    const form = document.getElementById("postForm");
-    if (form) {
-      form.addEventListener("submit", (e) => {
-        e.preventDefault();
-        this.submitForm();
-      });
-    }
+  updateQuantity(amount) {
+  const quantityDisplay = document.getElementById('itemQuantity');
+  const minusBtn = document.getElementById('quantity-minus');
+  if (!quantityDisplay || !minusBtn) return;
 
-    document.getElementById("itemCategory")?.addEventListener("change", (e) => {
-      document
-        .getElementById("clothingChecklist")
-        ?.classList.toggle("hidden", e.target.value !== "Clothes");
+  let currentQty = parseInt(quantityDisplay.value, 10);
+  currentQty = Math.max(1, currentQty + amount); // Never go below 1
+
+  quantityDisplay.value = currentQty;
+  minusBtn.disabled = (currentQty === 1);
+}
+
+handleCategoryChange() {
+  const category = document.getElementById('itemCategory').value;
+  const conditionGroup = document.getElementById('condition-form-group');
+  const quantityGroup = document.getElementById('quantity-form-group');
+  const conditionInput = document.getElementById('itemCondition');
+
+  if (!conditionGroup || !quantityGroup || !conditionInput) return;
+
+  if (category === 'Food') {
+    conditionGroup.classList.add('hidden');
+    conditionInput.required = false;
+    quantityGroup.classList.remove('hidden');
+  } else {
+    conditionGroup.classList.remove('hidden');
+    conditionInput.required = true;
+    quantityGroup.classList.add('hidden');
+    this.updateQuantity(-1000); // Resets quantity to 1
+  }
+}
+
+  bindEvents() {
+  if (this.eventsBound) return; // Prevent double-binding
+  this.eventsBound = true;
+  
+  const form = document.getElementById("postForm");
+  if (form) {
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      this.submitForm();
     });
+  }
 
     // Add a delegated event listener for remove buttons on previews
     document
@@ -1058,6 +1121,9 @@ class PostItem {
           this.removePreview(index);
         }
       });
+    document.getElementById('itemCategory')?.addEventListener('change', () => this.handleCategoryChange());
+document.getElementById('quantity-plus')?.addEventListener('click', () => this.updateQuantity(1));
+document.getElementById('quantity-minus')?.addEventListener('click', () => this.updateQuantity(-1));
 
     const disclaimerCheckbox = document.getElementById("disclaimerCheckbox");
     // Select the button inside the postForm
@@ -1068,6 +1134,18 @@ class PostItem {
       disclaimerCheckbox.addEventListener("change", () => {
         // Enable the button ONLY if the checkbox is checked
         submitBtn.disabled = !disclaimerCheckbox.checked;
+      });
+    }
+
+    const openTermsBtn = document.getElementById('openTermsBtn');
+    const termsModal = document.getElementById('termsModal');
+    
+    if (openTermsBtn && termsModal) {
+      // Open the modal
+      openTermsBtn.addEventListener('click', (e) => {
+        e.preventDefault(); // Stop the <a> tag from jumping
+        termsModal.classList.remove('hidden');
+        document.body.classList.add('modal-open');
       });
     }
   }
@@ -1132,34 +1210,37 @@ class PostItem {
       const imageUrls = await this.uploadImagesToStorage(currentUser.uid);
 
       const categoryVal = document.getElementById("itemCategory").value;
-      const newItem = {
-        title: document.getElementById("itemTitle").value.trim(),
-        category: categoryVal,
-        condition: document.getElementById("itemCondition").value,
-        price: parseInt(document.getElementById("itemPrice").value, 10),
-        originalPrice:
-          parseInt(document.getElementById("itemOriginalPrice").value, 10) ||
-          null,
-        description: document.getElementById("itemDescription").value.trim(),
-        hostel: document.getElementById("itemHostel").value,
-        images: imageUrls,
-        icon: this.getCategoryIcon(categoryVal),
-        sellerId: currentUser.uid,
-        sellerEmail: currentUser.email || "",
-        sellerName:
-          window.userSession?.getUserData?.().displayName ||
-          currentUser.displayName ||
-          "Anonymous",
-        status: "available",
-      };
+      // Define condition and quantity based on category
+let itemCondition = null;
+let itemQuantity = 1;
 
-      if (newItem.category === "Clothes") {
-        newItem.clothingChecklist = {
-          quality: document.getElementById("clothingQuality").value,
-          age: document.getElementById("clothingAge").value,
-          detailedCondition: document.getElementById("clothingCondition").value,
-        };
-      }
+if (categoryVal === 'Food') {
+  itemCondition = 'N/A'; // Food doesn't have a condition
+  itemQuantity = parseInt(document.getElementById("itemQuantity").value, 10) || 1;
+} else {
+  itemCondition = document.getElementById("itemCondition").value;
+}
+
+const newItem = {
+  title: document.getElementById("itemTitle").value.trim(),
+  category: categoryVal,
+  condition: itemCondition,
+  quantity: itemQuantity, // ADDED
+  price: parseInt(document.getElementById("itemPrice").value, 10),
+  // originalPrice is REMOVED
+  description: document.getElementById("itemDescription").value.trim(),
+  hostel: document.getElementById("itemHostel").value,
+  images: imageUrls,
+  icon: this.getCategoryIcon(categoryVal),
+  sellerId: currentUser.uid,
+  sellerEmail: currentUser.email || "",
+  sellerName:
+    window.userSession?.getUserData?.().displayName ||
+    currentUser.displayName ||
+    "Anonymous",
+  status: "available",
+};
+
 
       if (window.firebaseDb && window.firebaseModules) {
         const { collection, addDoc, serverTimestamp, doc, getDoc } = window.firebaseModules;
@@ -1208,7 +1289,7 @@ class PostItem {
       this.renderPreviews(); // Clear previews from UI
       window.marketplace?.filterItems();
 
-      setTimeout(() => switchToSection("marketplace"), 500);
+      setTimeout(() => window.app.navigateToSection("marketplace"), 500);
     } catch (error) {
       console.error("Failed to post item:", error);
       utils.showNotification(
@@ -1226,9 +1307,10 @@ class PostItem {
     const icons = {
       Clothes: "👕",
       Electronics: "💻",
-      Books: "📚",
+      Stationery: "📚", // CHANGED from "Books"
       Cosmetics: "💄",
       Miscellaneous: "📦",
+      Food: "🍔", // ADDED this line
     };
     return icons[category] || "📦";
   }
@@ -1248,6 +1330,15 @@ class Chat {
     this.activeFilter = 'all'; // NEW: Add this line to track the filter state
 
     this.bindEvents();
+
+    const chatBackButton = document.getElementById('chatBackButton');
+    const chatContainer = document.querySelector('.chat-container');
+    
+    if (chatBackButton && chatContainer) {
+      chatBackButton.addEventListener('click', () => {
+        chatContainer.classList.remove('chat-active');
+      });
+    }
     // Try to subscribe now (if user is already available)
     this.subscribeConversations();
     // And resubscribe on auth state changes
@@ -1336,8 +1427,12 @@ class Chat {
                       || c.sellerEmail;
       }
 
-      const preview = c.lastMessage || (c.itemTitle ? `About: ${c.itemTitle}` : '');
+      // New logic: Prioritize the item title in the requested format
+      const preview = c.itemTitle 
+                      ? `Product: ${c.itemTitle}` 
+                      : (c.lastMessage || 'Conversation started');
 
+      const myUnreadCount = (c.unreadCounts && c.unreadCounts[me.uid]) ? c.unreadCounts[me.uid] : 0;
       const el = document.createElement('div');
       el.className = 'conversation-item';
       el.dataset.chatId = c.id;
@@ -1347,7 +1442,8 @@ class Chat {
           <div class="conversation-preview">${preview || ''}</div>
         </div>
         <div class="conversation-meta">
-          <div class="conversation-time">${c.lastMessageAt?.toDate?.()?.toLocaleString?.() || ''}</div>
+        <div class="conversation-time">${c.lastMessageAt?.toDate?.()?.toLocaleTimeString?.([], { hour: '2-digit', minute: '2-digit' }) || ''}</div>
+          ${myUnreadCount > 0 ? `<span class="unread-bubble">${myUnreadCount}</span>` : ''}
         </div>
       `;
       el.addEventListener('click', () => this.openChat(c.id));
@@ -1423,16 +1519,19 @@ class Chat {
 
 // Replace the existing openChat function with this one
 // Replace the existing openChat function with this one
-  openChat(chatId) {
+ async openChat(chatId) {
     const convo = this.conversations.find((c) => c.id === chatId) || { id: chatId };
     this.activeConversation = convo;
+
+    document.querySelector('.chat-container')?.classList.add('chat-active');
+    const me = this.auth?.currentUser;
 
     const chatUserName = document.getElementById('chatUserName');
     const chatUserStatus = document.getElementById('chatUserStatus');
     const chatInputContainer = document.getElementById('chatInputContainer');
 
     if (chatUserName) {
-      const me = this.auth?.currentUser;
+      
       const otherUid = (convo.participants || []).find((p) => p !== me?.uid);
       
       let name = 'Chat'; // Default name
@@ -1455,9 +1554,28 @@ class Chat {
         chatAvatar.textContent = initials;
       }
     }
+    if (chatUserStatus) {
+      const itemTitle = convo.itemTitle || "Item"; // Get the item title
+      // Set the text content (this is secure and uses existing styles)
+      chatUserStatus.textContent = `Product: ${itemTitle}`; 
+    }
     
-    if (chatUserStatus) chatUserStatus.innerHTML = '<div style = " justify-content : left"class="status-indicator active"><span class="status-dot"></span><span class="status-text">Online</span></div>';
     if (chatInputContainer) chatInputContainer.classList.remove('hidden');
+
+    if (me && this.db && this.modules?.doc && this.modules?.setDoc) {
+      const { doc, setDoc } = this.modules;
+      const convoRef = doc(this.db, 'conversations', chatId);
+      try {
+        // Update the unread count for *this* user to 0
+        await setDoc(convoRef, {
+          unreadCounts: {
+            [me.uid]: 0 // Set *my* count to 0
+          }
+        }, { merge: true }); // 'merge: true' is critical so we don't wipe out the other user's count
+      } catch (error) {
+        console.warn("Could not clear unread count:", error);
+      }
+    }
 
     // Subscribe to active conversation doc and messages; update UI for sold state
     this.subscribeActiveConversation(chatId);
@@ -1589,120 +1707,102 @@ async awardPoints(userId) {
 
 // app.js
 
+// Replace the entire markItemAsSold function in the Chat class
 async markItemAsSold() {
-    const me = this.auth?.currentUser;
-    const convo = this.activeConversation || {};
-    const markAsSoldBtn = document.getElementById('markAsSoldBtn');
+  const me = this.auth?.currentUser;
+  const convo = this.activeConversation || {};
+  const markAsSoldBtn = document.getElementById('markAsSoldBtn');
 
-    if (!me || !convo?.id || !this.db || !this.modules || !markAsSoldBtn) return;
-    
-    if (convo.itemSold || markAsSoldBtn.disabled) {
-        utils.showNotification('Item is already marked as sold.', 'warning');
-        return;
+  if (!me || !convo?.id || !this.db || !this.modules || !markAsSoldBtn) return;
+  
+  if (convo.itemSold || markAsSoldBtn.disabled) {
+    utils.showNotification('Item is already marked as sold.', 'warning');
+    return;
+  }
+  
+  const originalText = markAsSoldBtn.textContent;
+  markAsSoldBtn.disabled = true;
+  markAsSoldBtn.textContent = 'Processing...';
+
+  const buyerId = convo.buyerId || (convo.participants || []).find((p) => p !== me.uid);
+  if (!buyerId) {
+    utils.showNotification('Cannot determine buyer', 'error');
+    markAsSoldBtn.disabled = false;
+    markAsSoldBtn.textContent = originalText;
+    return;
+  }
+
+  const { collection, addDoc, serverTimestamp, doc, getDoc } = this.modules;
+
+  try {
+    // 1. Get all item data needed for the function
+    const itemRef = doc(this.db, 'items', String(convo.itemId));
+    const itemSnap = await this.modules.getDoc(itemRef);
+    if (!itemSnap.exists()) {
+        throw new Error("This item no longer exists in the database.");
     }
-    
-    const originalText = markAsSoldBtn.textContent;
-    markAsSoldBtn.disabled = true;
-    markAsSoldBtn.textContent = 'Processing...';
+    const itemData = itemSnap.data();
 
-    const buyerId = convo.buyerId || (convo.participants || []).find((p) => p !== me.uid);
-    if (!buyerId) {
-        utils.showNotification('Cannot determine buyer', 'error');
+    // 2. Create the "sale event" document. This is the *only* write operation.
+    const saleEvent = {
+      // Data for the function
+      itemId: String(convo.itemId),
+      sellerId: me.uid,
+      buyerId: buyerId,
+      conversationId: convo.id, // Pass the convo ID
+      // Item data to log
+      price: itemData.price || 0,
+      itemTitle: itemData.title || "Item",
+      category: itemData.category || "Miscellaneous",
+      // Timestamp
+      createdAt: serverTimestamp(),
+    };
+    
+    const saleEventsRef = collection(this.db, 'saleEvents');
+    await addDoc(saleEventsRef, saleEvent);
+    
+    // 3. Optimistically update UI (the function will handle the rest)
+    // We can't show "Sold!" immediately, as it might be a food item
+    
+    // Logic from the 'Food' fix
+    const currentQuantity = itemData.quantity || 1;
+    if (itemData.category === 'Food' && currentQuantity > 1) {
+        // Food item with quantity > 1
+        utils.showNotification('Sale recorded! Item quantity updated.', 'success');
+        // We don't disable the button because it can be sold again
         markAsSoldBtn.disabled = false;
         markAsSoldBtn.textContent = originalText;
-        return;
-    }
-
-    const { doc, updateDoc, query, where, collection, getDocs, serverTimestamp, addDoc } = this.modules;
-
-    let criticalFailed = false;
-    let warnings = [];
-    const itemTitle = convo.itemTitle || 'Item';
-    const price = convo.itemPrice || null;
-
-    // 1) Update item status to sold (critical)
-    try {
-        if (convo.itemId) {
-            const itemRef = doc(this.db, 'items', String(convo.itemId));
-            await updateDoc(itemRef, { status: 'sold', soldToId: buyerId, updatedAt: serverTimestamp() });
+        
+        // --- OPTIONAL: Optimistically update local quantity ---
+        const itemIndex = AppState.originalItems.findIndex(i => i.id === String(convo.itemId));
+        if (itemIndex > -1) {
+            AppState.originalItems[itemIndex].quantity -= 1;
         }
-    } catch (e) {
-        criticalFailed = true;
-        console.error('Item status update failed:', e);
-    }
 
-    // 2) Award points to BOTH seller and buyer
-    let sellerAwardedSuccessfully = false;
-    let buyerAwardedSuccessfully = false;
-    if (!criticalFailed) {
-        try {
-            await this.awardPoints(me.uid);
-            sellerAwardedSuccessfully = true;
-        } catch (e) { warnings.push('Seller point award failed.'); }
-        try {
-            await this.awardPoints(buyerId);
-            buyerAwardedSuccessfully = true;
-        } catch (e) { warnings.push('Buyer point award failed.'); }
-    }
-
-    // 3) Update all related conversations
-    const updatePayload = { itemSold: true, soldToId: buyerId, soldAt: serverTimestamp() };
-    try {
-        if (convo.itemId) {
-            const convRef = collection(this.db, 'conversations');
-            const q = query(convRef, where('itemId', '==', String(convo.itemId)));
-            const snap = await getDocs(q);
-            const updates = snap.docs.map(d => updateDoc(d.ref, updatePayload));
-            await Promise.allSettled(updates);
-        } else {
-            await updateDoc(doc(this.db, 'conversations', convo.id), updatePayload);
-        }
-        this.activeConversation = { ...this.activeConversation, ...updatePayload };
-    } catch (e) {
-        warnings.push('Conversation state update encountered issues.');
-    }
-    
-    // 4) Create transaction records
-    if (!criticalFailed) {
-        const txRef = collection(this.db, 'transactions');
-        const transactionPromises = [];
-
-        // Seller Transaction: Assigned to the SELLER
-        transactionPromises.push(addDoc(txRef, {
-            userId: me.uid, // <-- Correctly uses the seller's ID
-            type: 'sale',
-            itemId: String(convo.itemId || ''),
-            itemTitle,
-            price,
-            counterpartId: buyerId,
-            createdAt: serverTimestamp(),
-            pointsAwarded: sellerAwardedSuccessfully ? 5 : 0
-        }));
-      
-        // Buyer Transaction: Assigned to the BUYER
-        transactionPromises.push(addDoc(txRef, { 
-            userId: buyerId, // <-- Correctly uses the buyer's ID
-            type: 'purchase',
-            itemId: String(convo.itemId || ''),
-            itemTitle,
-            price,
-            counterpartId: me.uid,
-            createdAt: serverTimestamp(),
-            pointsAwarded: buyerAwardedSuccessfully ? 5 : 0
-        }));
-      
-        await Promise.allSettled(transactionPromises);
-    }
-
-    // 5) Final Notification and UI Cleanup
-    if (criticalFailed) {
-        markAsSoldBtn.disabled = false;
-        markAsSoldBtn.textContent = originalText;
-        utils.showNotification('Failed to mark item as sold. Please try again.', 'error');
     } else {
-        utils.showNotification('Item marked as sold! Points awarded. 🎉', 'success');
+        // Normal item or last food item
+        utils.showNotification('Item marked as sold! Points will be awarded. 🎉', 'success');
+
+        // --- OPTIONAL: Optimistically update local item state ---
+        const itemIndex = AppState.originalItems.findIndex(i => i.id === String(convo.itemId));
+        if (itemIndex > -1) {
+            AppState.originalItems[itemIndex].status = 'sold';
+        }
+        
+        // Update the UI
+        this.activeConversation.itemSold = true; // Optimistic update
         this.updateSoldUI();
     }
+    
+    // Re-filter the marketplace to hide the sold item (if it was fully sold)
+    window.marketplace?.filterItems();
+
+  } catch (error) {
+    console.error('Failed to create sale event:', error);
+    utils.showNotification(`Sale failed: ${error.message}`, 'error');
+    markAsSoldBtn.disabled = false;
+    markAsSoldBtn.textContent = originalText;
+  }
 }
 
   subscribeMessages(conversationId) {
@@ -1781,13 +1881,12 @@ async markItemAsSold() {
     }
   }
 
-  async sendMessage() {
+ async sendMessage() {
     const chatInput = document.getElementById('chatInput');
     if (!chatInput) return;
     const text = chatInput.value.trim();
     if (!text) return;
 
-    if (!this.db || !this.modules) return;
     const convo = this.activeConversation;
     if (!convo?.id) return;
 
@@ -1813,7 +1912,11 @@ async markItemAsSold() {
       chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
-    const { collection, addDoc, serverTimestamp, doc, updateDoc } = this.modules;
+    // --- START MODIFICATION ---
+    // Get 'increment' and 'setDoc' from modules
+    const { collection, addDoc, serverTimestamp, doc, setDoc, increment } = this.modules;
+    // --- END MODIFICATION ---
+
     const msgsRef = collection(this.db, 'conversations', convo.id, 'messages');
 
     // Send the message first (critical)
@@ -1831,18 +1934,37 @@ async markItemAsSold() {
 
     // Update convo metadata (non-critical)
     try {
-      const convRef = doc(this.db, 'conversations', convo.id);
-      await updateDoc(convRef, {
+      // --- START: NEW LOGIC ---
+      // Find the *other* user
+      const otherUid = (convo.participants || []).find(p => p !== user.uid);
+      
+      let updateData = {
         lastMessage: text,
         lastMessageAt: serverTimestamp()
-      });
+      };
+
+      // If we found the other user, increment their unread count
+      if (otherUid && increment) {
+        // We will store unread counts in a map: { userId1: 2, userId2: 0 }
+        updateData.unreadCounts = {
+          [otherUid]: increment(1)
+        };
+      }
+      // --- END: NEW LOGIC ---
+
+      const convRef = doc(this.db, 'conversations', convo.id);
+      
+      // --- MODIFICATION: Use setDoc + merge for safety ---
+      // This will create or update the 'unreadCounts' map safely
+      await setDoc(convRef, updateData, { merge: true });
+      
     } catch (e) {
       console.warn('Message sent, but failed to update conversation metadata:', e);
-      // No error toast here; message already sent
     }
 
     chatInput.value = '';
   }
+ 
 }
 
 class Profile {
@@ -1862,11 +1984,16 @@ class Profile {
 
   // Binds clicks to all the interactive elements in the profile section
   bindEvents() {
-    const avatarEditBtn = document.querySelector(".avatar-edit"); // The pencil icon
+    const avatarEditBtn = document.querySelector(".avatar-edit");
     const saveEditNameBtn = document.getElementById("saveEditName");
     const cancelEditNameBtn = document.getElementById("cancelEditName");
     const logoutBtn = document.getElementById("logoutBtn");
     const deleteAccountBtn = document.getElementById("deleteAccountBtn");
+    const settingsHelpBtn = document.getElementById("openHelpBtn");
+    const changePasswordBtn = document.getElementById("changePasswordBtn");
+    const notificationSettingsBtn = document.getElementById(
+      "notificationSettingsBtn"
+    );
 
     // NEW: Make the pencil icon open the Edit Name modal
     if (avatarEditBtn) {
@@ -1906,6 +2033,17 @@ class Profile {
         e.preventDefault();
         const modal = document.getElementById("deleteAccountModal");
         modal?.classList.remove("hidden");
+      });
+    }
+
+    if (notificationSettingsBtn) {
+      notificationSettingsBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        // utils.showNotification("Notification settings coming soon!", "info"); // <-- OLD
+        
+        // NEW LOGIC:
+        window.notifications?.loadNotifications(); // Load data
+        switchToSection("notifications"); // Switch view
       });
     }
   }
@@ -2146,30 +2284,19 @@ updateStats(transactionCount, moneySaved) {
     const userData = window.userSession?.getUserData?.() || {};
     const currentPoints = userData.points || 0;
 
-    // --- 1. POINTS ---
-    utils.animateValue(
-      document.getElementById("userPoints"),
-      0,
-      currentPoints,
-      1000
-    );
-    
-    // --- 2. TOTAL TRANSACTIONS (Now reliable) ---
-    utils.animateValue(
-      document.getElementById("totalTransactions"),
-      0,
-      transactionCount, // <-- USES THE RELIABLE COUNT PASSED AS AN ARGUMENT
-      1000
-    );
+// --- 1. POINTS ---
+    const userPointsEl = document.getElementById("userPoints");
+    if (userPointsEl) {
+      userPointsEl.textContent = currentPoints;
+    }
 
-    // --- 3. MONEY SAVED (Now reliable) ---
-    utils.animateValue(
-      document.getElementById("moneySaved"),
-      0,
-      moneySaved, // <-- USES THE RELIABLE VALUE PASSED AS AN ARGUMENT
-      1000,
-      (val) => `₹${utils.formatPrice(val).replace('₹', '')}`
-    );
+    // --- 2. TOTAL TRANSACTIONS (Now reliable) ---
+    const totalTransactionsEl = document.getElementById("totalTransactions");
+    if (totalTransactionsEl) {
+      totalTransactionsEl.textContent = transactionCount;
+    }
+
+    
     
     // Update the points progress bar
     const pointsProgress = document.getElementById("pointsProgress");
@@ -2207,7 +2334,7 @@ updateStats(transactionCount, moneySaved) {
     if (userListings.length === 0) {
       myListingsContainer.innerHTML = `
         <div class="empty-state">
-            <p>🛍️ You haven't posted anything yet. Start selling to see your items here!</p>
+            <p> You haven't posted anything yet. Start selling to see your items here!</p>
         </div>
       `;
       emptyNotice.style.display = "block";
@@ -2257,7 +2384,7 @@ updateStats(transactionCount, moneySaved) {
     if (AppState.userProfile.heartedPosts.length === 0) {
       heartedPostsContainer.innerHTML = `
           <div class="empty-state">
-              <p>💖 Items you heart will appear here</p>
+              <p> Items you heart will appear here</p>
           </div>
       `;
       return;
@@ -2317,29 +2444,9 @@ async loadTransactionHistory() {
         const allTransactions = [];
         snapshot.forEach((d) => allTransactions.push({ id: d.id, ...d.data() }));
 
-        let totalMoneySaved = 0;
-        // This loop now runs on all fetched transactions
-        for (const transaction of allTransactions) {
-            if (transaction.type === 'purchase' && transaction.itemId) {
-                try {
-                    const itemRef = doc(window.firebaseDb, 'items', String(transaction.itemId));
-                    const itemSnap = await getDoc(itemRef);
-                    if (itemSnap.exists()) {
-                        const itemData = itemSnap.data();
-                        if (itemData.originalPrice && itemData.price) {
-                            const savings = itemData.originalPrice - itemData.price;
-                            if (savings > 0) totalMoneySaved += savings;
-                        }
-                    }
-                } catch (e) {
-                    console.warn(`Could not fetch details for sold item ${transaction.itemId}:`, e);
-                }
-            }
-        }
-
         if (allTransactions.length === 0) {
             container.innerHTML = `<div class="empty-state"><p>No transactions yet.</p></div>`;
-            this.updateStats(0, 0); // <-- UPDATE STATS WITH 0s
+            this.updateStats(0); // <-- UPDATE STATS WITH 0s
             return;
         }
 
@@ -2363,12 +2470,12 @@ async loadTransactionHistory() {
         container.innerHTML = html;
 
         // Finally, update the stats with the correct, calculated data
-        this.updateStats(allTransactions.length, totalMoneySaved);
+        this.updateStats(allTransactions.length);
 
     } catch (e) {
         console.error('Failed to load transactions:', e);
         container.innerHTML = `<div class="empty-state"><p>Failed to load transactions.</p></div>`;
-        this.updateStats(0, 0); // <-- UPDATE STATS WITH 0s ON ERROR
+        this.updateStats(0); // <-- UPDATE STATS WITH 0s ON ERROR
     }
 }
 }
@@ -2389,8 +2496,7 @@ class ItemDetail {
     if (backBtn) {
       backBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        window.history.pushState({ section: 'marketplace' }, 'Marketplace', window.location.pathname);
-        switchToSection('marketplace');
+        window.app.navigateToSection('marketplace');
       });
     }
 
@@ -2403,6 +2509,43 @@ class ItemDetail {
         }
       });
     }
+
+    const copyBtn = document.getElementById('copyUrlBtn');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        // Pass the button element itself for visual feedback
+        this.copyItemUrl(copyBtn);
+      });
+    }
+  }
+
+  copyItemUrl(buttonElement) {
+    // This gets the full URL, including the ?item=... query parameter
+    const urlToCopy = window.location.href;
+    
+    // Use the modern clipboard API
+    navigator.clipboard.writeText(urlToCopy).then(() => {
+      // Success!
+      // Show your custom notification
+      utils.showNotification('Link copied to clipboard!', 'success');
+      
+      // Temporarily change button text for more feedback
+      const originalText = buttonElement.innerHTML;
+      buttonElement.innerHTML = 'Copied! ✅';
+      buttonElement.disabled = true;
+      
+      // Revert button text after 2.5 seconds
+      setTimeout(() => {
+        buttonElement.innerHTML = originalText;
+        buttonElement.disabled = false;
+      }, 2500);
+      
+    }).catch(err => {
+      // Failure
+      console.error('Failed to copy URL: ', err);
+      utils.showNotification('Could not copy link.', 'error');
+    });
   }
 
 showById(itemId) {
@@ -2421,6 +2564,8 @@ showById(itemId) {
     const priceEl = document.getElementById('detailPrice');
     const statusEl = document.getElementById('detailStatus');
     const descEl = document.getElementById('detailDescription');
+    const quantWrapperEl = document.getElementById('detailQuantity-wrapper');
+    const quantEl = document.getElementById('detailQuantity');
     
     // --- Image Gallery Elements ---
     const mainImgEl = document.getElementById('detailMainImage');
@@ -2434,6 +2579,15 @@ showById(itemId) {
     if (priceEl) priceEl.textContent = utils.formatPrice(item.price || 0);
     if (statusEl) statusEl.textContent = item.condition || '';
     if (descEl) descEl.textContent = item.description || '';
+    // Logic for Food vs. Non-Food items
+if (item.category === 'Food' && item.quantity > 0) {
+  if (quantEl) quantEl.textContent = item.quantity;
+  if (quantWrapperEl) quantWrapperEl.classList.remove('hidden');
+  if (statusEl) statusEl.textContent = 'N/A'; // Hide condition
+} else {
+  if (quantWrapperEl) quantWrapperEl.classList.add('hidden');
+  if (statusEl) statusEl.textContent = item.condition || ''; // Show condition
+}
 
     // --- Image Gallery Logic ---
     const allImages = Array.isArray(item.images) && item.images.length > 0 ? item.images : [];
@@ -2488,10 +2642,132 @@ showById(itemId) {
   }
 }
 
+class Notifications {
+  constructor() {
+    this.container = document.getElementById("notificationListContainer");
+    this.db = window.firebaseDb;
+    this.modules = window.firebaseModules;
+  }
+
+  init() {
+    const backBtn = document.getElementById("backToProfileBtn");
+    if (backBtn) {
+      backBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        window.app.navigateToSection("profile");
+      });
+    }
+  }
+
+async loadNotifications() {
+    // --- FIX: Grab the database and modules here, not in the constructor ---
+    this.db = window.firebaseDb;
+    this.modules = window.firebaseModules;
+    // -----------------------------------------------------------------
+    
+    if (!this.container) return;
+    if (!this.db || !this.modules) {
+      this.container.innerHTML = `<div class="empty-state"><p>Error: Could not connect to database.</p></div>`;
+      return;
+    }
+
+    this.container.innerHTML = `<div class="empty-state"><p>Loading notifications...</p></div>`;
+
+    const { collection, query, orderBy, getDocs } = this.modules;
+
+    try {
+      const annRef = collection(this.db, "announcements");
+      const q = query(annRef, orderBy("createdAt", "desc"));
+      const snapshot = await getDocs(q);
+
+      if (snapshot.empty) {
+        this.container.innerHTML = `<div class="empty-state"><p>No new notifications from the admin team.</p></div>`;
+        return;
+      }
+
+      const notifications = [];
+      snapshot.forEach((doc) => {
+        notifications.push(doc.data());
+      });
+
+      this.renderNotifications(notifications);
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+      // --- FIX: Display the real Firebase error for easier debugging ---
+      if (error.code === 'permission-denied' || error.code === 'failed-precondition') {
+         this.container.innerHTML = `<div class="empty-state"><p>Security Error: Could not load notifications. (Check Firestore Rules)</p></div>`;
+      } else {
+         this.container.innerHTML = `<div class="empty-state"><p>Failed to load notifications.</p></div>`;
+      }
+    }
+  }
+
+  renderNotifications(notifications) {
+    let html = "";
+    let currentDate = "";
+
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+
+    for (const notif of notifications) {
+      const date = notif.createdAt?.toDate?.();
+      if (!date) continue;
+      
+      const dateString = date.toLocaleDateString('en-US', options);
+
+      // If the date is different from the last one, add a new date header
+      if (dateString !== currentDate) {
+        currentDate = dateString;
+        html += `<h3 class="notification-date-header">${currentDate}</h3>`;
+      }
+
+  // Add the notification item
+      html += `
+        <div class="notification-item">
+          <p class="notification-message">${this.escapeHtml(notif.message)}</p>
+          <span class="notification-meta">Posted by Team CampusKart</span>
+        </div>
+      `;
+    }
+
+    this.container.innerHTML = html;
+  }
+
+  escapeHtml(s) { 
+    return String(s||'').replace(/[&<>"']/g, (c)=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"})[c]); 
+  }
+}
+
 function initializeGlobalEventListeners() {
   document.body.addEventListener("click", async (e) => {
     const target = e.target;
     const modal = target.closest(".modal");
+
+    if (target.closest("#reportItemBtn")) {
+      e.preventDefault();
+      if (window.itemDetail?.currentItemId && window.firebaseDb && window.firebaseModules) {
+        if (!confirm("Are you sure you want to report this item to a moderator?")) {
+          return;
+        }
+        
+        const { doc, updateDoc, serverTimestamp } = window.firebaseModules;
+        const itemRef = doc(window.firebaseDb, 'items', window.itemDetail.currentItemId);
+        
+        try {
+          await updateDoc(itemRef, { 
+            flagged: true, 
+            flagReason: 'user_reported',
+            updatedAt: serverTimestamp() 
+          });
+          utils.showNotification('Item reported. A moderator will review it shortly.', 'success');
+          // Send user back to marketplace
+          window.history.pushState({ section: 'marketplace' }, 'Marketplace', window.location.pathname);
+          switchToSection('marketplace');
+        } catch (err) {
+          console.error("Failed to report item:", err);
+          utils.showNotification('Could not report item. Please try again.', 'error');
+        }
+      }
+    }
 
     // --- Modal Close Buttons ---
     if (
@@ -2500,6 +2776,7 @@ function initializeGlobalEventListeners() {
       target.id === "closeModal" ||
       target.id === "cancelRemove" ||
       target.id === "cancelBoost" ||
+      target.id === "closeTermsModal" ||
       target.id === "cancelDeleteAccount" || // Merged
       target.classList.contains("modal-overlay")
     ) {
@@ -2507,6 +2784,10 @@ function initializeGlobalEventListeners() {
         modal.classList.add("hidden");
         document.body.classList.remove('modal-open');
       }
+    }
+if (target.closest("#openHelpBtn")) {
+      e.preventDefault();
+      window.app.navigateToSection('help');
     }
 
     // --- Profile Page Actions (Merged from master) ---
@@ -2575,6 +2856,7 @@ class App {
     this.profile = new Profile();
     this.help = new Help();
     this.itemDetail = new ItemDetail();
+    this.notifications = new Notifications();
   }
 
   // --- APP INITIALIZATION (FIXED) ---
@@ -2588,6 +2870,7 @@ class App {
     window.profile = this.profile;
     window.help = this.help;
     window.itemDetail = this.itemDetail;
+    window.notifications = this.notifications;
 
     this.navigation.init();
 
@@ -2599,6 +2882,9 @@ class App {
     this.profile.init(); // Now this runs AFTER items are loaded
     this.help.init();
     this.itemDetail.init();
+    this.notifications.init()
+
+    this.personalizeHeaders()
 
     initializeGlobalEventListeners();
 
@@ -2612,42 +2898,89 @@ class App {
     console.log("App initialized successfully");
   }
 
-  // --- START: ADD THIS NEW METHOD ---
-  // This method checks the URL when the page first loads
+
+  navigateToSection(sectionName) {
+    // Don't create a new history entry if we're already there
+    if (sectionName === AppState.currentSection) return; 
+
+    let newUrl = window.location.pathname;
+    const state = { section: sectionName };
+
+    // Create a new URL like "?section=profile"
+    // The marketplace will just be the base URL
+    if (sectionName !== 'marketplace') {
+      newUrl += `?section=${sectionName}`;
+    }
+    
+    // Create a new browser history entry
+    window.history.pushState(state, '', newUrl);
+    
+    // Now, visually switch the section
+    switchToSection(sectionName);
+  }
+
+// This method checks the URL when the page first loads
   handleUrlRouting() {
     const params = new URLSearchParams(window.location.search);
     const itemId = params.get('item');
+    const section = params.get('section'); // <-- NEW
     
     if (itemId) {
+      // Item logic takes priority
       console.log(`URL routing: Found item ID ${itemId}`);
-      // App.init() already 'await'ed the item load, so our data is ready
       const itemExists = AppState.originalItems.some(i => String(i.id) === String(itemId));
 
       if (itemExists) {
-        // This function will automatically switch to the itemDetail section
         window.itemDetail.showById(itemId);
       } else {
         console.warn(`Item ${itemId} not found. Clearing URL.`);
-        // Clear the bad item ID from the URL
         window.history.replaceState({ section: 'marketplace' }, 'Marketplace', window.location.pathname);
         switchToSection('marketplace');
       }
+    } else if (section) {
+      // NEW: Handle section routing
+      console.log(`URL routing: Found section ${section}`);
+      switchToSection(section);
     } else {
-      // No item ID, just show the marketplace (which is the default)
+      // Default: show the marketplace
       switchToSection('marketplace');
     }
   }
 
-  // --- START: ADD THIS NEW METHOD ---
-  // This handles the browser's back/forward buttons
+ 
+  personalizeHeaders() {
+    const titleEl = document.getElementById('marketplace-title');
+    const subtitleEl = document.getElementById('marketplace-subtitle');
+    
+    if (!titleEl || !subtitleEl) return; // Failsafe
+
+    const user = window.userSession?.getCurrentUser?.();
+    const userData = window.userSession?.getUserData?.();
+
+    if (user && userData?.displayName) {
+      titleEl.textContent = `Welcome back, ${userData.displayName}!`;
+      subtitleEl.textContent = "Ready to find your next amazing deal?";
+    } else {
+      // Default text if user is not logged in
+      titleEl.textContent = "Discover Amazing Deals";
+      subtitleEl.textContent = "Find everything you need from fellow students";
+    }
+  }
+
+
+// This handles the browser's back/forward buttons
   setupPopstateListener() {
     window.onpopstate = (event) => {
       const state = event.state;
+      
       if (state && state.itemId) {
-        // User clicked 'forward' to an item page
+        // Handle item detail page
         window.itemDetail.showById(state.itemId);
+      } else if (state && state.section) {
+        // Handle other sections (profile, chat, post, help)
+        switchToSection(state.section);
       } else {
-        // User clicked 'back' to the marketplace
+        // Default state (null state) is the marketplace
         switchToSection('marketplace');
       }
     };

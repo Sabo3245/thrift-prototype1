@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CampusKart - College Marketplace</title>
-    <link rel="icon" type="image/svg" href="logo.svg">
+    <title>CampusKart</title>
+    <link rel="icon" type="image/svg" href="logoCart.png">
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -12,7 +12,7 @@
       <div class="loading-container">
         <div class="animated-logo">
             <div class="logo-shape">
-              <img src="./logo.svg" alt="CampusKart Logo" style="width: 80px; height: 80px; object-fit: contain; display: block; margin: 0 auto;" />
+              <img src="./logoCart.png" alt="CampusKart Logo" style="width: 80px; height: 80px; object-fit: contain; display: block; margin: 0 auto;" />
             </div>
           <div class="logo-text">CampusKart</div>
         </div>
@@ -41,7 +41,7 @@
 
       <nav class="nav-container">
         <div class="nav-brand">
-          <div class="brand-logo" >CK</div>
+          <div class="brand-logo" ><img src="logoCart.png"alt="CampusKart Logo" style="scale:1" /></div>
           <span class="brand-text">CampusKart</span>
         </div>
         <div class="nav-tabs">
@@ -57,7 +57,6 @@
             <span class="nav-icon">💬</span>
             <span>Chat</span>
           </button>
-
           <button class="nav-tab" data-section="profile">
             <span class="nav-icon">👤</span>
             <span>Profile</span>
@@ -65,6 +64,19 @@
           <div class="nav-indicator"></div>
         </div>
       </nav>
+      <section id="notifications" class="section">
+        <div class="container">
+          <div class="section-header" style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px;">
+            <button class="btn btn--outline" id="backToProfileBtn" style="justify-self: start;">
+              ← Back
+            </button>
+            <h1 class="page-title" style="margin-bottom: 0; justify-self: center;">Notifications</h1>
+            </div>
+          <div id="notificationListContainer" class="glass-card" style="padding: 20px 32px; max-width: 900px; margin: 0 auto;">
+            <div class="empty-state">Loading notifications...</div>
+          </div>
+        </div>
+      </section>
       <section id="help" class="section">
         <div class="container">
           <div class="section-header">
@@ -86,25 +98,11 @@
                   <div class="contact-details">
                     <span class="contact-label">Email Support</span>
                     <span class="contact-value"
-                      >admin@campuskart.example.com</span
+                      >help.campuskart@gmail.com</span
                     >
                   </div>
                 </div>
-                <div class="contact-item">
-                  <span class="contact-icon">📞</span>
-                  <div class="contact-details">
-                    <span class="contact-label">Phone Support</span>
-                    <span class="contact-value">+91 123-456-7890</span>
-                  </div>
-                </div>
-                <div class="contact-item">
-                  <span class="contact-icon">🕒</span>
-                  <div class="contact-details">
-                    <span class="contact-label">Office Hours</span>
-                    <span class="contact-value"
-                      >Mon-Fri, 10:00 AM - 5:00 PM</span
-                    >
-                  </div>
+
                 </div>
               </div>
             </div>
@@ -114,9 +112,9 @@
 
       <section id="marketplace" class="section active">
         <div class="container">
-          <div class="section-header">
-            <h1 class="page-title">Discover Amazing Deals</h1>
-            <p class="page-subtitle">
+          <div class="section-header" style="text-align: center;">
+            <h1 class="page-title" id="marketplace-title">Discover Amazing Deals</h1>
+            <p class="page-subtitle" id="marketplace-subtitle">
               Find everything you need from fellow students
             </p>
           </div>
@@ -141,9 +139,10 @@
                 <option value="">All Categories</option>
                 <option value="Clothes">Clothes</option>
                 <option value="Electronics">Electronics</option>
-                <option value="Books">Books</option>
+                <option value="Stationery">Stationery</option>
                 <option value="Cosmetics">Cosmetics</option>
                 <option value="Miscellaneous">Miscellaneous</option>
+                <option value="Food">Food</option>
               </select>
             </div>
             <div class="filter-group">
@@ -157,10 +156,10 @@
             </div>
             <div class="filter-group">
               <label class="filter-label">Hostel</label>
+              
               <select id="hostelFilter" class="filter-select">
                 <option value="">All Hostels</option>
-                <option value="Boys">Boys</option>
-                <option value="Girls">Girls</option>
+                <option value="myHostel">My Hostel</option>
               </select>
             </div>
           </div>
@@ -212,13 +211,20 @@
                   <label class="detail-label">Condition</label>
                   <div id="detailStatus" class="detail-value"></div>
                 </div>
+                <div class="detail-field hidden" id="detailQuantity-wrapper">
+                  <label class="detail-label">Quantity Available</label>
+                  <div id="detailQuantity" class="detail-value"></div>
+                </div>
                 <div class="detail-field">
                   <label class="detail-label">Description</label>
                   <div id="detailDescription" class="detail-value"></div>
                 </div>
                 <div class="detail-actions">
+                  <button class="btn btn--outline" id="copyUrlBtn">🔗 Share</button>
+                  <button class="btn btn--outline btn--danger" id="reportItemBtn">🚩 Report Item</button>
                   <button class="btn btn--primary" id="detailContactBtn">Contact Seller</button>
                 </div>
+                
               </div>
             </div>
           </div>
@@ -226,196 +232,175 @@
       </section>
 
       <section id="post" class="section">
-        <div class="container">
-          <div class="section-header">
-            <h1 class="page-title">Post Your Item</h1>
-            <p class="page-subtitle">
-              Share what you're selling with the community
-            </p>
-          </div>
+  <div class="container">
+    <div class="section-header center-text">
+    <h1 class="page-title">Welcome back! Post Your Item</h1>
+    <p class="page-subtitle">Share what you're selling with the community</p>
+    </div>
 
-          <form class="post-form glass-card" id="postForm">
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Item Title</label>
-                <input
-                  type="text"
-                  class="form-control animated-input"
-                  id="itemTitle"
-                  placeholder="What are you selling?"
-                  required
-                />
-              </div>
-            </div>
 
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Category</label>
-                <select
-                  class="form-control animated-input"
-                  id="itemCategory"
-                  required
-                >
-                  <option value="">Select category...</option>
-                  <option value="Clothes">Clothes</option>
-                  <option value="Electronics">Electronics</option>
-                  <option value="Books">Books</option>
-                  <option value="Cosmetics">Cosmetics</option>
-                  <option value="Miscellaneous">Miscellaneous</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Condition</label>
-                <select
-                  class="form-control animated-input"
-                  id="itemCondition"
-                  required
-                >
-                  <option value="">Select condition...</option>
-                  <option value="New">New</option>
-                  <option value="Used">Used</option>
-                  <option value="Unused">Unused</option>
-                </select>
-              </div>
-            </div>
+    <form class="post-form glass-card" id="postForm">
+      
+      <h4 class="form-section-header">1. Item Details</h4>
 
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Current Price (₹)</label>
-                <input
-                  type="number"
-                  class="form-control animated-input"
-                  id="itemPrice"
-                  placeholder="Current selling price"
-                  required
-                />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Original Price (₹)</label>
-                <input
-                  type="number"
-                  class="form-control animated-input"
-                  id="itemOriginalPrice"
-                  placeholder="Original purchase price"
-                />
-              </div>
-            </div>
+      <div class="form-group">
+        <label class="form-label">Item Title</label>
+        <input
+          type="text"
+          class="form-control animated-input"
+          id="itemTitle"
+          placeholder="What are you selling?"
+          required
+        />
+      </div>
 
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Hostel</label>
-                <select
-                  class="form-control animated-input"
-                  id="itemHostel"
-                  required
-                >
-                  <option value="">Select hostel...</option>
-                  <option value="Boys">Boys</option>
-                  <option value="Girls">Girls</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="clothing-checklist hidden" id="clothingChecklist">
-              <h4 class="checklist-title">Clothing Details</h4>
-              <div class="form-row">
-                <div class="form-group">
-                  <label class="form-label">Quality</label>
-                  <select class="form-control" id="clothingQuality">
-                    <option value="">Select quality...</option>
-                    <option value="Excellent">Excellent</option>
-                    <option value="Good">Good</option>
-                    <option value="Fair">Fair</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Age</label>
-                  <select class="form-control" id="clothingAge">
-                    <option value="">Select age...</option>
-                    <option value="< 6 months">< 6 months</option>
-                    <option value="6-12 months">6-12 months</option>
-                    <option value="1-2 years">1-2 years</option>
-                    <option value="2+ years">2+ years</option>
-                  </select>
-                </div>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Detailed Condition</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="clothingCondition"
-                  placeholder="e.g., Minimal wear, no stains"
-                />
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Description</label>
-              <textarea
-                class="form-control animated-input"
-                id="itemDescription"
-                rows="4"
-                placeholder="Describe your item in detail"
-                required
-              ></textarea>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Upload Photos</label>
-              <div class="upload-area" id="uploadArea">
-                <div class="upload-content">
-                  <span class="upload-icon">📸</span>
-                  <span class="upload-text">Click or drag photos here</span>
-                  <input
-                    type="file"
-                    id="itemPhotos"
-                    multiple
-                    accept="image/*"
-                    class="upload-input"
-                  />
-                </div>
-              </div>
-              <div class="uploaded-images" id="uploadedImages"></div>
-            </div>
-            <div class="form-tips-card">
-              <h4 class="tips-title">💡 Safety Tips & Disclaimer</h4>
-              <ul class="tips-list">
-                <li>
-                  <strong>Be Cautious:</strong> Don't share OTPs or personal
-                  details like bank account numbers.
-                </li>
-                <li>
-                  <strong>No Advance Payments:</strong> Never give money or the
-                  product to someone in advance.
-                </li>
-                <li>
-                  <strong>Meet Safely:</strong> Always be cautious while meeting
-                  a buyer or seller. Prefer public places on campus.
-                </li>
-                <li>
-                  <strong>Report Suspicious Users:</strong> Help keep the
-                  community safe by reporting any suspicious behavior to the
-                  admins.
-                </li>
-              </ul>
-            </div>
-            <div class="form-group form-group-checkbox">
-              <input type="checkbox" id="disclaimerCheckbox" class="styled-checkbox" />
-              <label for="disclaimerCheckbox" class="checkbox-label">
-                I have read and agree to the safety tips & disclaimer.
-              </label>
-            </div>
-            <button
-              type="submit"
-              class="btn btn--primary btn--full-width animated-btn"
-            >
-              <span class="btn-text">Post Item</span>
-              <span class="btn-loader hidden">🔄</span>
-            </button>
-          </form>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select
+            class="form-control animated-input"
+            id="itemCategory"
+            required
+          >
+            <option value="">Select category...</option>
+            <option value="Clothes">Clothes</option>
+            <option value="Electronics">Electronics</option>
+            <option value="Stationery">Stationery</option>
+            <option value="Cosmetics">Cosmetics</option>
+            <option value="Miscellaneous">Miscellaneous</option>
+            <option value="Food">Food</option>
+          </select>
         </div>
-      </section>
+        <div class="form-group">
+          <div class="form-group" id="condition-form-group">
+          <label class="form-label">Condition</label>
+          <select
+            class="form-control animated-input"
+            id="itemCondition"
+            required
+          >
+            <option value="">Select condition...</option>
+            <option value="New">New</option>
+            <option value="Used">Used</option>
+            <option value="Unused">Unused</option>
+          </select>
+        </div>
+        
+        <div class="form-group hidden" id="quantity-form-group">
+          <label class="form-label">Quantity</label>
+          <div class="quantity-input-group">
+            <button type="button" class="btn btn--outline quantity-btn" id="quantity-minus" aria-label="Decrease quantity" disabled>&ndash;</button>
+            <input type="text" id="itemQuantity" class="form-control quantity-display" value="1" readonly>
+            <button type="button" class="btn btn--outline quantity-btn" id="quantity-plus" aria-label="Increase quantity">+</button>
+          </div>
+        </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea
+          class="form-control animated-input"
+          id="itemDescription"
+          rows="4"
+          placeholder="Describe your item in detail"
+          required
+        ></textarea>
+      </div>
+
+
+
+      <hr class="form-divider" />
+
+      <h4 class="form-section-header">2. Price & Location</h4>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Selling Price (₹)</label>
+          <input
+            type="number"
+            class="form-control animated-input"
+            id="itemPrice"
+            placeholder="Your selling price"
+            required
+          />
+        </div>
+      </div>
+
+      
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Hostel</label>
+          <select
+            class="form-control animated-input"
+            id="itemHostel"
+            required
+          >
+            <option value="">Select hostel...</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="D">D</option>
+            <option value="H">H</option>
+            <option value="J">J</option>
+            <option value="K">K</option>
+            <option value="L">L</option>
+            <option value="M">M</option>
+            <option value="O">O</option>
+            <option value="E">E</option>
+            <option value="G">G</option>
+            <option value="I">I</option>
+            <option value="N">N</option>
+            <option value="HOTEL-PG">HOTEL-PG</option>
+            <option value="Q">Q</option>
+            <option value="FRF">FRF</option>
+            <option value="FRG">FRG</option>
+          </select>
+        </div>
+      </div>
+
+      <hr class="form-divider" />
+
+      <h4 class="form-section-header">3. Photos (up to 5)</h4>
+
+      <div class="form-group">
+        <div class="upload-area" id="uploadArea">
+          <div class="upload-content">
+            <span class="upload-icon">📸</span>
+            <span class="upload-text">Click or drag photos here</span>
+            <input
+              type="file"
+              id="itemPhotos"
+              multiple
+              accept="image/*"
+              class="upload-input"
+            />
+          </div>
+        </div>
+        <div class="uploaded-images" id="uploadedImages"></div>
+      </div>
+      
+      <hr class="form-divider" />
+
+      <div class="form-group form-group-checkbox">
+        <input type="checkbox" id="disclaimerCheckbox" class="styled-checkbox" />
+        <label for="disclaimerCheckbox" class="checkbox-label">
+          I have read and agree to the <a href="#" id="openTermsBtn">Terms & Conditions</a>.
+        </label>
+      </div>
+
+      <button
+        type="submit"
+        class="btn btn--primary btn--full-width animated-btn"
+        disabled >
+        <span class="btn-text">Post Item</span>
+        <span class="btn-loader hidden">🔄</span>
+      </button>
+    </form>
+    </div>
+  </div>
+</section>
 
       <section id="chat" class="section">
         <div class="container">
@@ -439,6 +424,7 @@
 
             <div class="chat-window glass-card" id="chatWindow">
               <div class="chat-header">
+                <button class="btn btn--outline btn--sm" id="chatBackButton">← Back</button>
                 <div class="chat-user-info">
                   <div class="chat-avatar">👤</div>
                   <div class="chat-user-details">
@@ -465,7 +451,11 @@
                   placeholder="Type your message..."
                   class="chat-input"
                 />
-                <button class="chat-send-btn" id="chatSendBtn">📤</button>
+                <button class="chat-send-btn" id="chatSendBtn" aria-label="Send message">
+  <svg class="send-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
+    <path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+  </svg>
+</button>
               </div>
             </div>
           </div>
@@ -474,10 +464,12 @@
 
       <section id="profile" class="section">
         <div class="container">
-          <div class="section-header">
-            <h1 class="page-title">Your Profile</h1>
-            <p class="page-subtitle">Manage your account and listings</p>
-          </div>
+          <div class="section-header" >
+            <h1 class="page-title" id="marketplace-title">Your Profile</h1>
+            <p class="page-subtitle" id="marketplace-subtitle">
+              Manager Your Account and Listings
+            </p>
+            <br><br>
 
           <div class="profile-grid">
             <div class="profile-card glass-card">
@@ -497,10 +489,7 @@
                     <span class="stat-number" id="totalTransactions">3</span>
                     <span class="stat-label">Transactions</span>
                   </div>
-                  <div class="stat">
-                    <span class="stat-number" id="moneySaved">₹0</span>
-                    <span class="stat-label">Money Saved</span>
-                  </div>
+
                 </div>
               </div>
             </div>
@@ -517,7 +506,7 @@
               <div class="listings-grid" id="myListings">
                 <div class="empty-state">
                   <p>
-                    🛍️ You haven't posted anything yet. Start selling to see
+                     You haven't posted anything yet. Start selling to see
                     your items here!
                   </p>
                 </div>
@@ -525,10 +514,10 @@
             </div>
 
             <div class="hearted-posts glass-card">
-              <h3 class="card-title">Hearted Posts ❤️</h3>
+              <h3 class="card-title">Hearted Posts </h3>
               <div class="hearted-grid" id="heartedPosts">
                 <div class="empty-state">
-                  <p>💖 Items you heart will appear here</p>
+                  <p> Items you heart will appear here</p>
                 </div>
               </div>
             </div>
@@ -559,16 +548,21 @@
             <div class="account-settings glass-card">
               <h3 class="card-title">Settings</h3>
               <div class="settings-actions-list">
-               <button class="nav-tab" data-section="help">
-                <span class="nav-icon">🆘</span>
-                <span>Help</span>
-              </button>
+
+                <div class="setting-action-item toggle-item">
+                  <span>🌙 Dark Mode/ ☀️ Light </span>
+                  <div class="toggle-switch">
+                    <input type="checkbox" id="themeToggle" class="toggle-input">
+                    <label for="themeToggle" class="toggle-label"></label>
+                  </div>
+                </div>
+
+            <a href="#" id="openHelpBtn" class="setting-action-item" data-section="help">
+              <span>🆘 Help</span>
+              <span>&gt;</span>
+            </a>
                 <a href="#" id="logoutBtn" class="setting-action-item">
                     <span>&#x1F6AA; Logout</span>
-      <span>&gt;</span>
-    </a>
-    <a href="#" id="changePasswordBtn" class="setting-action-item">
-      <span>&#x1F510; Privacy - Change Password</span>
       <span>&gt;</span>
     </a>
     <a
@@ -736,6 +730,56 @@
           </div>
         </div>
       </div>
+      <div class="modal hidden" id="termsModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content glass-card">
+          <div class="modal-header">
+            <h3 class="modal-title">Terms & Conditions</h3>
+          </div>
+          <div class="modal-body">
+ 
+            <p>Welcome to CampusKart!</p>
+            <p>By using this platform, you agree to the following terms:</p>
+            <ul>
+              <li><strong>Eligibility</strong> 
+                   ⁠The Service is intended for use by students, faculty, and staff of participating campuses only. You must be 18 years or older or have consent from a legal guardian to create an account.
+              </li>
+              <li><strong>Account Registration</strong>
+⁠  ⁠You must provide accurate information during registration including your name, campus email, phone number, and hostel name.
+⁠  ⁠You are responsible for maintaining the confidentiality of your account credentials.</li>
+              <li><strong>Rules</strong> 
+  ⁠  ⁠Users are responsible for ensuring that their listings and conduct comply with all applicable campus and local laws.
+⁠    ⁠Prohibited items and content are strictly forbidden. Such listings will be removed without notice.
+⁠    ⁠CampusKart is not liable for transactions or interactions between users.
+</li>
+              <li><strong>Point System</strong>
+⁠  ⁠Each completed transaction may earn loyalty points for users, redeemable per current platform policy.
+⁠  ⁠Points are non-transferable and have no cash value.
+</li>
+              <li><strong>Intellectual Property</strong>
+⁠  ⁠The CampusKart brand, logos, and mascot images are protected. Users may not copy, distribute, or modify these assets.
+</li>
+              <li><strong>Disclaimer and Limitation of Liability</strong>
+ ⁠The Service is provided “as is” and “as available,” without warranty. CampusKart disclaims all liability for damages from use or inability to use the platform.
+</li>
+              <li><strong>Account Termination</strong>
+ ⁠CampusKart may suspend or terminate user accounts for breach of these Terms.
+</li>
+<li>
+  <strong>Changes to Terms</strong>
+ ⁠CampusKart reserves the right to update these Terms at any time. Users are encouraged to review them periodically.
+
+</li>
+            </ul>
+          </div>
+          <div class="modal-actions">
+            <button class="btn btn--primary" id="closeTermsModal">I Understand</button>
+          </div>
+        </div>
+      </div>
+      
+
+
       <button class="fab" id="fabButton">
         <span class="fab-icon">➕</span>
         <div class="fab-ripple"></div>
@@ -785,11 +829,11 @@
         #itemDetail .item-detail-grid { grid-template-columns: 1fr; justify-content: initial; }
         #itemDetail .item-detail-right { position: static; max-width: 100%; }
       }
-      #itemDetail .item-detail-image { width: 100%; height: min(60vh, 560px); min-height: 280px; object-fit: cover; border-radius: 14px; box-shadow: 0 20px 40px rgba(0,0,0,.35); display: none; }
+      #itemDetail .item-detail-image { width: 100%; height: min(60vh, 560px); min-height: 280px; object-fit: contain;background-color: rgba(0, 0, 0, 0.2); border-radius: 14px; box-shadow: 0 20px 40px rgba(0,0,0,.35); display: none; }
       #itemDetail .item-detail-emoji { font-size: 120px; display: flex; align-items: center; justify-content: center; height: min(50vh, 420px); border-radius: 14px; background: rgba(255,255,255,0.05); }
       #itemDetail .item-detail-right { display: grid; gap: 12px; align-content: start; position: sticky; top: 100px; justify-self: end; width: 100%; max-width: 420px; }
-      #itemDetail .detail-label { display: block; opacity: 0.85; font-weight: 600; color: var(--color-gray-300); margin-bottom: 4px; }
-      #itemDetail .detail-value { color: var(--color-gray-200); font-size: 16px; }
+      #itemDetail .detail-label { display: block; opacity: 0.85; font-weight: 600; color: var(--color-text-secondary); margin-bottom: 4px; }
+      #itemDetail .detail-value { color: var(--color-text); font-size: 16px; }
       #itemDetail .detail-price { font-size: 24px; font-weight: 800; color: var(--neon-green); }
       #itemDetail .detail-actions { margin-top: 12px; display: flex; gap: 8px; }
 
@@ -802,7 +846,7 @@
           #itemDetail .detail-thumbnail-img {
             width: 64px;
             height: 64px;
-            object-fit: cover;
+            object-fit: contain;background-color: rgba(0, 0, 0, 0.2);
             border-radius: 8px;
             cursor: pointer;
             border: 2px solid var(--glass-border);
@@ -818,6 +862,15 @@
             border-color: var(--neon-cyan);
             box-shadow: 0 0 8px var(--neon-cyan);
           }
+
+          .btn--danger {
+            color: #FF5459;
+            border-color: #FF5459;
+          }
+          .btn--danger:hover {
+            background: rgba(255, 84, 89, 0.1);
+          }
+
     </style>
 
   <!-- Append a version query to bust long-lived CDN/browser caches after deploy -->
@@ -923,41 +976,8 @@
       }
     </script>
     
-    <script>
-      // Handle logout functionality
-      async function handleLogout(event) {
-        event.preventDefault();
-        
-        if (window.userSession) {
-          await window.userSession.logout();
-        } else {
-          console.log('🚺 Logging out...');
-          window.location.href = 'auth.html';
-        }
-      }
-      
-      // Handle profile completion
-      function completeProfile() {
-        if (window.userSession) {
-          window.userSession.switchToProfile();
-        }
-      }
-      
-      // Initialize authentication-dependent features
-      document.addEventListener('DOMContentLoaded', () => {
-        // Hide loading screen after a delay
-        setTimeout(() => {
-          const loadingScreen = document.getElementById('loadingScreen');
-          if (loadingScreen) {
-            loadingScreen.classList.add('hidden');
-          }
-          
-          const mainApp = document.getElementById('mainApp');
-          if (mainApp) {
-            mainApp.classList.remove('hidden');
-          }
-        }, 2000);
-      });
-    </script>
+
+
+    <script src="theme.js" defer></script>
   </body>
 </html>

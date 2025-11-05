@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Connectivity Diagnostic</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .diagnostic-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .diagnostic-card {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid #e1e5f2;
+        }
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+        .status-loading { background: #fff3cd; color: #856404; }
+        .status-success { background: #d4edda; color: #155724; }
+        .status-error { background: #f8d7da; color: #721c24; }
+        .status-warning { background: #fff3cd; color: #856404; }
+        
+        .test-btn {
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+        }
+        .test-btn:hover { background: #4338ca; }
+        .test-btn:disabled { background: #9ca3af; cursor: not-allowed; }
+        
+        .log-container {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 20px;
+            border-radius: 15px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 20px 0;
+        }
+        .config-display {
+            background: #f3f4f6;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #6366f1;
+            margin: 15px 0;
+        }
+        .error-details {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+        .fix-suggestion {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 Firebase Connectivity Diagnostic</h1>
+            <p>Comprehensive testing for Firebase configuration and connectivity issues</p>
+        </div>
+        
+        <div class="diagnostic-grid">
+            <div class="diagnostic-card">
+                <h3>🔧 Configuration Status</h3>
+                <div id="configStatus" class="status-indicator status-loading">
+                    ⏳ Checking configuration...
+                </div>
+                <div id="configDetails"></div>
+                <button class="test-btn" onclick="checkConfiguration()">Recheck Config</button>
+            </div>
+            
+            <div class="diagnostic-card">
+                <h3>🌐 Network Connectivity</h3>
+                <div id="networkStatus" class="status-indicator status-loading">
+                    ⏳ Testing network...
+                </div>
+                <div id="networkDetails"></div>
+                <button class="test-btn" onclick="testNetworkConnectivity()">Test Network</button>
+            </div>
+            
+            <div class="diagnostic-card">
+                <h3>🔥 Firebase Initialization</h3>
+                <div id="firebaseStatus" class="status-indicator status-loading">
+                    ⏳ Initializing Firebase...
+                </div>
+                <div id="firebaseDetails"></div>
+                <button class="test-btn" onclick="testFirebaseInit()">Test Firebase</button>
+            </div>
+            
+            <div class="diagnostic-card">
+                <h3>🏪 Firestore Connection</h3>
+                <div id="firestoreStatus" class="status-indicator status-loading">
+                    ⏳ Testing Firestore...
+                </div>
+                <div id="firestoreDetails"></div>
+                <button class="test-btn" onclick="testFirestoreConnection()">Test Firestore</button>
+            </div>
+            
+            <div class="diagnostic-card">
+                <h3>🔐 Authentication Test</h3>
+                <div id="authStatus" class="status-indicator status-loading">
+                    ⏳ Testing authentication...
+                </div>
+                <div id="authDetails"></div>
+                <button class="test-btn" onclick="testAuthentication()">Test Auth</button>
+            </div>
+            
+            <div class="diagnostic-card">
+                <h3>📡 Offline/Online Detection</h3>
+                <div id="offlineStatus" class="status-indicator status-loading">
+                    ⏳ Checking connectivity...
+                </div>
+                <div id="offlineDetails"></div>
+                <button class="test-btn" onclick="testOfflineDetection()">Test Offline</button>
+            </div>
+        </div>
+        
+        <div class="log-container" id="logContainer">
+            <div id="logs">📋 Diagnostic Log:<br>Starting comprehensive Firebase diagnostic...<br></div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px;">
+            <button class="test-btn" onclick="runAllTests()" style="background: #059669; font-size: 16px; padding: 15px 30px;">
+                🚀 Run All Tests
+            </button>
+            <button class="test-btn" onclick="clearLogs()" style="background: #dc2626;">
+                🗑️ Clear Logs
+            </button>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+        import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+        import { getFirestore, doc, getDoc, enableNetwork, disableNetwork } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+        // Global variables for testing
+        window.firebaseApp = null;
+        window.firebaseAuth = null;
+        window.firebaseDb = null;
+        window.firebaseModules = { doc, getDoc, enableNetwork, disableNetwork, onAuthStateChanged };
+        
+        // Logging function
+        window.addLog = function(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEl = document.getElementById('logs');
+            const colors = {
+                info: '#60a5fa',
+                success: '#34d399',
+                error: '#f87171',
+                warning: '#fbbf24'
+            };
+            logEl.innerHTML += `<span style="color: ${colors[type]}">[${timestamp}] ${message}</span><br>`;
+            logEl.scrollTop = logEl.scrollHeight;
+        };
+
+        // Status update function
+        window.updateStatus = function(elementId, status, message) {
+            const el = document.getElementById(elementId);
+            const classes = {
+                loading: 'status-loading',
+                success: 'status-success',
+                error: 'status-error',
+                warning: 'status-warning'
+            };
+            
+            el.className = `status-indicator ${classes[status]}`;
+            const icons = {
+                loading: '⏳',
+                success: '✅',
+                error: '❌',
+                warning: '⚠️'
+            };
+            el.innerHTML = `${icons[status]} ${message}`;
+        };
+
+        // Configuration check
+        window.checkConfiguration = function() {
+            addLog('Checking Firebase configuration...', 'info');
+            updateStatus('configStatus', 'loading', 'Checking configuration...');
+            
+            // Default/placeholder config that needs to be replaced
+            const placeholderValues = [
+                'your-api-key-here',
+                'your-project-id',
+                'your-sender-id',
+                'your-app-id',
+                'your-measurement-id'
+            ];
+            
+            // Try to detect configuration from various sources
+            let firebaseConfig = null;
+            let configSource = 'unknown';
+            
+            // Check if config is embedded in the page or available globally
+            if (window.firebaseConfig) {
+                firebaseConfig = window.firebaseConfig;
+                configSource = 'window.firebaseConfig';
+            } else {
+                // Use a sample config for testing (replace with actual values)
+                firebaseConfig = {
+                    apiKey: "your-api-key-here",
+                    authDomain: "your-project-id.firebaseapp.com",
+                    projectId: "your-project-id",
+                    storageBucket: "your-project-id.appspot.com",
+                    messagingSenderId: "your-sender-id",
+                    appId: "your-app-id",
+                    measurementId: "your-measurement-id"
+                };
+                configSource = 'default/placeholder';
+            }
+            
+            // Check if configuration has placeholder values
+            const hasPlaceholders = placeholderValues.some(placeholder => 
+                Object.values(firebaseConfig).includes(placeholder)
+            );
+            
+            const configEl = document.getElementById('configDetails');
+            
+            if (hasPlaceholders) {
+                updateStatus('configStatus', 'error', 'Invalid configuration detected');
+                addLog('❌ Configuration contains placeholder values', 'error');
+                configEl.innerHTML = `
+                    <div class="error-details">
+                        <strong>Configuration Issues:</strong><br>
+                        • Contains placeholder values like "your-api-key-here"<br>
+                        • Source: ${configSource}<br>
+                        • This will cause authentication and Firestore failures
+                    </div>
+                    <div class="fix-suggestion">
+                        <strong>🔧 How to Fix:</strong><br>
+                        1. Go to Firebase Console → Project Settings<br>
+                        2. Copy your actual configuration values<br>
+                        3. Update backend/firebase-config.js with real values<br>
+                        4. Ensure the config is properly imported in your HTML
+                    </div>
+                `;
+            } else {
+                updateStatus('configStatus', 'success', 'Configuration looks valid');
+                addLog('✅ Configuration appears to be valid', 'success');
+                configEl.innerHTML = `
+                    <div class="config-display">
+                        <strong>Configuration Source:</strong> ${configSource}<br>
+                        <strong>Project ID:</strong> ${firebaseConfig.projectId}<br>
+                        <strong>Auth Domain:</strong> ${firebaseConfig.authDomain}
+                    </div>
+                `;
+            }
+            
+            return { firebaseConfig, hasPlaceholders };
+        };
+
+        // Network connectivity test
+        window.testNetworkConnectivity = function() {
+            addLog('Testing network connectivity...', 'info');
+            updateStatus('networkStatus', 'loading', 'Testing network...');
+            
+            const testUrls = [
+                'https://www.google.com/favicon.ico',
+                'https://firebase.googleapis.com',
+                'https://firestore.googleapis.com'
+            ];
+            
+            Promise.all(
+                testUrls.map(url => 
+                    fetch(url, { method: 'HEAD', mode: 'no-cors' })
+                    .then(() => ({ url, success: true }))
+                    .catch(error => ({ url, success: false, error: error.message }))
+                )
+            ).then(results => {
+                const failedTests = results.filter(r => !r.success);
+                const networkEl = document.getElementById('networkDetails');
+                
+                if (failedTests.length === 0) {
+                    updateStatus('networkStatus', 'success', 'Network connectivity OK');
+                    addLog('✅ Network connectivity test passed', 'success');
+                    networkEl.innerHTML = `
+                        <div class="config-display">
+                            <strong>Status:</strong> All network tests passed<br>
+                            <strong>Online:</strong> ${navigator.onLine ? 'Yes' : 'No'}
+                        </div>
+                    `;
+                } else {
+                    updateStatus('networkStatus', 'warning', 'Some network issues detected');
+                    addLog('⚠️ Some network connectivity issues found', 'warning');
+                    networkEl.innerHTML = `
+                        <div class="error-details">
+                            <strong>Network Issues:</strong><br>
+                            ${failedTests.map(t => `• ${t.url}: ${t.error}`).join('<br>')}
+                        </div>
+                    `;
+                }
+            });
+        };
+
+        // Firebase initialization test
+        window.testFirebaseInit = function() {
+            addLog('Testing Firebase initialization...', 'info');
+            updateStatus('firebaseStatus', 'loading', 'Initializing Firebase...');
+            
+            const { firebaseConfig, hasPlaceholders } = checkConfiguration();
+            
+            if (hasPlaceholders) {
+                updateStatus('firebaseStatus', 'error', 'Cannot initialize - invalid config');
+                addLog('❌ Firebase initialization failed due to invalid config', 'error');
+                document.getElementById('firebaseDetails').innerHTML = `
+                    <div class="error-details">
+                        <strong>Cannot initialize Firebase:</strong><br>
+                        Configuration contains placeholder values. Please update your Firebase config first.
+                    </div>
+                `;
+                return;
+            }
+            
+            try {
+                window.firebaseApp = initializeApp(firebaseConfig);
+                window.firebaseAuth = getAuth(window.firebaseApp);
+                window.firebaseDb = getFirestore(window.firebaseApp);
+                
+                updateStatus('firebaseStatus', 'success', 'Firebase initialized successfully');
+                addLog('✅ Firebase initialized successfully', 'success');
+                
+                document.getElementById('firebaseDetails').innerHTML = `
+                    <div class="config-display">
+                        <strong>Status:</strong> Initialized<br>
+                        <strong>App Name:</strong> ${window.firebaseApp.name}<br>
+                        <strong>Project ID:</strong> ${firebaseConfig.projectId}
+                    </div>
+                `;
+                
+                // Enable other tests
+                ['testFirestoreConnection', 'testAuthentication'].forEach(testName => {
+                    const button = document.querySelector(`[onclick="${testName}()"]`);
+                    if (button) button.disabled = false;
+                });
+                
+            } catch (error) {
+                updateStatus('firebaseStatus', 'error', 'Firebase initialization failed');
+                addLog(`❌ Firebase initialization error: ${error.message}`, 'error');
+                
+                document.getElementById('firebaseDetails').innerHTML = `
+                    <div class="error-details">
+                        <strong>Initialization Error:</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        };
+
+        // Firestore connection test
+        window.testFirestoreConnection = function() {
+            if (!window.firebaseDb) {
+                updateStatus('firestoreStatus', 'error', 'Firebase not initialized');
+                return;
+            }
+            
+            addLog('Testing Firestore connection...', 'info');
+            updateStatus('firestoreStatus', 'loading', 'Testing Firestore...');
+            
+            // Test basic Firestore connection
+            const testDoc = doc(window.firebaseDb, 'test', 'connectivity');
+            
+            getDoc(testDoc)
+                .then(() => {
+                    updateStatus('firestoreStatus', 'success', 'Firestore connection OK');
+                    addLog('✅ Firestore connection test passed', 'success');
+                    
+                    document.getElementById('firestoreDetails').innerHTML = `
+                        <div class="config-display">
+                            <strong>Status:</strong> Connected<br>
+                            <strong>Database:</strong> ${window.firebaseDb.app.options.projectId}<br>
+                            <strong>Test:</strong> Basic document read successful
+                        </div>
+                    `;
+                })
+                .catch(error => {
+                    updateStatus('firestoreStatus', 'error', 'Firestore connection failed');
+                    addLog(`❌ Firestore error: ${error.message}`, 'error');
+                    
+                    const firestoreEl = document.getElementById('firestoreDetails');
+                    
+                    if (error.code === 'unavailable' || error.message.includes('offline')) {
+                        firestoreEl.innerHTML = `
+                            <div class="error-details">
+                                <strong>Offline Error:</strong><br>
+                                ${error.message}
+                            </div>
+                            <div class="fix-suggestion">
+                                <strong>🔧 Possible Solutions:</strong><br>
+                                1. Check your internet connection<br>
+                                2. Disable browser extensions that might block requests<br>
+                                3. Check if you're behind a firewall<br>
+                                4. Try enabling offline persistence<br>
+                                5. Verify Firebase project is active in console
+                            </div>
+                        `;
+                    } else {
+                        firestoreEl.innerHTML = `
+                            <div class="error-details">
+                                <strong>Firestore Error:</strong><br>
+                                Code: ${error.code}<br>
+                                Message: ${error.message}
+                            </div>
+                        `;
+                    }
+                });
+        };
+
+        // Authentication test
+        window.testAuthentication = function() {
+            if (!window.firebaseAuth) {
+                updateStatus('authStatus', 'error', 'Firebase not initialized');
+                return;
+            }
+            
+            addLog('Testing authentication state...', 'info');
+            updateStatus('authStatus', 'loading', 'Testing authentication...');
+            
+            onAuthStateChanged(window.firebaseAuth, (user) => {
+                if (user) {
+                    updateStatus('authStatus', 'success', 'User authenticated');
+                    addLog(`✅ User authenticated: ${user.email}`, 'success');
+                    
+                    document.getElementById('authDetails').innerHTML = `
+                        <div class="config-display">
+                            <strong>Status:</strong> Authenticated<br>
+                            <strong>User:</strong> ${user.email}<br>
+                            <strong>UID:</strong> ${user.uid}
+                        </div>
+                    `;
+                } else {
+                    updateStatus('authStatus', 'warning', 'No user authenticated');
+                    addLog('⚠️ No user currently authenticated', 'warning');
+                    
+                    document.getElementById('authDetails').innerHTML = `
+                        <div class="config-display">
+                            <strong>Status:</strong> Not authenticated<br>
+                            <strong>Note:</strong> This is normal if user hasn't signed in
+                        </div>
+                    `;
+                }
+            });
+        };
+
+        // Offline detection test
+        window.testOfflineDetection = function() {
+            addLog('Testing offline/online detection...', 'info');
+            updateStatus('offlineStatus', 'loading', 'Checking connectivity...');
+            
+            const isOnline = navigator.onLine;
+            const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            
+            if (isOnline) {
+                updateStatus('offlineStatus', 'success', 'Browser reports online');
+                addLog('✅ Browser connectivity status: Online', 'success');
+            } else {
+                updateStatus('offlineStatus', 'error', 'Browser reports offline');
+                addLog('❌ Browser connectivity status: Offline', 'error');
+            }
+            
+            const offlineEl = document.getElementById('offlineDetails');
+            offlineEl.innerHTML = `
+                <div class="config-display">
+                    <strong>Navigator.onLine:</strong> ${isOnline ? 'Yes' : 'No'}<br>
+                    <strong>Connection Type:</strong> ${connection ? connection.effectiveType : 'Unknown'}<br>
+                    <strong>Downlink:</strong> ${connection ? connection.downlink + ' Mbps' : 'Unknown'}
+                </div>
+            `;
+            
+            // Add online/offline event listeners
+            window.addEventListener('online', () => {
+                addLog('🌐 Browser detected network connection restored', 'success');
+            });
+            
+            window.addEventListener('offline', () => {
+                addLog('📵 Browser detected network connection lost', 'warning');
+            });
+        };
+
+        // Run all tests
+        window.runAllTests = function() {
+            addLog('🚀 Running comprehensive diagnostic suite...', 'info');
+            
+            setTimeout(() => checkConfiguration(), 100);
+            setTimeout(() => testNetworkConnectivity(), 500);
+            setTimeout(() => testFirebaseInit(), 1000);
+            setTimeout(() => testFirestoreConnection(), 2000);
+            setTimeout(() => testAuthentication(), 2500);
+            setTimeout(() => testOfflineDetection(), 3000);
+        };
+
+        // Clear logs
+        window.clearLogs = function() {
+            document.getElementById('logs').innerHTML = '📋 Diagnostic Log:<br>';
+        };
+
+        // Auto-run tests on load
+        window.addEventListener('load', () => {
+            addLog('🔧 Firebase Diagnostic Tool loaded', 'info');
+            setTimeout(() => runAllTests(), 1000);
+        });
+    </script>
+</body>
+</html>
