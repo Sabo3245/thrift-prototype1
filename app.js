@@ -481,7 +481,7 @@ class LoadingScreen {
 // We no longer hide the loading screen here.
     // user-session.js will handle that.
     // We just initialize the app.
-    window.app.init();
+    //window.app.init();
   }
 }
 
@@ -1880,22 +1880,6 @@ async markItemAsSold() {
     if (!user) {
       utils.showNotification('Please sign in to send messages', 'error');
       return;
-    }
-
-    const chatMessages = document.getElementById('chatMessages');
-    // Optimistic UI: append the message immediately
-    if (chatMessages) {
-      const welcome = chatMessages.querySelector('.welcome-message');
-      if (welcome) welcome.remove();
-      const el = document.createElement('div');
-      el.className = 'message sent';
-      const now = new Date();
-      el.innerHTML = `
-        <div class="message-text">${text}</div>
-        <div class="message-time">${now.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}</div>
-      `;
-      chatMessages.appendChild(el);
-      chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
     // --- START MODIFICATION ---

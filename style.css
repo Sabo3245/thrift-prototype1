@@ -1712,6 +1712,17 @@ body {
     flex: 1;
     min-width: 0;
   }
+  /* Inside your @media (max-width: 768px) block in style.css */
+
+.filter-select {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+
+  /* This ensures the text doesn't flow under the dropdown arrow */
+  /* We're just re-stating the padding you already have */
+  padding-right: var(--space-32);
+}
   .items-grid {
     grid-template-columns: 1fr;
     gap: 12px;
@@ -2657,4 +2668,33 @@ body {
    opacity: 0.5;
    background: var(--color-secondary);
    cursor: not-allowed;
+}
+.chat-messages::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+  background: transparent; /* No visible track */
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+  background-color: var(--color-border);
+  border-radius: var(--radius-full);
+  /* This is the key fix: 
+    The border color matches the chat-messages background (--color-secondary)
+    instead of the main page background (--color-surface).
+  */
+  border: 2px solid var(--color-secondary);
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-text-secondary);
+}
+
+/* --- And add .chat-messages to the Firefox rule --- */
+.conversation-list,
+#transactionList,
+.chat-messages {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent; /* thumb color, track color */
 }
