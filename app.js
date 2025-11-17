@@ -692,90 +692,57 @@ class Marketplace {
     });
   }
 
-  createItemCard(item, index) {
-    const card = document.createElement("div");
-    card.className = `item-card glass-card${item.isBoosted ? " boosted" : ""}`;
-    card.style.animationDelay = `${index * 0.1}s`;
+// Inside Marketplace class
+createItemCard(item, index) {
+  const card = document.createElement("div");
+  card.className = `item-card glass-card${item.isBoosted ? " boosted" : ""}`;
+  card.style.animationDelay = `${index * 0.1}s`;
 
-    
-    const isUserItem =
-      !!item.sellerId &&
-      item.sellerId === window.userSession?.getCurrentUser?.()?.uid;
-    const isHearted = AppState.userProfile.heartedPosts.includes(item.id);
-    const primaryImage =
-      Array.isArray(item.images) && item.images.length > 0
-        ? item.images[0]
-        : null;
+  const isHearted = AppState.userProfile.heartedPosts.includes(item.id);
+  const primaryImage =
+    Array.isArray(item.images) && item.images.length > 0
+      ? item.images[0]
+      : null;
 
-    card.innerHTML = `
-      <div class="item-image">
-          ${
-            primaryImage
-              ? `<img src="${primaryImage}" alt="${item.title}" class="item-img" style="width:100%;height:160px;object-fit: contain;border-radius:12px;"/>`
-              : `<span class="item-emoji">${item.icon || "📦"}</span>`
-          }
-          <button class="heart-btn ${isHearted ? "hearted" : ""}" data-id="${
-      item.id
-    }" title="Heart this item">${isHearted ? "❤️" : "🤍"}</button>
+  card.innerHTML = `
+    <div class="item-image">
+        ${
+          primaryImage
+            ? `<img src="${primaryImage}" alt="${item.title}" class="item-img" style="width:100%;height:160px;object-fit: contain;border-radius:12px;"loading="lazy"/>`
+            : `<span class="item-emoji">${item.icon || "📦"}</span>`
+        }
+        <button class="heart-btn ${isHearted ? "hearted" : ""}" data-id="${
+    item.id
+  }" title="Heart this item">${isHearted ? "❤️" : "🤍"}</button>
+    </div>
+
+    <div class="item-card-content">
+      <h3 class="item-title">${item.title}</h3>
+      <div class="item-prices">
+        <div class="item-price">${utils.formatPrice(item.price)}</div>
       </div>
+    </div>
+    `;
 
-      <div class="item-card-content">
-        <h3 class="item-title">${item.title}</h3>
-        <div class="item-prices">
-    <div class="item-price">${utils.formatPrice(item.price)}</div>
-</div>
-        <div class="item-details">
-    <span class="item-tag">${item.category}</span>
-    ${
-      (item.category === 'Food' && item.quantity > 0)
-        ? `<span class="item-tag">Qty: ${item.quantity}</span>`
-        : `<span class="item-tag">${item.condition}</span>`
-    }
-    <span class="item-tag">${item.hostel}</span>
-</div>
-        <div class="item-seller-info">
-            <span class="seller-label">Sold by:</span>
-            <span class="seller-name" data-seller-name="${item.sellerName || "Anonymous"}">${item.sellerName || "Anonymous"}</span>
-        </div>
-        <div class="item-actions">
-            <button class="btn btn--primary btn--sm contact-btn" data-id="${
-              item.id
-            }">Contact Seller</button>
-            ${
-              isUserItem
-                ? `
-                <button class="boost-btn" data-id="${item.id}" title="Boost post">🚀</button>
-                <button class="remove-btn" data-id="${item.id}" title="Remove post">🗑️</button>`
-                : ""
-            }
-        </div>
-      </div>
-      `;
+  card.addEventListener("click", (e) => this.handleCardClick(e, item.id));
+  return card;
+}
 
-    card.addEventListener("click", (e) => this.handleCardClick(e, item.id));
-    return card;
+  // Inside Marketplace class
+handleCardClick(e, itemId) {
+  const target = e.target;
+  if (target.closest(".heart-btn")) {
+    this.toggleHeart(itemId, target.closest(".heart-btn"));
+  } else {
+    // Open detail section for general card clicks
+    const newUrl = `${window.location.pathname}?item=${itemId}`;
+    // Update the browser history and URL bar
+    window.history.pushState({ itemId: itemId }, `Item ${itemId}`, newUrl);
+
+    // Now, open the detail section
+    window.itemDetail?.showById?.(itemId);
   }
-
-  handleCardClick(e, itemId) {
-    const target = e.target;
-    if (target.closest(".contact-btn")) {
-      this.contactSeller(itemId);
-    } else if (target.closest(".heart-btn")) {
-      this.toggleHeart(itemId, target.closest(".heart-btn"));
-    } else if (target.closest(".boost-btn")) {
-      this.showBoostModal(itemId);
-    } else if (target.closest(".remove-btn")) {
-      this.showRemoveModal(itemId);
-    } else {
-      // Open detail section for general card clicks
-      const newUrl = `${window.location.pathname}?item=${itemId}`;
-      // Update the browser history and URL bar
-      window.history.pushState({ itemId: itemId }, `Item ${itemId}`, newUrl);
-      
-      // Now, open the detail section
-      window.itemDetail?.showById?.(itemId);
-    }
-  }
+}
 
   async contactSeller(itemId) {
     const currentUser = window.userSession?.getCurrentUser?.() || window.firebaseAuth?.currentUser || null;
@@ -2536,6 +2503,13 @@ showById(itemId) {
     const descEl = document.getElementById('detailDescription');
     const quantWrapperEl = document.getElementById('detailQuantity-wrapper');
     const quantEl = document.getElementById('detailQuantity');
+    const boostBtn = document.getElementById('detailBoostBtn');
+  const removeBtn = document.getElementById('detailRemoveBtn');
+
+  const currentUser = window.userSession?.getCurrentUser?.() || window.firebaseAuth?.currentUser || null;
+  const currentUid = currentUser ? currentUser.uid : null;
+
+  const isSeller = (currentUid && item.sellerId === currentUid);
     
     // --- Image Gallery Elements ---
     const mainImgEl = document.getElementById('detailMainImage');
@@ -2558,6 +2532,13 @@ if (item.category === 'Food' && item.quantity > 0) {
   if (quantWrapperEl) quantWrapperEl.classList.add('hidden');
   if (statusEl) statusEl.textContent = item.condition || ''; // Show condition
 }
+if (isSeller) {
+    boostBtn.classList.remove('hidden');
+    removeBtn.classList.remove('hidden');
+  } else {
+    boostBtn.classList.add('hidden');
+    removeBtn.classList.add('hidden');
+  }
 
     // --- Image Gallery Logic ---
     const allImages = Array.isArray(item.images) && item.images.length > 0 ? item.images : [];
@@ -2627,6 +2608,27 @@ class Notifications {
         window.app.navigateToSection("profile");
       });
     }
+    const boostBtn = document.getElementById('detailBoostBtn');
+  if (boostBtn) {
+    boostBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (this.currentItemId != null) {
+        // Call the Marketplace's modal function
+        window.marketplace?.showBoostModal?.(this.currentItemId);
+      }
+    });
+  }
+
+  const removeBtn = document.getElementById('detailRemoveBtn');
+  if (removeBtn) {
+    removeBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (this.currentItemId != null) {
+        // Call the Marketplace's modal function
+        window.marketplace?.showRemoveModal?.(this.currentItemId);
+      }
+    });
+  }
   }
 
 async loadNotifications() {

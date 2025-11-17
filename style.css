@@ -584,12 +584,21 @@ textarea.animated-input {
   flex: 1;
   min-width: 150px;
 }
-.items-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: var(--space-24);
-  margin-bottom: var(--space-32);
-}
+
+
+  /* Add these NEW rules inside the (max-width: 768px) media query */
+  .item-image {
+    height: 140px; /* Make image shorter for the smaller card */
+  }
+
+  .item-title {
+    font-size: 0.9rem; /* Make title smaller */
+    white-space: normal; /* Allow title to wrap (optional, but good) */
+  }
+
+  .item-price {
+    font-size: 1rem; /* Make price smaller */
+  }
 .item-card {
   padding: 0;
   transition: all 0.3s ease;
@@ -777,8 +786,10 @@ textarea.animated-input {
   color: var(--color-price);
 }
 .detail-actions {
+  /* ... (existing rules) ... */
   display: flex;
-  gap: var(--space-8);
+  gap: 8px;
+  flex-wrap: wrap; /* ADD THIS LINE */
 }
 .btn--danger {
   color: var(--color-red-500);
@@ -1660,184 +1671,10 @@ body.modal-open {
 /* === 7. MOBILE RESPONSIVE STYLES === */
 /* =================================== */
 
-@media (max-width: 768px) {
-  /* --- Base & Nav --- */
-body {
-    padding-top: 130px; /* Increased padding for the taller 2-line mobile nav */
-  }
-  .nav-container {
-    height: auto;
-    flex-wrap: wrap;
-    padding: var(--space-12);
-    gap: var(--space-12);
-    justify-content: center;
-  }
-  .nav-brand {
-    flex-basis: 100%;
-    justify-content: center;
-  }
-  .nav-brand .brand-text {
-    display: block; /* Show text on mobile */
-  }
-  .nav-tabs {
-    width: 100%;
-    justify-content: space-around;
-  }
-  .nav-tab span:not(.nav-icon) {
-    display: none; /* Hide text, show icon */
-  }
-  .nav-tab {
-    padding: 10px;
-  }
-  .nav-indicator {
-    bottom: -10px; /* Adjust for gap */
-  }
-  .page-title {
-    font-size: 1.8rem;
-  }
-  .fab {
-    width: 50px;
-    height: 50px;
-    bottom: 20px;
-    right: 20px;
-    display:none !important;
-  }
 
-  /* --- Marketplace --- */
-  .filters-container {
-    flex-direction: row;
-    gap: 8px;
-  }
-  .filter-group {
-    flex: 1;
-    min-width: 0;
-  }
-  /* Inside your @media (max-width: 768px) block in style.css */
-
-.filter-select {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-
-  /* This ensures the text doesn't flow under the dropdown arrow */
-  /* We're just re-stating the padding you already have */
-  padding-right: var(--space-32);
-}
-  .items-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-  .item-detail-grid {
-    grid-template-columns: 1fr;
-  }
-  .item-detail-right {
-    position: static;
-  }
-  .item-detail-image {
-    height: 300px;
-  }
-
-  /* --- Post Item Form --- */
-  .form-row {
-    flex-direction: column;
-    gap: 0;
-  }
-  .uploaded-images {
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  }
-
-/* --- Chat Page (Mobile Master-Detail) --- */
-
-  /* Fix for mobile chat experience */
-.chat-input {
-  font-size: 16px; /* Prevents auto-zoom on tap */
-}
-
-.chat-window {
-  /* Adds a "safe area" at the bottom */
-  padding-bottom: 60px; 
-}
-  
-  /* Hide the "Messages" header on mobile */
-  #chat .section-header {
-    display: none;
-  }
-  
-  .chat-container {
-    display: block;
-    overflow: hidden; /* Keeps the slide effect */
-    
-    /* --- NEW STYLES --- */
-    /* Fix the container to the viewport */
-    position: fixed; 
-    top: 130px; /* Start it right below your nav bar */
-    bottom: 0; /* Fill the rest of the screen */
-    left: 0;
-    right: 0;
-  }
-  .chat-sidebar {
-    height: 100%;
-    overflow-y: auto;
-    width: 100%;
-    position: absolute;
-    top: 0;
-    left: 0;
-    transition: transform 0.3s ease-in-out;
-    transform: translateX(0);
-    opacity: 1;
-    animation: none;
-    border: none; /* Remove card border */
-  }
-  .chat-window {
-    height: 100%;
-    width: 100%;
-    position: absolute;
-    top: 0;
-    left: 0;
-    display: flex;
-    flex-direction: column;
-    transition: transform 0.3s ease-in-out;
-    transform: translateX(100%);
-    opacity: 1;
-    animation: none;
-    border: none; /* Remove card border */
-  }
-  .chat-container.chat-active .chat-sidebar {
-    transform: translateX(-100%);
-  }
-  .chat-container.chat-active .chat-window {
-    transform: translateX(0);
-  }
-  #chatBackButton {
-    display: inline-flex;
-  }
-  .chat-header {
-    padding: 12px;
-  }
-  .chat-avatar {
-    width: 40px;
-    height: 40px;
-    font-size: 1.2rem;
-  }
-
-  /* --- Profile Page --- */
-  .profile-grid {
-    grid-template-columns: 1fr;
-  }
-  .listings-grid,
-  .hearted-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-  }
-}
 
 /* --- Small Phones --- */
 @media (max-width: 420px) {
-  .items-grid,
-  .listings-grid,
-  .hearted-grid {
-    grid-template-columns: 1fr;
-  }
   .filters-container {
     grid-template-columns: 1fr;
     gap: 12px;
@@ -1906,11 +1743,16 @@ body {
 /* === 9. PROFESSIONAL ITEM CARDS === */
 /* =================================== */
 
-/* --- Card Grid & Sizing --- */
 
 .items-grid {
   /* This aligns all card content vertically */
   align-items: stretch;
+
+  /* --- ADD THIS --- */
+  display: grid;
+  /* We'll use your idea: smaller min-width for more cards */
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
 }
 
 .item-card {
@@ -1953,8 +1795,8 @@ body {
 .item-card-content {
   /* This is the magic! */
   flex: 1; /* Makes this section grow to fill all available space */
-  display: flex;
-  flex-direction: column;
+  display: flex; /* <-- ADD THIS LINE BACK */
+  flex-direction: column; /* <-- ADD THIS LINE BACK */
   padding: var(--space-16);
 }
 
@@ -2053,6 +1895,13 @@ body {
   background: rgba(var(--color-red-500-rgb), 0.1);
   border-color: var(--color-red-500);
   color: var(--color-red-500);
+}
+
+.item-details,
+.item-seller-info,
+.item-actions {
+  /* This hides the tags, seller info, and action buttons from the card */
+  display: none;
 }
 
 /* =================================== */
@@ -2697,4 +2546,177 @@ body {
 .chat-messages {
   scrollbar-width: thin;
   scrollbar-color: var(--color-border) transparent; /* thumb color, track color */
+}
+
+@media (max-width: 768px) {
+  /* --- Base & Nav --- */
+body {
+    padding-top: 130px; /* Increased padding for the taller 2-line mobile nav */
+  }
+  .nav-container {
+    height: auto;
+    flex-wrap: wrap;
+    padding: var(--space-12);
+    gap: var(--space-12);
+    justify-content: center;
+  }
+  .nav-brand {
+    flex-basis: 100%;
+    justify-content: center;
+  }
+  .nav-brand .brand-text {
+    display: block; /* Show text on mobile */
+  }
+  .nav-tabs {
+    width: 100%;
+    justify-content: space-around;
+  }
+  .nav-tab span:not(.nav-icon) {
+    display: none; /* Hide text, show icon */
+  }
+  .nav-tab {
+    padding: 10px;
+  }
+  .nav-indicator {
+    bottom: -10px; /* Adjust for gap */
+  }
+  .page-title {
+    font-size: 1.8rem;
+  }
+  .fab {
+    width: 50px;
+    height: 50px;
+    bottom: 20px;
+    right: 20px;
+    display:none !important;
+  }
+
+  /* --- Marketplace --- */
+  .filters-container {
+    flex-direction: row;
+    gap: 8px;
+  }
+  .filter-group {
+    flex: 1;
+    min-width: 0;
+  }
+  /* Inside your @media (max-width: 768px) block in style.css */
+
+.filter-select {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+
+  /* This ensures the text doesn't flow under the dropdown arrow */
+  /* We're just re-stating the padding you already have */
+  padding-right: var(--space-32);
+}
+.items-grid {
+    /* This rule now correctly overrides the desktop rule */
+    /* This locks the grid to 2 equal columns */
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .item-detail-grid {
+    grid-template-columns: 1fr;
+  }
+  .item-detail-right {
+    position: static;
+  }
+  .item-detail-image {
+    height: 300px;
+  }
+
+  /* --- Post Item Form --- */
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+  .uploaded-images {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
+
+/* --- Chat Page (Mobile Master-Detail) --- */
+
+  /* Fix for mobile chat experience */
+.chat-input {
+  font-size: 16px; /* Prevents auto-zoom on tap */
+}
+
+.chat-window {
+  /* Adds a "safe area" at the bottom */
+  padding-bottom: 60px; 
+}
+  
+  /* Hide the "Messages" header on mobile */
+  #chat .section-header {
+    display: none;
+  }
+  
+  .chat-container {
+    display: block;
+    overflow: hidden; /* Keeps the slide effect */
+    
+    /* --- NEW STYLES --- */
+    /* Fix the container to the viewport */
+    position: fixed; 
+    top: 130px; /* Start it right below your nav bar */
+    bottom: 0; /* Fill the rest of the screen */
+    left: 0;
+    right: 0;
+  }
+  .chat-sidebar {
+    height: 100%;
+    overflow-y: auto;
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    transition: transform 0.3s ease-in-out;
+    transform: translateX(0);
+    opacity: 1;
+    animation: none;
+    border: none; /* Remove card border */
+  }
+  .chat-window {
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease-in-out;
+    transform: translateX(100%);
+    opacity: 1;
+    animation: none;
+    border: none; /* Remove card border */
+  }
+  .chat-container.chat-active .chat-sidebar {
+    transform: translateX(-100%);
+  }
+  .chat-container.chat-active .chat-window {
+    transform: translateX(0);
+  }
+  #chatBackButton {
+    display: inline-flex;
+  }
+  .chat-header {
+    padding: 12px;
+  }
+  .chat-avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+  }
+
+  /* --- Profile Page --- */
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
+  .listings-grid,
+  .hearted-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
 }
