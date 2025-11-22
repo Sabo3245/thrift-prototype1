@@ -445,6 +445,12 @@ class UserSessionManager {
       }
     }
 
+    const profileHostelEl = document.getElementById("profileHostel");
+    if (profileHostelEl && this.userData) {
+      const hostelText = this.userData.hostel ? `Hostel: ${this.userData.hostel}` : "Hostel: Not set";
+      profileHostelEl.textContent = hostelText;
+    }
+
     // Update user stats
     const userPointsEl = document.getElementById("userPoints");
     if (userPointsEl && this.userData) {
@@ -504,6 +510,8 @@ class UserSessionManager {
     }
   }
 
+// Inside UserSessionManager class in user-session.js
+
   updateNavigation() {
     // Add user indicator to navigation
     const navBrand = document.querySelector(".nav-brand");
@@ -515,19 +523,56 @@ class UserSessionManager {
         navBrand.appendChild(userIndicator);
       }
 
+      // --- CHANGED: Added an ID to the points span and made it look clickable ---
       userIndicator.innerHTML = `
         <span class="user-welcome">Welcome, ${
           this.userData.firstName || "User"
         }!</span>
-        <span class="user-points">🟡 ${this.userData.points || 0} CampusKoins</span>
+        <button id="navPointsBtn" class="user-points" style="background:none; border:none; cursor:pointer; font:inherit; padding:0;">
+          <span style="
+            background: var(--color-secondary); 
+            padding: 4px 12px; 
+            border-radius: 999px; 
+            border: 1px solid var(--color-border); 
+            color: var(--color-primary); 
+            font-weight: 500; 
+            font-size: var(--font-size-sm);
+            transition: all 0.2s ease;
+          ">
+            🟡 ${this.userData.points || 0} CampusKoins
+          </span>
+        </button>
       `;
+      
+      // --- NEW: Add Event Listener ---
+      const pointsBtn = document.getElementById('navPointsBtn');
+      if (pointsBtn) {
+        pointsBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          // Navigate to our new section
+          window.app.navigateToSection('campusKoins');
+        });
+        
+        // Add simple hover effect
+        pointsBtn.addEventListener('mouseenter', () => {
+          pointsBtn.querySelector('span').style.borderColor = 'var(--color-primary)';
+          pointsBtn.querySelector('span').style.background = 'var(--color-surface)';
+        });
+        pointsBtn.addEventListener('mouseleave', () => {
+          pointsBtn.querySelector('span').style.borderColor = 'var(--color-border)';
+          pointsBtn.querySelector('span').style.background = 'var(--color-secondary)';
+        });
+      }
     }
   }
 
+
+
   updatePersonalizedContent() {
-    // Show welcome message
+    // Show welcome message (This is for the status bar "Online" text)
     this.showWelcomeMessage();
 
+    /* --- DELETE OR COMMENT OUT THIS ENTIRE BLOCK ---
     // Update page titles with user's name
     const pageTitles = document.querySelectorAll(".page-title");
     pageTitles.forEach((title) => {
@@ -538,6 +583,7 @@ class UserSessionManager {
         title.textContent = `Welcome back, ${this.userData.firstName}! ${originalText}`;
       }
     });
+    --- END OF DELETED BLOCK --- */
 
     // Load user's listings
     this.loadUserListings();
@@ -817,77 +863,72 @@ showAuthRedirectMessage() {
     return this.userData;
   }
 
-  async updateUserData(updates) {
+async updateUserData(updates) {
     if (!this.currentUser) return;
 
     try {
+      // 1. Update Firestore
       await this.modules.updateDoc(
         this.modules.doc(this.db, "users", this.currentUser.uid),
         updates
       );
 
-      // Update local data
+      // 2. Update local data
       this.userData = { ...this.userData, ...updates };
       this.cacheUserData(this.userData);
-      this.cacheUserData(this.userData);
-      await this.updateItemsWithNewName(this.userData.firstName, this.userData.lastName);
-      await this.updateItemsWithNewSellerName(this.userData.firstName, this.userData.lastName);
+
+      // --- FIX: Only update items if the NAME actually changed ---
+      if (updates.firstName || updates.lastName) {
+         console.log("📝 Name changed, updating listing names...");
+         await this.updateItemsWithNewSellerName(this.userData.firstName, this.userData.lastName);
+      }
+      // ----------------------------------------------------------
+
       this.updateUI();
-      this.refreshMarketplace();
+      
+      // Refresh marketplace to show new data (like if you filter by "My Hostel")
+      if (this.refreshMarketplace) {
+          this.refreshMarketplace();
+      }
 
       console.log("✅ User data updated");
     } catch (error) {
       console.error("❌ Failed to update user data:", error);
+      throw error; // Re-throw so app.js knows it failed
     }
   }
 
   async updateItemsWithNewName(firstName, lastName) {
-    if (!this.currentUser) return;
-
-    try {
-      const itemsQuery = this.modules.query(
-        this.modules.collection(this.db, "items"),
-        this.modules.where("userId", "==", this.currentUser.uid)
-        );        
-        
-
-
-      const querySnapshot = await thi`s.modules.getDocs(itemsQuery);
-`
-      querySnapshot.forEach(async (doc) => {
-        await this.modules.updateDoc(doc.ref, {
-          postedByFirstName: firstName,
-          postedByLastName: lastName,
-          postedByDisplayName: `${firstName} ${lastName}`
-        });
-        console.log(`✅ Updated item ${doc.id} with new name`);
-      });
-
-    } catch (error) {
-
-
-    }
+   return;
   }
 
-    async updateItemsWithNewSellerName(firstName, lastName) {
+  async updateItemsWithNewSellerName(firstName, lastName) {
     if (!this.currentUser) return;
 
     try {
+      // 1. Find all items belonging to this seller
       const itemsQuery = this.modules.query(
         this.modules.collection(this.db, "items"),
         this.modules.where("sellerId", "==", this.currentUser.uid)
       );
+      
       const querySnapshot = await this.modules.getDocs(itemsQuery);
 
-      querySnapshot.forEach(async (doc) => {
-        await this.modules.updateDoc(doc.ref, {
+      // 2. Update each item with the new name
+      const updatePromises = [];
+      querySnapshot.forEach((doc) => {
+        const promise = this.modules.updateDoc(doc.ref, {
           sellerName: `${firstName} ${lastName}`,
         });
-        console.log(`✅ Updated item ${doc.id} with new sellerName`);
+        updatePromises.push(promise);
       });
+
+      await Promise.all(updatePromises);
+      console.log(`✅ Updated seller name on ${updatePromises.length} items`);
 
     } catch (error) {
       console.error("❌ Failed to update items with new sellerName:", error);
+      // We don't throw here, so the main profile update can still succeed
     }
   }
 
@@ -895,20 +936,21 @@ showAuthRedirectMessage() {
 
   async refreshMarketplace() {
     console.log("🔄 Refreshing marketplace section...");
-    const marketplaceSection = document.getElementById("marketplace");
-    if (marketplaceSection) {
-      // Trigger a re-render of the items in the marketplace
-      // This is a simplified approach; in a real app, you might want to
-      // use a more efficient method to update the items, like only updating
-      // the changed item cards.
-      const itemsGrid = document.getElementById("itemsGrid");
-      if (itemsGrid) {
-        itemsGrid.innerHTML = ""; // Clear existing items
-        // Call the function to load the items again
-        window.app.loadItems(); // Replace with the actual function call
+    
+    // Check if the marketplace module exists
+    if (window.marketplace) {
+      try {
+        // 1. Reload the data from Firebase/Storage
+        await window.marketplace.loadData();
+        
+        // 2. Re-run filters to update the UI (this renders the grid)
+        window.marketplace.filterItems();
+        
+        console.log("✅ Marketplace refreshed with new user details");
+      } catch (err) {
+        console.warn("⚠️ Failed to refresh marketplace UI:", err);
       }
-      console.error("❌ Failed to update items with new name:", error);
-    } 
+    }
   }
 
 

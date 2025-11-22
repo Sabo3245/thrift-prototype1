@@ -358,6 +358,8 @@ textarea.animated-input {
 /* =================================== */
 
 /* --- Main Layout --- */
+
+
 .container {
   width: 100%;
   margin-right: auto;
@@ -454,6 +456,39 @@ textarea.animated-input {
   align-items: center;
   justify-content: space-between;
 }
+/* --- Unread Indicator for Navigation --- */
+
+.nav-tab {
+  position: relative;
+}
+
+/* The red dot */
+.nav-tab.has-unread::after {
+  content: '';
+  position: absolute;
+  /* Adjusted position to move it to the corner, away from text */
+  top: 4px;
+  right: 4px;
+  width: 8px; /* Slightly smaller for a cleaner look */
+  height: 8px;
+  background-color: var(--color-error);
+  border: 1px solid var(--color-surface); /* Thinner border */
+  border-radius: 50%;
+  z-index: 10;
+  box-shadow: 0 0 0 1px var(--color-surface);
+}
+
+/* Mobile Adjustment: Keep it centered over the icon */
+@media (max-width: 768px) {
+  .nav-tab.has-unread::after {
+    top: 6px;
+    /* On mobile, text is hidden, so we position relative to the icon center */
+    right: 12px; 
+    width: 10px;
+    height: 10px;
+  }
+}
+
 .nav-brand {
   display: flex;
   align-items: center;
@@ -584,12 +619,21 @@ textarea.animated-input {
   flex: 1;
   min-width: 150px;
 }
-.items-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: var(--space-24);
-  margin-bottom: var(--space-32);
-}
+
+
+  /* Add these NEW rules inside the (max-width: 768px) media query */
+  .item-image {
+    height: 140px; /* Make image shorter for the smaller card */
+  }
+
+  .item-title {
+    font-size: 0.9rem; /* Make title smaller */
+    white-space: normal; /* Allow title to wrap (optional, but good) */
+  }
+
+  .item-price {
+    font-size: 1rem; /* Make price smaller */
+  }
 .item-card {
   padding: 0;
   transition: all 0.3s ease;
@@ -777,8 +821,10 @@ textarea.animated-input {
   color: var(--color-price);
 }
 .detail-actions {
+  /* ... (existing rules) ... */
   display: flex;
-  gap: var(--space-8);
+  gap: 8px;
+  flex-wrap: wrap; /* ADD THIS LINE */
 }
 .btn--danger {
   color: var(--color-red-500);
@@ -1114,6 +1160,18 @@ textarea.animated-input {
 .profile-card {
   padding: var(--space-32);
   text-align: center;
+}
+/* Add in Section 5 under Profile Page */
+
+.profile-hostel {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-20);
+  font-weight: 500;
+  font-size: var(--font-size-sm);
+  background: var(--color-secondary);
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
 }
 .profile-avatar {
   position: relative;
@@ -1640,10 +1698,8 @@ body.modal-open {
   animation: slideInFromRight 0.5s ease;
 }
 .notification.success {
-    background: rgba(240, 255, 244, 0.9);
-    color: #034627;
-    border-left-color: #00b35a;
-  }
+  border-color: var(--color-success);
+}
 .notification.error {
   border-color: var(--color-error);
 }
@@ -1662,173 +1718,10 @@ body.modal-open {
 /* === 7. MOBILE RESPONSIVE STYLES === */
 /* =================================== */
 
-@media (max-width: 768px) {
-  /* --- Base & Nav --- */
-body {
-    padding-top: 130px; /* Increased padding for the taller 2-line mobile nav */
-  }
-  .nav-container {
-    height: auto;
-    flex-wrap: wrap;
-    padding: var(--space-12);
-    gap: var(--space-12);
-    justify-content: center;
-  }
-  .nav-brand {
-    flex-basis: 100%;
-    justify-content: center;
-  }
-  .nav-brand .brand-text {
-    display: block; /* Show text on mobile */
-  }
-  .nav-tabs {
-    width: 100%;
-    justify-content: space-around;
-  }
-  .nav-tab span:not(.nav-icon) {
-    display: none; /* Hide text, show icon */
-  }
-  .nav-tab {
-    padding: 10px;
-  }
-  .nav-indicator {
-    bottom: -10px; /* Adjust for gap */
-  }
-  .page-title {
-    font-size: 1.8rem;
-  }
-  .fab {
-    width: 50px;
-    height: 50px;
-    bottom: 20px;
-    right: 20px;
-    display:none !important;
-  }
 
-  /* --- Marketplace --- */
-  .filters-container {
-    flex-direction: row;
-    gap: 8px;
-  }
-  .filter-group {
-    flex: 1;
-    min-width: 0;
-  }
-  .items-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-  .item-detail-grid {
-    grid-template-columns: 1fr;
-  }
-  .item-detail-right {
-    position: static;
-  }
-  .item-detail-image {
-    height: 300px;
-  }
-
-  /* --- Post Item Form --- */
-  .form-row {
-    flex-direction: column;
-    gap: 0;
-  }
-  .uploaded-images {
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  }
-
-/* --- Chat Page (Mobile Master-Detail) --- */
-
-  /* Fix for mobile chat experience */
-.chat-input {
-  font-size: 16px; /* Prevents auto-zoom on tap */
-}
-
-.chat-window {
-  /* Adds a "safe area" at the bottom */
-  padding-bottom: 60px; 
-}
-  
-  /* Hide the "Messages" header on mobile */
-  #chat .section-header {
-    display: none;
-  }
-  
-  .chat-container {
-    display: block;
-    overflow: hidden; /* Keeps the slide effect */
-    
-    /* --- NEW STYLES --- */
-    /* Fix the container to the viewport */
-    position: fixed; 
-    top: 130px; /* Start it right below your nav bar */
-    bottom: 0; /* Fill the rest of the screen */
-    left: 0;
-    right: 0;
-  }
-  .chat-sidebar {
-    height: 100%;
-    overflow-y: auto;
-    width: 100%;
-    position: absolute;
-    top: 0;
-    left: 0;
-    transition: transform 0.3s ease-in-out;
-    transform: translateX(0);
-    opacity: 1;
-    animation: none;
-    border: none; /* Remove card border */
-  }
-  .chat-window {
-    height: 100%;
-    width: 100%;
-    position: absolute;
-    top: 0;
-    left: 0;
-    display: flex;
-    flex-direction: column;
-    transition: transform 0.3s ease-in-out;
-    transform: translateX(100%);
-    opacity: 1;
-    animation: none;
-    border: none; /* Remove card border */
-  }
-  .chat-container.chat-active .chat-sidebar {
-    transform: translateX(-100%);
-  }
-  .chat-container.chat-active .chat-window {
-    transform: translateX(0);
-  }
-  #chatBackButton {
-    display: inline-flex;
-  }
-  .chat-header {
-    padding: 12px;
-  }
-  .chat-avatar {
-    width: 40px;
-    height: 40px;
-    font-size: 1.2rem;
-  }
-
-  /* --- Profile Page --- */
-  .profile-grid {
-    grid-template-columns: 1fr;
-  }
-  .listings-grid,
-  .hearted-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-  }
-}
 
 /* --- Small Phones --- */
 @media (max-width: 420px) {
-  .items-grid,
-  .listings-grid,
-  .hearted-grid {
-    grid-template-columns: 1fr;
-  }
   .filters-container {
     grid-template-columns: 1fr;
     gap: 12px;
@@ -1897,11 +1790,16 @@ body {
 /* === 9. PROFESSIONAL ITEM CARDS === */
 /* =================================== */
 
-/* --- Card Grid & Sizing --- */
 
 .items-grid {
   /* This aligns all card content vertically */
   align-items: stretch;
+
+  /* --- ADD THIS --- */
+  display: grid;
+  /* We'll use your idea: smaller min-width for more cards */
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
 }
 
 .item-card {
@@ -1944,8 +1842,8 @@ body {
 .item-card-content {
   /* This is the magic! */
   flex: 1; /* Makes this section grow to fill all available space */
-  display: flex;
-  flex-direction: column;
+  display: flex; /* <-- ADD THIS LINE BACK */
+  flex-direction: column; /* <-- ADD THIS LINE BACK */
   padding: var(--space-16);
 }
 
@@ -2044,6 +1942,13 @@ body {
   background: rgba(var(--color-red-500-rgb), 0.1);
   border-color: var(--color-red-500);
   color: var(--color-red-500);
+}
+
+.item-details,
+.item-seller-info,
+.item-actions {
+  /* This hides the tags, seller info, and action buttons from the card */
+  display: none;
 }
 
 /* =================================== */
@@ -2161,7 +2066,7 @@ body {
   /* Clean style for the welcome message */
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary); /* Uses the subtle grey text color */
+  color: var(--color-text); 
 }
 
 .user-points {
@@ -2413,39 +2318,35 @@ body {
 }
 
 /* =================================== */
-/* === 15. DYNAMIC PAGE TITLE     === */
+/* === 15. PAGE TITLE (PROFESSIONAL) === */
 /* =================================== */
 
 .page-title {
-  /* 1. Create a gradient using your theme's colors */
-  background: linear-gradient(
-    45deg,
-    var(--color-primary-active),
-    var(--color-primary),
-    var(--color-teal-300)
-  );
+  /* 1. Typography */
+  font-size: 2rem;
+  font-weight: 800; /* Extra bold for authority */
+  color: var(--color-text); /* Dark Slate/Charcoal */
+  letter-spacing: -0.03em; /* Tight tracking is very modern */
+  line-height: 1.1;
   
-  /* 2. Clip the background to the text */
-  background-clip: text;
-  -webkit-background-clip: text;
-  
-  /* 3. Make the text color transparent */
-  -webkit-text-fill-color: transparent;
-  color: transparent;
-  
-  /* 4. Animate the gradient position */
-  background-size: 200% 200%;
-  animation: gradientShift 4s ease-in-out infinite;
+  /* 2. Structure for the accent line */
+  position: relative;
+  display: inline-block;
+  margin-bottom: 0;
+  padding-bottom: 12px; /* Space for the underline */
 }
 
-/* Keyframe animation to move the gradient */
-@keyframes gradientShift {
-  0%,
-  100% {
-    background-position: 0% 50%;
+
+
+/* 4. Mobile adjustment */
+@media (max-width: 768px) {
+  .page-title {
+    font-size: 1.5rem;
+    padding-bottom: 8px;
   }
-  50% {
-    background-position: 100% 50%;
+  .page-title::after {
+    width: 30px;
+    height: 3px;
   }
 }
 
@@ -2660,3 +2561,571 @@ body {
    background: var(--color-secondary);
    cursor: not-allowed;
 }
+.chat-messages::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+  background: transparent; /* No visible track */
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+  background-color: var(--color-border);
+  border-radius: var(--radius-full);
+  /* This is the key fix: 
+    The border color matches the chat-messages background (--color-secondary)
+    instead of the main page background (--color-surface).
+  */
+  border: 2px solid var(--color-secondary);
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-text-secondary);
+}
+
+/* --- And add .chat-messages to the Firefox rule --- */
+.conversation-list,
+#transactionList,
+.chat-messages {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent; /* thumb color, track color */
+}
+
+@media (max-width: 768px) {
+  /* --- Base & Nav --- */
+body {
+    padding-top: 130px; /* Increased padding for the taller 2-line mobile nav */
+  }
+
+  .btn{
+    padding: var(--space-8) var(--space-8);
+    font-size: var(--font-size-sm);
+  }
+  .nav-container {
+    height: auto;
+    flex-wrap: wrap;
+    padding: var(--space-12);
+    gap: var(--space-12);
+    justify-content: center;
+  }
+  .nav-brand {
+    flex-basis: 100%;
+    justify-content: center;
+  }
+  .nav-brand .brand-text {
+    display: block; /* Show text on mobile */
+  }
+  .nav-tabs {
+    width: 100%;
+    justify-content: space-around;
+  }
+  .nav-tab span:not(.nav-icon) {
+    display: none; /* Hide text, show icon */
+  }
+  .nav-tab {
+    padding: 10px;
+  }
+  .nav-indicator {
+    bottom: -10px; /* Adjust for gap */
+  }
+  .page-title {
+    font-size: 1.8rem;
+  }
+  .fab {
+    width: 50px;
+    height: 50px;
+    bottom: 20px;
+    right: 20px;
+    display:none !important;
+  }
+
+  /* --- Marketplace --- */
+  .filters-container {
+    flex-direction: row;
+    gap: 8px;
+  }
+  .filter-group {
+    flex: 1;
+    min-width: 0;
+  }
+  /* Inside your @media (max-width: 768px) block in style.css */
+
+.filter-select {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+
+  /* This ensures the text doesn't flow under the dropdown arrow */
+  /* We're just re-stating the padding you already have */
+  padding-right: var(--space-32);
+}
+.items-grid {
+    /* This rule now correctly overrides the desktop rule */
+    /* This locks the grid to 2 equal columns */
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .item-detail-grid {
+    grid-template-columns: 1fr;
+  }
+  .item-detail-right {
+    position: static;
+  }
+  .item-detail-image {
+    height: 300px;
+  }
+
+  /* --- Post Item Form --- */
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+  .uploaded-images {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
+
+/* --- Chat Page (Mobile Master-Detail) --- */
+
+  /* Fix for mobile chat experience */
+.chat-input {
+  font-size: 16px; /* Prevents auto-zoom on tap */
+}
+
+.chat-window {
+  /* Adds a "safe area" at the bottom */
+  padding-bottom: 60px; 
+}
+  
+  /* Hide the "Messages" header on mobile */
+  #chat .section-header {
+    display: none;
+  }
+  
+  .chat-container {
+    display: block;
+    overflow: hidden; /* Keeps the slide effect */
+    
+    /* --- NEW STYLES --- */
+    /* Fix the container to the viewport */
+    position: fixed; 
+    top: 130px; /* Start it right below your nav bar */
+    bottom: 0; /* Fill the rest of the screen */
+    left: 0;
+    right: 0;
+  }
+  .chat-sidebar {
+    height: 100%;
+    overflow-y: auto;
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    transition: transform 0.3s ease-in-out;
+    transform: translateX(0);
+    opacity: 1;
+    animation: none;
+    border: none; /* Remove card border */
+  }
+  .chat-window {
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease-in-out;
+    transform: translateX(100%);
+    opacity: 1;
+    animation: none;
+    border: none; /* Remove card border */
+  }
+  .chat-container.chat-active .chat-sidebar {
+    transform: translateX(-100%);
+  }
+  .chat-container.chat-active .chat-window {
+    transform: translateX(0);
+  }
+  #chatBackButton {
+    display: inline-flex;
+  }
+  .chat-header {
+    padding: 12px;
+  }
+  .chat-avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+  }
+
+  /* --- Profile Page --- */
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
+  .listings-grid,
+  .hearted-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+}
+
+/* =================================== */
+/* === 22. NOTIFICATION PAGE STYLES === */
+/* =================================== */
+
+/* Date Header - Clean and muted */
+.notification-date-header {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin: 32px 0 12px 0; /* More breathing room */
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 8px;
+}
+
+/* The Notification Card - Minimalist Professional */
+.notification-item {
+  background: var(--color-surface);
+  /* Subtle border only */
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-base); /* Slightly smaller radius for a sharper look */
+  padding: 20px;
+  margin-bottom: 12px;
+  display: flex;
+  gap: 16px;
+  transition: all 0.2s ease;
+  align-items: flex-start; /* Aligns icon to top of text */
+}
+
+/* Hover State - Lift slightly with shadow, no color shift */
+.notification-item:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+  background: var(--color-secondary); /* Very subtle highlight */
+}
+
+/* Icon Wrapper - Subtle circle */
+.notification-icon-wrapper {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  background: var(--color-background); /* Neutral background */
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  color: var(--color-text-secondary); /* Neutral icon color */
+}
+
+/* Content Area */
+.notification-content-wrapper {
+  flex: 1;
+}
+
+.notification-message {
+  color: var(--color-text);
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+/* Meta info (Time/Author) - Clean text, no badges */
+.notification-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notification-meta {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-weight: 400;
+}
+
+/* =================================== */
+/* === 23. CAMPUSKOINS PAGE STYLES === */
+/* =================================== */
+
+.koins-hero {
+  padding: 40px;
+  margin-bottom: 32px;
+  background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-secondary) 100%);
+}
+
+.koins-header-content {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.big-koin {
+  font-size: 4rem;
+  filter: drop-shadow(0 4px 12px rgba(255, 215, 0, 0.3));
+}
+
+.hero-text h2 {
+  font-size: 1.8rem;
+  margin-bottom: 8px;
+  color: var(--color-text);
+}
+
+.hero-text p {
+  font-size: 1.1rem;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  max-width: 600px;
+}
+
+.koins-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.koin-card {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.card-icon-wrapper {
+  width: 60px;
+  height: 60px;
+  background: var(--color-secondary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  font-size: 1.8rem;
+}
+
+.koin-card h3 {
+  margin-bottom: 12px;
+  font-size: 1.4rem;
+}
+
+.koin-card p {
+  margin-bottom: 24px;
+  color: var(--color-text-secondary);
+}
+
+/* Earn Section Styling */
+.earn-list {
+  width: 100%;
+  text-align: left;
+  background: var(--color-secondary);
+  padding: 16px;
+  border-radius: var(--radius-base);
+}
+
+.earn-item {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+}
+
+.earn-item:last-child {
+  margin-bottom: 0;
+}
+
+/* Boost Section Styling */
+.boost-visual {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.visual-card {
+  width: 80%;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid var(--color-border);
+  background: var(--color-background);
+}
+
+.visual-card.boosted {
+  border: 1px solid var(--color-gold-700);
+  background: linear-gradient(45deg, rgba(255,215,0,0.1), transparent);
+  box-shadow: 0 4px 12px rgba(255,215,0,0.15);
+  color: var(--color-text);
+}
+
+.visual-arrow {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.cost-badge {
+  background: var(--color-primary);
+  color: var(--color-btn-primary-text);
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .koins-grid {
+    grid-template-columns: 1fr;
+  }
+  .koins-header-content {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+/* =================================== */
+/* === 24. HEADER LAYOUT UTILITIES === */
+/* =================================== */
+
+.header-grid {
+  display: grid;
+  /* Left (Button), Center (Title), Right (Empty balance) */
+  grid-template-columns: auto 1fr auto; 
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+  width: 100%;
+}
+
+/* Ensure the title stays perfectly centered */
+.header-grid .page-title {
+  text-align: center;
+  margin-bottom: 0;
+  /* Prevent long titles from breaking alignment */
+  grid-column: 2; 
+}
+
+/* Mobile Adjustment: Stack them if needed, or keep grid */
+@media (max-width: 600px) {
+  .header-grid {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* Align button to left */
+    gap: 12px;
+  }
+  
+  .header-grid .page-title {
+    width: 100%;
+    text-align: center; /* Keep title centered */
+  }
+}
+
+
+/* =================================== */
+/* === 25. SINGLE VIEWPORT LAYOUT  === */
+/* =================================== */
+
+/* Only apply this "no-scroll" layout on Desktop/Tablet */
+@media (min-width: 768px) {
+  
+  #campusKoins {
+    height: 100vh;      /* Force exactly full screen height */
+    overflow: hidden;   /* Disable scrolling */
+    padding-bottom: 0;  /* Remove extra padding */
+    display: flex;      /* Enable flex layout */
+    flex-direction: column;
+  }
+
+  #campusKoins .container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    /* Add top padding to account for the fixed navbar */
+
+    padding-bottom: 24px;
+  }
+
+  /* 1. Compact Header */
+  #campusKoins .section-header {
+    margin-bottom: 16px; /* Reduce gap below header */
+    flex-shrink: 0;      /* Prevent header from squishing */
+  }
+  
+  #campusKoins .page-subtitle {
+    margin-bottom: 0;
+  }
+
+  /* 2. Compact Hero Section */
+  .koins-hero {
+    padding: 20px 32px;  /* Slimmer padding */
+    margin-bottom: 16px; /* Reduce gap below hero */
+    flex-shrink: 0;      /* Prevent hero from squishing */
+  }
+
+  .big-koin {
+    font-size: 3rem; /* Slightly smaller icon */
+  }
+  
+  .hero-text h2 {
+    font-size: 1.5rem;
+    margin-bottom: 4px;
+  }
+  
+  .hero-text p {
+    margin-bottom: 0;
+    font-size: 1rem;
+  }
+
+  /* 3. Auto-Expanding Grid */
+  .koins-grid {
+    flex: 1;        /* This is the magic: take up all remaining space */
+    min-height: 0;  /* Allow flex items to shrink if needed */
+    gap: 16px;      /* Tighter gap */
+  }
+
+  .koin-card {
+    height: 100%;   /* Fill the grid cell completely */
+    padding: 20px;  /* Compact padding inside cards */
+    justify-content: center; /* Center content vertically */
+    margin: 0;
+  }
+
+  /* 4. Compact Internal Card Elements */
+  .card-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    font-size: 1.4rem;
+    margin-bottom: 12px;
+  }
+
+  .koin-card h3 {
+    margin-bottom: 8px;
+    font-size: 1.2rem;
+  }
+
+  .koin-card p {
+    margin-bottom: 12px;
+    font-size: 0.95rem;
+  }
+
+  /* Adjust lists and visuals to fit */
+  .earn-item {
+    margin-bottom: 6px;
+  }
+  
+  .boost-visual {
+    margin-bottom: 12px;
+  }
+  
+  .visual-card {
+    padding: 8px;
+  }
+}
+

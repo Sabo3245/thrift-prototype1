@@ -481,7 +481,7 @@ class LoadingScreen {
 // We no longer hide the loading screen here.
     // user-session.js will handle that.
     // We just initialize the app.
-    window.app.init();
+    //window.app.init();
   }
 }
 
@@ -620,7 +620,7 @@ class Marketplace {
         item.title.toLowerCase().includes(searchQuery) ||
         item.description.toLowerCase().includes(searchQuery);
       
-      // --- MODIFY THIS LINE ---
+   
       if (!matchesActive || !matchesStatus) return false;
 
       const matchesCategory =
@@ -650,8 +650,10 @@ class Marketplace {
 
       
     AppState.filteredItems.sort((a, b) => {
-      const aIsBoosted = a.isBoosted || false;
-      const bIsBoosted = b.isBoosted || false;
+const aIsBoosted = (categoryFilter !== "") && (a.isBoosted || false);
+    const bIsBoosted = (categoryFilter !== "") && (b.isBoosted || false);
+
+      
 
       // 1. One is boosted, one is not
       if (aIsBoosted && !bIsBoosted) return -1; // a comes first
@@ -693,14 +695,18 @@ class Marketplace {
   }
 
   createItemCard(item, index) {
+    // --- NEW LOGIC START ---
+    // Check if we should show the boost styling
+    const categoryFilter = AppState.filters.category;
+    const showBoostEffect = item.isBoosted && (categoryFilter !== "");
+    // --- NEW LOGIC END ---
+
     const card = document.createElement("div");
-    card.className = `item-card glass-card${item.isBoosted ? " boosted" : ""}`;
+    
+    // Only add the "boosted" class if showBoostEffect is true
+    card.className = `item-card glass-card${showBoostEffect ? " boosted" : ""}`;
     card.style.animationDelay = `${index * 0.1}s`;
 
-    
-    const isUserItem =
-      !!item.sellerId &&
-      item.sellerId === window.userSession?.getCurrentUser?.()?.uid;
     const isHearted = AppState.userProfile.heartedPosts.includes(item.id);
     const primaryImage =
       Array.isArray(item.images) && item.images.length > 0
@@ -711,7 +717,7 @@ class Marketplace {
       <div class="item-image">
           ${
             primaryImage
-              ? `<img src="${primaryImage}" alt="${item.title}" class="item-img" style="width:100%;height:160px;object-fit: contain;border-radius:12px;"/>`
+              ? `<img src="${primaryImage}" alt="${item.title}" class="item-img" style="width:100%;height:160px;object-fit: contain;border-radius:12px;" loading="lazy"/>`
               : `<span class="item-emoji">${item.icon || "📦"}</span>`
           }
           <button class="heart-btn ${isHearted ? "hearted" : ""}" data-id="${
@@ -722,32 +728,7 @@ class Marketplace {
       <div class="item-card-content">
         <h3 class="item-title">${item.title}</h3>
         <div class="item-prices">
-    <div class="item-price">${utils.formatPrice(item.price)}</div>
-</div>
-        <div class="item-details">
-    <span class="item-tag">${item.category}</span>
-    ${
-      (item.category === 'Food' && item.quantity > 0)
-        ? `<span class="item-tag">Qty: ${item.quantity}</span>`
-        : `<span class="item-tag">${item.condition}</span>`
-    }
-    <span class="item-tag">${item.hostel}</span>
-</div>
-        <div class="item-seller-info">
-            <span class="seller-label">Sold by:</span>
-            <span class="seller-name" data-seller-name="${item.sellerName || "Anonymous"}">${item.sellerName || "Anonymous"}</span>
-        </div>
-        <div class="item-actions">
-            <button class="btn btn--primary btn--sm contact-btn" data-id="${
-              item.id
-            }">Contact Seller</button>
-            ${
-              isUserItem
-                ? `
-                <button class="boost-btn" data-id="${item.id}" title="Boost post">🚀</button>
-                <button class="remove-btn" data-id="${item.id}" title="Remove post">🗑️</button>`
-                : ""
-            }
+          <div class="item-price">${utils.formatPrice(item.price)}</div>
         </div>
       </div>
       `;
@@ -756,26 +737,21 @@ class Marketplace {
     return card;
   }
 
-  handleCardClick(e, itemId) {
-    const target = e.target;
-    if (target.closest(".contact-btn")) {
-      this.contactSeller(itemId);
-    } else if (target.closest(".heart-btn")) {
-      this.toggleHeart(itemId, target.closest(".heart-btn"));
-    } else if (target.closest(".boost-btn")) {
-      this.showBoostModal(itemId);
-    } else if (target.closest(".remove-btn")) {
-      this.showRemoveModal(itemId);
-    } else {
-      // Open detail section for general card clicks
-      const newUrl = `${window.location.pathname}?item=${itemId}`;
-      // Update the browser history and URL bar
-      window.history.pushState({ itemId: itemId }, `Item ${itemId}`, newUrl);
-      
-      // Now, open the detail section
-      window.itemDetail?.showById?.(itemId);
-    }
+  // Inside Marketplace class
+handleCardClick(e, itemId) {
+  const target = e.target;
+  if (target.closest(".heart-btn")) {
+    this.toggleHeart(itemId, target.closest(".heart-btn"));
+  } else {
+    // Open detail section for general card clicks
+    const newUrl = `${window.location.pathname}?item=${itemId}`;
+    // Update the browser history and URL bar
+    window.history.pushState({ itemId: itemId }, `Item ${itemId}`, newUrl);
+
+    // Now, open the detail section
+    window.itemDetail?.showById?.(itemId);
   }
+}
 
   async contactSeller(itemId) {
     const currentUser = window.userSession?.getCurrentUser?.() || window.firebaseAuth?.currentUser || null;
@@ -1011,36 +987,25 @@ class PostItem {
   }
 
   initUploadArea() {
-  const uploadArea = document.getElementById("uploadArea");
-  const fileInput = document.getElementById("itemPhotos");
+    const uploadArea = document.getElementById("uploadArea");
+    const fileInput = document.getElementById("itemPhotos");
 
-  if (!uploadArea || !fileInput) return;
+    if (uploadArea && fileInput) {
+      uploadArea.addEventListener("click", () => fileInput.click());
 
-  // Prevent multiple event bindings
-  if (!this._uploadBound) {
-    // Cache handler refs so they can be removed if needed later
-    this._handleFileChange = (e) => {
-      const newFiles = Array.from(e.target.files).slice(
-        0,
-        5 - this.selectedFiles.length
-      );
-      this.selectedFiles.push(...newFiles);
-      this.renderPreviews();
-
-      // Reset the input so user can reselect same file
-      fileInput.value = "";
-    };
-
-    this._handleUploadClick = () => fileInput.click();
-
-    uploadArea.addEventListener("click", this._handleUploadClick);
-    fileInput.addEventListener("change", this._handleFileChange);
-
-    // Mark as initialized
-    this._uploadBound = true;
+      fileInput.addEventListener("change", (e) => {
+        // Limit to 5 total images
+        const newFiles = Array.from(e.target.files).slice(
+          0,
+          5 - this.selectedFiles.length
+        );
+        this.selectedFiles.push(...newFiles);
+        this.renderPreviews();
+        // Reset the input so the user can select the same file again if they remove it
+        fileInput.value = "";
+      });
+    }
   }
-}
-
 
   renderPreviews() {
     const uploadedImagesContainer = document.getElementById("uploadedImages");
@@ -1101,16 +1066,13 @@ handleCategoryChange() {
 }
 
   bindEvents() {
-  if (this.eventsBound) return; // Prevent double-binding
-  this.eventsBound = true;
-  
-  const form = document.getElementById("postForm");
-  if (form) {
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
-      this.submitForm();
-    });
-  }
+    const form = document.getElementById("postForm");
+    if (form) {
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        this.submitForm();
+      });
+    }
 
     // Add a delegated event listener for remove buttons on previews
     document
@@ -1363,6 +1325,28 @@ class Chat {
   loadConversations() {
     this.renderConversationList();
   }
+  // Inside Chat class
+  updateUnreadNavIndicator() {
+    const me = this.auth?.currentUser;
+    if (!me) return;
+
+    // Check if ANY conversation has unread messages for the current user
+    const hasUnread = this.conversations.some(c => {
+       const myUnread = (c.unreadCounts && c.unreadCounts[me.uid]) ? c.unreadCounts[me.uid] : 0;
+       return myUnread > 0;
+    });
+
+    // Find the chat navigation tab
+    const chatTab = document.querySelector('.nav-tab[data-section="chat"]');
+    
+    if (chatTab) {
+      if (hasUnread) {
+        chatTab.classList.add('has-unread');
+      } else {
+        chatTab.classList.remove('has-unread');
+      }
+    }
+  }
 
   // Subscribe to conversations for the current user
   subscribeConversations() {
@@ -1385,6 +1369,8 @@ class Chat {
       list.sort((a, b) => (b.lastMessageAt?.toMillis?.() || 0) - (a.lastMessageAt?.toMillis?.() || 0));
       this.conversations = list;
       this.renderConversationList();
+
+      this.updateUnreadNavIndicator();
     }, (error) => {
       console.error('Failed to subscribe to conversations:', error);
     });
@@ -1452,6 +1438,7 @@ class Chat {
   }
 
   // Start or reuse a conversation for a given item
+// Inside Chat class
   async startConversationForItem(item) {
     if (!this.db || !this.modules) throw new Error("Chat not initialized.");
     const me = this.auth?.currentUser;
@@ -1465,9 +1452,9 @@ class Chat {
         return;
     }
 
-    const { collection, query, where, getDocs, addDoc, serverTimestamp } = this.modules;
+    const { collection, query, where, getDocs } = this.modules;
 
-    // Check for an existing conversation for this item with this user
+    // 1. Check for an existing conversation
     const convRef = collection(this.db, 'conversations');
     const q = query(convRef,
         where('itemId', '==', String(item.id)),
@@ -1476,17 +1463,18 @@ class Chat {
 
     const snapshot = await getDocs(q);
     if (!snapshot.empty) {
-        // Conversation already exists, just open it
+        // Found one! Open it normally.
         const existingConvo = snapshot.docs[0];
         this.openChat(existingConvo.id);
         return;
     }
 
-    // No existing conversation, so create a new one
+    // 2. No conversation exists? Create a "Draft" object (NOT saved to DB yet)
     const sellerData = { displayName: item.sellerName || 'Seller', email: item.sellerEmail || '' };
     const buyerData = { displayName: me.displayName || 'Buyer', email: me.email || '' };
 
-    const newConversation = {
+    const draftConversation = {
+        id: null, // Indicates it's not in DB yet
         itemId: String(item.id),
         itemTitle: item.title,
         itemPrice: item.price,
@@ -1501,21 +1489,59 @@ class Chat {
             [me.uid]: buyerData.email,
             [item.sellerId]: sellerData.email,
         },
-        createdAt: serverTimestamp(),
-        lastMessageAt: serverTimestamp(),
-        lastMessage: `Conversation started about "${item.title}"`,
+        // Timestamps will be added when saving
         itemSold: false,
     };
 
-    const docRef = await addDoc(convRef, newConversation);
-    // Open the newly created chat
-    this.openChat(docRef.id);
+    // 3. Set this as active and manually setup the UI (bypassing openChat subscriptions)
+    this.activeConversation = draftConversation;
+    this.setupDraftUI(draftConversation);
   }
 
   // Start or reuse a conversation for a given item
 // Replace the existing startConversationForItem function with this one
 // Start or reuse a conversation for a given item
 
+
+  setupDraftUI(convo) {
+    document.querySelector('.chat-container')?.classList.add('chat-active');
+    
+    const chatUserName = document.getElementById('chatUserName');
+    const chatUserStatus = document.getElementById('chatUserStatus');
+    const chatInputContainer = document.getElementById('chatInputContainer');
+    const chatMessages = document.getElementById('chatMessages');
+    
+    // Clear previous messages
+    if (chatMessages) chatMessages.innerHTML = '<div class="welcome-message"><p>Type a message to start the chat...</p></div>';
+
+    // Setup Header Info
+    const me = this.auth?.currentUser;
+    const otherUid = (convo.participants || []).find((p) => p !== me?.uid);
+    
+    let name = 'Chat';
+    if (otherUid) {
+        name = convo.participantNames?.[otherUid] || convo.sellerEmail || 'Seller';
+    }
+
+    if (chatUserName) chatUserName.textContent = name;
+    if (chatUserStatus) chatUserStatus.textContent = `Product: ${convo.itemTitle || "Item"}`;
+    
+    // Setup Avatar
+    const chatAvatar = document.querySelector('.chat-avatar');
+    if (chatAvatar) {
+      let initials = '👤';
+      if (name && name !== 'Chat' && name.trim().length > 0) {
+        initials = name.trim().split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+      }
+      chatAvatar.textContent = initials;
+    }
+
+    if (chatInputContainer) chatInputContainer.classList.remove('hidden');
+    
+    // Hide "Mark as Sold" button for drafts
+    const markBtn = document.getElementById('markAsSoldBtn');
+    if (markBtn) markBtn.style.display = 'none';
+  }
 
 // Replace the existing openChat function with this one
 // Replace the existing openChat function with this one
@@ -1881,14 +1907,12 @@ async markItemAsSold() {
     }
   }
 
- async sendMessage() {
+// Inside Chat class
+  async sendMessage() {
     const chatInput = document.getElementById('chatInput');
     if (!chatInput) return;
     const text = chatInput.value.trim();
     if (!text) return;
-
-    const convo = this.activeConversation;
-    if (!convo?.id) return;
 
     const user = this.auth?.currentUser;
     if (!user) {
@@ -1896,30 +1920,48 @@ async markItemAsSold() {
       return;
     }
 
-    const chatMessages = document.getElementById('chatMessages');
-    // Optimistic UI: append the message immediately
-    if (chatMessages) {
-      const welcome = chatMessages.querySelector('.welcome-message');
-      if (welcome) welcome.remove();
-      const el = document.createElement('div');
-      el.className = 'message sent';
-      const now = new Date();
-      el.innerHTML = `
-        <div class="message-text">${text}</div>
-        <div class="message-time">${now.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}</div>
-      `;
-      chatMessages.appendChild(el);
-      chatMessages.scrollTop = chatMessages.scrollHeight;
+    // Get necessary modules
+    const { collection, addDoc, serverTimestamp, doc, setDoc, increment } = this.modules;
+
+    // --- 1. HANDLE DRAFT CREATION ---
+    if (this.activeConversation && !this.activeConversation.id) {
+        try {
+            // It's a draft! We must create the conversation doc first.
+            const newConvoData = {
+                ...this.activeConversation,
+                createdAt: serverTimestamp(),
+                lastMessageAt: serverTimestamp(),
+                lastMessage: text,
+                unreadCounts: {
+                    // The OTHER user gets 1 unread
+                    [this.activeConversation.participants.find(p => p !== user.uid)]: 1
+                }
+            };
+            // Remove the null ID before saving
+            delete newConvoData.id; 
+
+            const convRef = await addDoc(collection(this.db, 'conversations'), newConvoData);
+            
+            // Update local state with the new real ID
+            this.activeConversation.id = convRef.id;
+            
+            // Now that it exists, hook up the real listeners
+            this.openChat(convRef.id);
+            
+            // Refresh the list so it appears in the sidebar
+            this.subscribeConversations();
+
+        } catch (e) {
+            console.error("Failed to create new conversation:", e);
+            utils.showNotification("Failed to start chat.", "error");
+            return;
+        }
     }
 
-    // --- START MODIFICATION ---
-    // Get 'increment' and 'setDoc' from modules
-    const { collection, addDoc, serverTimestamp, doc, setDoc, increment } = this.modules;
-    // --- END MODIFICATION ---
+    // --- 2. SEND THE MESSAGE (Normal Logic) ---
+    const convoId = this.activeConversation.id;
+    const msgsRef = collection(this.db, 'conversations', convoId, 'messages');
 
-    const msgsRef = collection(this.db, 'conversations', convo.id, 'messages');
-
-    // Send the message first (critical)
     try {
       await addDoc(msgsRef, {
         senderId: user.uid,
@@ -1932,34 +1974,26 @@ async markItemAsSold() {
       return;
     }
 
-    // Update convo metadata (non-critical)
+    // --- 3. UPDATE CONVERSATION METADATA ---
     try {
-      // --- START: NEW LOGIC ---
-      // Find the *other* user
-      const otherUid = (convo.participants || []).find(p => p !== user.uid);
+      const otherUid = (this.activeConversation.participants || []).find(p => p !== user.uid);
       
       let updateData = {
         lastMessage: text,
         lastMessageAt: serverTimestamp()
       };
 
-      // If we found the other user, increment their unread count
       if (otherUid && increment) {
-        // We will store unread counts in a map: { userId1: 2, userId2: 0 }
         updateData.unreadCounts = {
           [otherUid]: increment(1)
         };
       }
-      // --- END: NEW LOGIC ---
 
-      const convRef = doc(this.db, 'conversations', convo.id);
-      
-      // --- MODIFICATION: Use setDoc + merge for safety ---
-      // This will create or update the 'unreadCounts' map safely
+      const convRef = doc(this.db, 'conversations', convoId);
       await setDoc(convRef, updateData, { merge: true });
       
     } catch (e) {
-      console.warn('Message sent, but failed to update conversation metadata:', e);
+      console.warn('Message sent, but metadata update failed:', e);
     }
 
     chatInput.value = '';
@@ -2049,42 +2083,64 @@ class Profile {
   }
 
   // ... (Keep openEditNameModal and saveEditedName methods as they are) ...
-  openEditNameModal() {
+// Inside Profile class
+openEditNameModal() {
     const modal = document.getElementById("editNameModal");
     if (!modal) return;
+    
     const userData = window.userSession?.getUserData?.() || {};
-    document.getElementById("editFirstName").value = userData.firstName || "";
-    document.getElementById("editLastName").value = userData.lastName || "";
+    
+    // Only pre-fill the hostel
+    const hostelInput = document.getElementById("editHostel");
+    if (hostelInput) {
+      hostelInput.value = userData.hostel || "";
+    }
+    
     modal.classList.remove("hidden");
+    document.body.classList.add('modal-open');
   }
 
   async saveEditedName() {
-    const firstName = document.getElementById("editFirstName").value.trim();
-    const lastName = document.getElementById("editLastName").value.trim();
-    const fullName = `${firstName} ${lastName}`.trim();
+    // 1. Get only the hostel value
+    const hostelInput = document.getElementById("editHostel");
+    const hostel = hostelInput ? hostelInput.value : "";
 
-    if (!fullName) {
-      utils.showNotification("Please enter a name.", "warning");
+    // 2. Validate (optional - ensure they picked something)
+    if (!hostel) {
+      utils.showNotification("Please select a hostel.", "warning");
       return;
     }
+
+    const saveBtn = document.getElementById("saveEditName");
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.textContent = "Saving...";
+    }
+
     try {
+      // 3. Send ONLY the hostel update to the session manager
       if (window.userSession?.updateUserData) {
-        await window.userSession.updateUserData({ firstName, lastName });
+        await window.userSession.updateUserData({ hostel });
       }
-      const user = window.firebaseAuth?.currentUser;
-      if (user && window.firebaseModules?.updateProfile) {
-        await window.firebaseModules.updateProfile(user, {
-          displayName: fullName,
-        });
+
+      // 4. Update the UI immediately
+      const profileHostelEl = document.getElementById("profileHostel");
+      if (profileHostelEl) {
+        profileHostelEl.textContent = `Hostel: ${hostel}`;
       }
-      document.getElementById("profileDisplayName").textContent = fullName;
-      utils.showNotification("Name updated successfully!", "success");
+
+      utils.showNotification("Hostel updated successfully!", "success");
       document.getElementById("editNameModal").classList.add("hidden");
+      document.body.classList.remove('modal-open');
+
     } catch (error) {
-      utils.showNotification(
-        "Could not update name. Please try again.",
-        "error"
-      );
+      console.error("Hostel update error:", error);
+      utils.showNotification("Could not update hostel. Please try again.", "error");
+    } finally {
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = "Save Update";
+        }
     }
   }
 
@@ -2492,6 +2548,7 @@ class ItemDetail {
   }
 
   init() {
+    // 1. Back Button
     const backBtn = document.getElementById('backToMarketplace');
     if (backBtn) {
       backBtn.addEventListener('click', (e) => {
@@ -2500,6 +2557,7 @@ class ItemDetail {
       });
     }
 
+    // 2. Contact Button
     const contactBtn = document.getElementById('detailContactBtn');
     if (contactBtn) {
       contactBtn.addEventListener('click', (e) => {
@@ -2510,45 +2568,58 @@ class ItemDetail {
       });
     }
 
+    // 3. Share/Copy Button
     const copyBtn = document.getElementById('copyUrlBtn');
     if (copyBtn) {
       copyBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        // Pass the button element itself for visual feedback
         this.copyItemUrl(copyBtn);
+      });
+    }
+
+    // --- NEW: Boost & Remove Buttons (The fix) ---
+    
+    const boostBtn = document.getElementById('detailBoostBtn');
+    if (boostBtn) {
+      boostBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        console.log("🚀 Boost button clicked for item:", this.currentItemId);
+        if (this.currentItemId) {
+          window.marketplace?.showBoostModal(this.currentItemId);
+        }
+      });
+    }
+
+    const removeBtn = document.getElementById('detailRemoveBtn');
+    if (removeBtn) {
+      removeBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        console.log("🗑️ Remove button clicked for item:", this.currentItemId);
+        if (this.currentItemId) {
+          window.marketplace?.showRemoveModal(this.currentItemId);
+        }
       });
     }
   }
 
   copyItemUrl(buttonElement) {
-    // This gets the full URL, including the ?item=... query parameter
     const urlToCopy = window.location.href;
-    
-    // Use the modern clipboard API
     navigator.clipboard.writeText(urlToCopy).then(() => {
-      // Success!
-      // Show your custom notification
       utils.showNotification('Link copied to clipboard!', 'success');
-      
-      // Temporarily change button text for more feedback
       const originalText = buttonElement.innerHTML;
       buttonElement.innerHTML = 'Copied! ✅';
       buttonElement.disabled = true;
-      
-      // Revert button text after 2.5 seconds
       setTimeout(() => {
         buttonElement.innerHTML = originalText;
         buttonElement.disabled = false;
       }, 2500);
-      
     }).catch(err => {
-      // Failure
       console.error('Failed to copy URL: ', err);
       utils.showNotification('Could not copy link.', 'error');
     });
   }
 
-showById(itemId) {
+  showById(itemId) {
     const item = AppState.originalItems.find((i) => String(i.id) === String(itemId));
     if (!item) {
       utils.showNotification('Item not found', 'error');
@@ -2557,79 +2628,88 @@ showById(itemId) {
 
     this.currentItemId = item.id;
 
-    // Get all UI elements
+    // --- Standard UI Updates ---
     const titleEl = document.getElementById('detailTitle');
     const nameEl = document.getElementById('detailName');
     const sellerEl = document.getElementById('detailSeller');
+    const hostelEl = document.getElementById('detailHostel');
     const priceEl = document.getElementById('detailPrice');
     const statusEl = document.getElementById('detailStatus');
     const descEl = document.getElementById('detailDescription');
     const quantWrapperEl = document.getElementById('detailQuantity-wrapper');
     const quantEl = document.getElementById('detailQuantity');
-    
-    // --- Image Gallery Elements ---
-    const mainImgEl = document.getElementById('detailMainImage');
-    const emojiEl = document.getElementById('detailEmoji');
-    const thumbnailsEl = document.getElementById('detailThumbnails');
-    
-    // --- Set Text Details ---
+
     if (titleEl) titleEl.textContent = 'Item Details';
     if (nameEl) nameEl.textContent = item.title || '';
     if (sellerEl) sellerEl.textContent = item.sellerName || 'Anonymous';
     if (priceEl) priceEl.textContent = utils.formatPrice(item.price || 0);
-    if (statusEl) statusEl.textContent = item.condition || '';
     if (descEl) descEl.textContent = item.description || '';
+
     // Logic for Food vs. Non-Food items
-if (item.category === 'Food' && item.quantity > 0) {
-  if (quantEl) quantEl.textContent = item.quantity;
-  if (quantWrapperEl) quantWrapperEl.classList.remove('hidden');
-  if (statusEl) statusEl.textContent = 'N/A'; // Hide condition
-} else {
-  if (quantWrapperEl) quantWrapperEl.classList.add('hidden');
-  if (statusEl) statusEl.textContent = item.condition || ''; // Show condition
-}
+    if (item.category === 'Food' && item.quantity > 0) {
+      if (quantEl) quantEl.textContent = item.quantity;
+      if (quantWrapperEl) quantWrapperEl.classList.remove('hidden');
+      if (statusEl) statusEl.textContent = 'N/A';
+    } else {
+      if (quantWrapperEl) quantWrapperEl.classList.add('hidden');
+      if (statusEl) statusEl.textContent = item.condition || '';
+    }
+
+    // --- NEW: Handle Seller Buttons Visibility ---
+    const boostBtn = document.getElementById('detailBoostBtn');
+    const removeBtn = document.getElementById('detailRemoveBtn');
+    
+    // Get current user ID safely
+    const currentUser = window.userSession?.getCurrentUser?.() || window.firebaseAuth?.currentUser;
+    const currentUid = currentUser ? currentUser.uid : null;
+    
+    // Check if the current user is the seller
+    const isSeller = (currentUid && item.sellerId === currentUid);
+    
+    if (boostBtn && removeBtn) {
+      if (isSeller) {
+        boostBtn.classList.remove('hidden');
+        removeBtn.classList.remove('hidden');
+      } else {
+        boostBtn.classList.add('hidden');
+        removeBtn.classList.add('hidden');
+      }
+    }
+    if (hostelEl) {
+      hostelEl.textContent = item.hostel ? `${item.hostel}` : 'Hostel Not Specified';
+    }
 
     // --- Image Gallery Logic ---
+    const mainImgEl = document.getElementById('detailMainImage');
+    const emojiEl = document.getElementById('detailEmoji');
+    const thumbnailsEl = document.getElementById('detailThumbnails');
     const allImages = Array.isArray(item.images) && item.images.length > 0 ? item.images : [];
     
-    if (thumbnailsEl) thumbnailsEl.innerHTML = ''; // Clear old thumbnails
+    if (thumbnailsEl) thumbnailsEl.innerHTML = '';
 
     if (allImages.length > 0) {
-      // We have images
       if (mainImgEl) {
-        mainImgEl.src = allImages[0]; // Set main image to the first one
+        mainImgEl.src = allImages[0];
         mainImgEl.style.display = 'block';
       }
       if (emojiEl) emojiEl.style.display = 'none';
       if (thumbnailsEl) thumbnailsEl.style.display = 'flex';
 
-      // Create thumbnails
       allImages.forEach((imgUrl, index) => {
         const thumbImg = document.createElement('img');
         thumbImg.src = imgUrl;
         thumbImg.alt = `${item.title} thumbnail ${index + 1}`;
         thumbImg.className = 'detail-thumbnail-img';
-        
-        if (index === 0) {
-          thumbImg.classList.add('active'); // Active state for the first one
-        }
+        if (index === 0) thumbImg.classList.add('active');
 
-        // Add click listener to change main image
         thumbImg.addEventListener('click', () => {
           if (mainImgEl) mainImgEl.src = imgUrl;
-          
-          // Update active class
-          thumbnailsEl.querySelectorAll('.detail-thumbnail-img').forEach(img => {
-            img.classList.remove('active');
-          });
+          thumbnailsEl.querySelectorAll('.detail-thumbnail-img').forEach(img => img.classList.remove('active'));
           thumbImg.classList.add('active');
         });
-        
-        if (thumbnailsEl) thumbnailsEl.appendChild(thumbImg);
+        thumbnailsEl.appendChild(thumbImg);
       });
-
     } else {
-      // No images, show emoji
       if (mainImgEl) mainImgEl.style.display = 'none';
       if (emojiEl) {
         emojiEl.style.display = 'flex';
@@ -2657,6 +2737,27 @@ class Notifications {
         window.app.navigateToSection("profile");
       });
     }
+    const boostBtn = document.getElementById('detailBoostBtn');
+  if (boostBtn) {
+    boostBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (this.currentItemId != null) {
+        // Call the Marketplace's modal function
+        window.marketplace?.showBoostModal?.(this.currentItemId);
+      }
+    });
+  }
+
+  const removeBtn = document.getElementById('detailRemoveBtn');
+  if (removeBtn) {
+    removeBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (this.currentItemId != null) {
+        // Call the Marketplace's modal function
+        window.marketplace?.showRemoveModal?.(this.currentItemId);
+      }
+    });
+  }
   }
 
 async loadNotifications() {
@@ -2702,6 +2803,8 @@ async loadNotifications() {
     }
   }
 
+// Inside Notifications class in app.js
+
   renderNotifications(notifications) {
     let html = "";
     let currentDate = "";
@@ -2713,18 +2816,27 @@ async loadNotifications() {
       if (!date) continue;
       
       const dateString = date.toLocaleDateString('en-US', options);
+      // Shorter time format (e.g., "2:30 PM")
+      const timeString = date.toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'});
 
-      // If the date is different from the last one, add a new date header
+      // Date Header
       if (dateString !== currentDate) {
         currentDate = dateString;
         html += `<h3 class="notification-date-header">${currentDate}</h3>`;
       }
 
-  // Add the notification item
+      // Card Structure
       html += `
         <div class="notification-item">
-          <p class="notification-message">${this.escapeHtml(notif.message)}</p>
-          <span class="notification-meta">Posted by Team CampusKart</span>
+          <div class="notification-icon-wrapper">
+            🔔
+          </div>
+          <div class="notification-content-wrapper">
+            <p class="notification-message">${this.escapeHtml(notif.message)}</p>
+            <div class="notification-footer">
+               <span class="notification-meta">${timeString} • Team CampusKart</span>
+            </div>
+          </div>
         </div>
       `;
     }
@@ -2741,6 +2853,14 @@ function initializeGlobalEventListeners() {
   document.body.addEventListener("click", async (e) => {
     const target = e.target;
     const modal = target.closest(".modal");
+    
+const backFromKoinsBtn = document.getElementById("backToMarketplaceFromKoins");
+    if (backFromKoinsBtn) {
+      backFromKoinsBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        window.app.navigateToSection("marketplace");
+      });
+    }
 
     if (target.closest("#reportItemBtn")) {
       e.preventDefault();

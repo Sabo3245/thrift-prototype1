@@ -204,6 +204,10 @@
                   <div id="detailSeller" class="detail-value"></div>
                 </div>
                 <div class="detail-field">
+  <label class="detail-label">Hostel</label>
+  <div id="detailHostel" class="detail-value"></div>
+</div>
+                <div class="detail-field">
                   <label class="detail-label">Price</label>
                   <div id="detailPrice" class="detail-price"></div>
                 </div>
@@ -220,10 +224,13 @@
                   <div id="detailDescription" class="detail-value"></div>
                 </div>
                 <div class="detail-actions">
-                  <button class="btn btn--outline" id="copyUrlBtn">🔗 Share</button>
-                  <button class="btn btn--outline btn--danger" id="reportItemBtn">🚩 Report Item</button>
-                  <button class="btn btn--primary" id="detailContactBtn">Contact Seller</button>
-                </div>
+  <button class="btn btn--outline" id="copyUrlBtn">🔗 Share</button>
+  <button class="btn btn--outline btn--danger" id="reportItemBtn">🚩 Report Item</button>
+  <button class="btn btn--primary" id="detailContactBtn">Contact Seller</button>
+  
+  <button class="btn btn--outline hidden" id="detailBoostBtn">🚀 Boost Post</button>
+  <button class="btn btn--outline btn--danger hidden" id="detailRemoveBtn">🗑️ Remove Post</button>
+  </div>
                 
               </div>
             </div>
@@ -233,11 +240,12 @@
 
       <section id="post" class="section">
   <div class="container">
-    <div class="section-header center-text">
-    <h1 class="page-title">Welcome back! Post Your Item</h1>
-    <p class="page-subtitle">Share what you're selling with the community</p>
+    <div class="section-header">
+      <h1 class="page-title">Post Your Item</h1>
+      <p class="page-subtitle">
+        Share what you're selling with the community
+      </p>
     </div>
-
 
     <form class="post-form glass-card" id="postForm">
       
@@ -469,7 +477,8 @@
             <p class="page-subtitle" id="marketplace-subtitle">
               Manager Your Account and Listings
             </p>
-            <br><br>
+            <br>
+            <br>
 
           <div class="profile-grid">
             <div class="profile-card glass-card">
@@ -480,6 +489,7 @@
               <div class="profile-info">
                 <h3 class="profile-name" id="profileDisplayName">Loading...</h3>
                 <p class="profile-email" id="profileDisplayEmail">Loading...</p>
+                <p class="profile-hostel" id="profileHostel">Hostel: Loading...</p>
                 <div class="profile-stats">
                   <div class="stat">
                     <span class="stat-number" id="userPoints">15</span>
@@ -586,7 +596,71 @@
           </div>
         </div>
       </section>
+      <section id="campusKoins" class="section">
+  <div class="container">
+    <div class="section-header">
+    <div class="header-grid">
+      <button class="btn btn--outline" id="backToMarketplaceFromKoins">← Back</button>
+      
+      <h1 class="page-title">Points System</h1>
+      
+      <div style="width: 80px;"></div> 
+    </div>
+    
+    <p class="page-subtitle" style="text-align: center; margin-top: -10px;">
+      How to earn rewards and boost your visibility
+    </p>
+  </div>
 
+    <div class="glass-card koins-hero">
+      <div class="koins-header-content">
+        <div class="big-koin">🟡</div>
+        <div class="hero-text">
+          <h2>More Than Just Points</h2>
+          <p>CampusKoins are the exclusive currency of CampusKart. They reward active members and provide powerful tools to help you sell your items faster.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="koins-grid">
+      <div class="glass-card koin-card earn-card">
+        <div class="card-icon-wrapper">
+          <span class="card-icon">💰</span>
+        </div>
+        <h3>How to Earn</h3>
+        <p>We reward every successful connection. You earn Koins automatically whenever you complete a transaction.</p>
+        
+        <div class="earn-list">
+          <div class="earn-item">
+            <span class="check">✅</span>
+            <span><strong>+5 Koins</strong> for Selling an Item</span>
+          </div>
+          <div class="earn-item">
+            <span class="check">✅</span>
+            <span><strong>+5 Koins</strong> for Buying an Item</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-card koin-card boost-card">
+        <div class="card-icon-wrapper">
+          <span class="card-icon">🚀</span>
+        </div>
+        <h3>Boost Your Listings</h3>
+        <p>Struggling to sell? Use your Koins to <strong>Boost</strong> your post. Boosted items appear at the very top of the marketplace.</p>
+        
+        <div class="boost-visual">
+          <div class="visual-card boosted">✨ Boosted (Top of List)</div>
+          
+          <div class="visual-arrow">⬆</div>
+          <div class="visual-card normal">Standard Post</div>
+        </div>
+        
+        <div class="cost-badge">Cost: 25 Koins / 7 Days</div>
+      </div>
+    </div>
+  </div>
+</section>
 
       
       <div class="modal hidden" id="changePasswordModal">
@@ -680,27 +754,41 @@
   <div class="modal hidden" id="editNameModal">
         <div class="modal-overlay"></div>
         <div class="modal-content glass-card">
-          <div class="modal-header">
-            <h3 class="modal-title">Edit Your Name</h3>
-            <p class="modal-message">Update how your name appears across the app.</p>
-          </div>
-          <div class="modal-body">
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">First Name</label>
-                <input type="text" id="editFirstName" class="form-control" placeholder="First name" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Last Name</label>
-                <input type="text" id="editLastName" class="form-control" placeholder="Last name" />
-              </div>
-            </div>
-          </div>
-          <div class="modal-actions">
-            <button class="btn btn--outline" id="cancelEditName">Cancel</button>
-            <button class="btn btn--primary" id="saveEditName">Save</button>
-          </div>
-        </div>
+  <div class="modal-header">
+    <h3 class="modal-title">Update Hostel</h3>
+    <p class="modal-message">Change your current hostel residence.</p>
+  </div>
+  <div class="modal-body">
+    <div class="form-group">
+      <label class="form-label">Select Hostel</label>
+      <select class="form-control" id="editHostel">
+        <option value="">Select hostel...</option>
+        <option value="A">A</option>
+        <option value="B">B</option>
+        <option value="C">C</option>
+        <option value="D">D</option>
+        <option value="H">H</option>
+        <option value="J">J</option>
+        <option value="K">K</option>
+        <option value="L">L</option>
+        <option value="M">M</option>
+        <option value="O">O</option>
+        <option value="E">E</option>
+        <option value="G">G</option>
+        <option value="I">I</option>
+        <option value="N">N</option>
+        <option value="HOTEL-PG">HOTEL-PG</option>
+        <option value="Q">Q</option>
+        <option value="FRF">FRF</option>
+        <option value="FRG">FRG</option>
+      </select>
+    </div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn btn--outline" id="cancelEditName">Cancel</button>
+    <button class="btn btn--primary" id="saveEditName">Save Update</button>
+  </div>
+</div>
       </div>
       <div class="modal hidden" id="deleteAccountModal">
         <div class="modal-overlay"></div>
