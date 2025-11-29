@@ -209,44 +209,59 @@ exports.grantAdminClaim = functions.region("us-central1").https.onCall(
  * It queries for items that are older than 7 days and still "available"
  * and deletes them in a batch.
  */
+/**
+ * [UPDATED] Scheduled Job: Database Cleanup
+ * Runs every day at 1:00 AM.
+ * Permanently deletes items that have been 'sold' or 'removed' for more than 7 days.
+ */
 exports.deleteOldItems = functions.pubsub
-  .schedule("0 1 * * *") // Uses "cron" syntax (1:00 AM every day)
-  .timeZone("Asia/Kolkata") // Set to your time zone
+  .schedule("0 1 * * *") // Runs at 1:00 AM daily
+  .timeZone("Asia/Kolkata")
   .onRun(async (context) => {
     console.log("Running scheduled job: deleteOldItems");
 
-    // 1. Calculate the timestamp for 7 days ago
+    // 1. Calculate the cutoff time (7 days ago)
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
     try {
-      // 2. Query for items that are unsold AND older than 7 days
-      // Note: Make sure the 'createdAt' field is a Timestamp in Firestore
-      const oldItemsQuery = db
-        .collection("items")
-        .where("status", "==", "available") // Only unsold items
-        .where("createdAt", "<=", sevenDaysAgo); // Older than 7 days
-
-      const snapshot = await oldItemsQuery.get();
-
-      if (snapshot.empty) {
-        console.log("No old items to delete.");
-        return null;
-      }
-
-      // 3. Create a "batch" to delete all items at once (very efficient)
       const batch = db.batch();
       let deletedCount = 0;
 
-      snapshot.docs.forEach((doc) => {
-        console.log(`Adding item to deletion batch: ${doc.id}`);
+      // 2. Query for 'sold' items older than 7 days
+      // We check 'updatedAt' because that's when the status changed to 'sold'
+      const soldQuery = db
+        .collection("items")
+        .where("status", "==", "sold")
+        .where("updatedAt", "<=", sevenDaysAgo);
+
+      const soldSnap = await soldQuery.get();
+      soldSnap.docs.forEach((doc) => {
         batch.delete(doc.ref);
         deletedCount++;
       });
 
-      // 4. Commit the batch deletion
-      await batch.commit();
-      console.log(`Successfully deleted ${deletedCount} old items.`);
+      // 3. Query for 'removed' (soft-deleted) items older than 7 days
+      const removedQuery = db
+        .collection("items")
+        .where("status", "==", "removed")
+        .where("updatedAt", "<=", sevenDaysAgo);
+
+      const removedSnap = await removedQuery.get();
+      removedSnap.docs.forEach((doc) => {
+        batch.delete(doc.ref);
+        deletedCount++;
+      });
+
+      // 4. Commit the deletion
+      if (deletedCount > 0) {
+        await batch.commit();
+        console.log(`Successfully cleaned up ${deletedCount} old items (sold/removed).`);
+      } else {
+        console.log("No old items to delete.");
+      }
+
       return null;
+
     } catch (error) {
       console.error("Error deleting old items:", error);
       return null;
