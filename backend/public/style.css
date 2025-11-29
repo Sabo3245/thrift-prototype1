@@ -3129,3 +3129,34 @@ body {
   }
 }
 
+/* =================================== */
+/* === 27. NAV BAR RESPONSIVE FIX  === */
+/* =================================== */
+
+/* 1. Ensure the points pill NEVER breaks into two lines */
+#navPointsBtn span {
+  white-space: nowrap !important;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* 2. specific rules for mobile/tablet */
+@media (max-width: 768px) {
+  
+  /* Hide the "Welcome, Name!" text on mobile to save space */
+  .user-welcome {
+    display: none;
+  }
+
+  /* Adjust the container since the welcome text is gone */
+  .user-indicator {
+    margin-left: 0;
+    gap: 0;
+  }
+
+  /* Make the points button slightly smaller/compact on mobile */
+  #navPointsBtn span {
+    font-size: 11px !important;
+    padding: 4px 8px !important;
+  }
+}

@@ -325,22 +325,22 @@
         const db = getFirestore(app);
         console.log("✅ Firestore initialized:", db);
 
-        // Configure Google Provider with proper scopes
-        // Configure Google Provider with proper scopes
+      // Configure Google Provider with proper scopes
       const googleProvider = new GoogleAuthProvider();
       googleProvider.addScope("email");
       googleProvider.addScope("profile");
 
-      // NEW: Check for 'from=admin' parameter to conditionally set the 'hd' (hosted domain)
+      // Check URL parameters
       const urlParams = new URLSearchParams(window.location.search);
       const fromAdmin = urlParams.get('from') === 'admin';
+      const isDemo = urlParams.get('mode') === 'demo'; // <--- NEW CHECK
 
-      if (fromAdmin) {
-        // ADMIN FLOW: Allow any Google account
-        console.log(" ADMIN LOGIN: Allowing all email domains.");
+      if (fromAdmin || isDemo) {
+        // ADMIN OR DEMO FLOW: Allow any Google account
+        console.log(" SPECIAL LOGIN: Allowing all email domains.");
         googleProvider.setCustomParameters({
           prompt: "select_account",
-          // Note: We DO NOT set the 'hd' parameter here
+          // We DO NOT set 'hd' here, allowing any Gmail account
         });
       } else {
         // STUDENT FLOW: Force @thapar.edu domain
