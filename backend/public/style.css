@@ -2610,7 +2610,10 @@ body {
   }
   .nav-brand {
     flex-basis: 100%;
-    justify-content: center;
+    justify-content: space-between;
+  }
+  .brand{
+    margin-left: 1vw;
   }
   .nav-brand .brand-text {
     display: block; /* Show text on mobile */
@@ -3159,4 +3162,10 @@ body {
     font-size: 11px !important;
     padding: 4px 8px !important;
   }
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 0.3; }
+  100% { opacity: 0.6; }
 }

@@ -627,22 +627,29 @@ class Marketplace {
         !filters.category || item.category === filters.category; 
       const matchesCondition =
         !filters.condition || item.condition === filters.condition;
-      let matchesHostel = true; // Default to true (for "All Hostels")
-
-      if (filters.hostel === 'myHostel') {
+      let matchesHostel = true; // Default to true
+      
+      // --- NEW LOGIC START ---
+      // 1. If it's a Food item and the filter is "All Hostels" (empty), HIDE IT.
+      if (item.category === 'Food' && !filters.hostel) {
+        return false;
+      } 
+      // 2. Handle "My Hostel" filter                           
+       else if (filters.hostel === 'myHostel') {
         // User selected "My Hostel", get their data
         const currentUser = window.userSession?.getCurrentUser?.();
         const userData = window.userSession?.getUserData?.();
         const userHostel = (currentUser && userData) ? userData.hostel : null;
 
         if (userHostel) {
-          // User is logged in and has a hostel, so filter
+          // Match if item is in the same hostel
           matchesHostel = item.hostel === userHostel;
         } else {
-          // User is not logged in or has no hostel. "My Hostel" filter should match nothing.
+          // User has no hostel data, show nothing for this filter
           matchesHostel = false;
         }
       }
+      // --- NEW LOGIC END ---
       return (
         matchesSearch && matchesCategory && matchesCondition && matchesHostel
       );
@@ -1686,9 +1693,14 @@ class Chat {
       if (messages && !messages.querySelector('.sold-banner')) {
         const div = document.createElement('div');
         div.className = 'sold-banner';
-        div.style.cssText = 'text-align:center;color:#ff6b6b;margin:8px 0;opacity:0.9;';
+        div.style.cssText = 'text-align:center;color:#ff6b6b;margin:16px 0;opacity:0.9;font-weight:500;';
         div.textContent = 'This item has been sold';
-        messages.prepend(div);
+        
+        // Change: Append to bottom instead of top
+        messages.appendChild(div); 
+        
+        // Change: Auto-scroll to show the new message
+        messages.scrollTop = messages.scrollHeight; 
       }
     } else {
       if (input) input.disabled = false;
@@ -2995,7 +3007,7 @@ class App {
     this.navigation.init();
 
     // IMPORTANT: Wait for marketplace data to load before initializing other components
-    await this.marketplace.init();
+    this.marketplace.init();
 
     this.postItem.init();
     this.chat.init();

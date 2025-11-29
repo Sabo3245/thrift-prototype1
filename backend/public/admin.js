@@ -38,6 +38,7 @@ const db = getFirestore(app);
 
 let currentAdminUser = null; // <-- Store the admin user
 let allFetchedUsers = [];
+let allMarketplaceItems = []; // <-- Add this to store fetched posts
 
 const itemsList = document.getElementById("itemsList");
 const marketplaceList = document.getElementById("marketplaceList");
@@ -310,7 +311,9 @@ async function loadFlaggedItems() {
 }
 
 async function loadMarketplacePosts() {
-  marketplaceList.innerHTML = '<div class="empty-state">Loading...</div>';
+  const listEl = document.getElementById('marketplaceList');
+  listEl.innerHTML = '<div class="empty-state">Loading...</div>';
+  document.getElementById('marketplaceSearchInput').value = ''; // Clear search
   
   try {
     const itemsRef = collection(db, 'items');
@@ -318,37 +321,64 @@ async function loadMarketplacePosts() {
     const snapshot = await getDocs(q);
     
     if (snapshot.empty) {
-      marketplaceList.innerHTML = '<div class="empty-state">No active marketplace posts</div>';
+      listEl.innerHTML = '<div class="empty-state">No active marketplace posts</div>';
       return;
     }
     
-    marketplaceList.innerHTML = '';
+    // Store items in global variable
+    allMarketplaceItems = [];
     snapshot.forEach(docSnap => {
-      const item = docSnap.data();
-      const itemDiv = document.createElement('div');
-      itemDiv.className = 'marketplace-item';
-      
-      itemDiv.innerHTML = `
-        <img class="marketplace-item-image" src="${(item.images && item.images[0]) || ''}" alt="${escapeHtml(item.title || '')}" />
-        <div class="marketplace-item-info">
-          <div class="marketplace-item-title">${escapeHtml(item.title || '')}</div>
-          <div class="marketplace-item-price">₹${item.price || 0}</div>
-          <div class="marketplace-item-seller">Seller: ${item.sellerId || 'unknown'}</div>
-          <div style="color:#8892b0;font-size:12px;margin-top:4px;">
-            Category: ${escapeHtml(item.category || 'N/A')} | Condition: ${escapeHtml(item.condition || 'N/A')}
-          </div>
-        </div>
-        <div class="admin-actions">
-          <button class="btn btn--danger" onclick="deactivateItem('${docSnap.id}')">Deactivate</button>
-        </div>
-      `;
-      
-      marketplaceList.appendChild(itemDiv);
+      allMarketplaceItems.push({ id: docSnap.id, ...docSnap.data() });
     });
+
+    // Render them
+    renderMarketplaceList(allMarketplaceItems);
+    
   } catch (e) {
     console.error('Error loading marketplace posts:', e);
-    marketplaceList.innerHTML = '<div class="empty-state">Error loading posts</div>';
+    listEl.innerHTML = '<div class="empty-state">Error loading posts</div>';
   }
+}
+
+function renderMarketplaceList(items) {
+  const listEl = document.getElementById('marketplaceList');
+  listEl.innerHTML = '';
+
+  if (!items || items.length === 0) {
+    listEl.innerHTML = '<div class="empty-state">No posts match your search.</div>';
+    return;
+  }
+
+  items.forEach(item => {
+    const itemDiv = document.createElement('div');
+    itemDiv.className = 'marketplace-item';
+    
+    // Check boost status
+    const isBoosted = item.isBoosted || false;
+    const boostBtnText = isBoosted ? "⚡ Unboost Post" : "🚀 Boost Post";
+    const boostBtnStyle = isBoosted ? "background:#ffa502; color:white;" : "background:#00e5ff; color:#0a192f;";
+
+    itemDiv.innerHTML = `
+      <img class="marketplace-item-image" src="${(item.images && item.images[0]) || ''}" alt="${escapeHtml(item.title || '')}" />
+      <div class="marketplace-item-info">
+        <div class="marketplace-item-title">
+          ${escapeHtml(item.title || '')} 
+          ${isBoosted ? '<span style="font-size:12px; background:#ffa502; color:white; padding:2px 6px; border-radius:4px; margin-left:8px;">BOOSTED</span>' : ''}
+        </div>
+        <div class="marketplace-item-price">₹${item.price || 0}</div>
+        <div class="marketplace-item-seller">Seller: ${item.sellerId || 'unknown'}</div>
+        <div style="color:#8892b0;font-size:12px;margin-top:4px;">
+          Category: ${escapeHtml(item.category || 'N/A')} | Condition: ${escapeHtml(item.condition || 'N/A')}
+        </div>
+      </div>
+      <div class="admin-actions">
+        <button class="btn" style="${boostBtnStyle}" onclick="toggleAdminBoost('${item.id}', ${isBoosted})">${boostBtnText}</button>
+        <button class="btn btn--danger" onclick="deactivateItem('${item.id}')">Deactivate</button>
+      </div>
+    `;
+    
+    listEl.appendChild(itemDiv);
+  });
 }
 
 // --- NEW: Function to render the user list ---
@@ -374,9 +404,11 @@ function renderUserList(users) {
     userCard.innerHTML = `
       <div class="user-header">
     <div>
-      <div class="user-name">${escapeHtml(user.displayName || user.email || 'Unknown User')}</div>
+      <div class="user-name">${user.firstName }  ${user.lastName} <div>
       <div class="user-email">${escapeHtml(user.email || user.uid)}</div>
-
+      <div class="user-hostel" style="color:#00e5ff; font-size:13px; margin-top: 2px;">
+            Hostel: ${escapeHtml(user.hostel || 'N/A')}
+          </div>
       <div class="user-phone" style="color:#cbd5e1; font-size:14px; margin-top: 4px;">
         Phone: ${escapeHtml(user.phone || 'Not Provided')}
       </div>
@@ -437,23 +469,55 @@ async function loadAllUsers() {
   }
 }
 
-// --- NEW: Add event listener for user search ---
-document.getElementById("userSearchInput").addEventListener("input", (e) => {
-  const searchTerm = e.target.value.toLowerCase().trim();
-  
-  if (!searchTerm) {
-    renderUserList(allFetchedUsers); // Show all users if search is empty
-    return;
-  }
+// --- UNIFIED FILTER FUNCTION ---
+// --- UNIFIED FILTER FUNCTION ---
+function filterUsers() {
+  // We keep .trim() because it handles accidental spaces well.
+  // The logic below handles the "First Last" search issue.
+  const searchTerm = document.getElementById("userSearchInput").value.toLowerCase().trim();
+  const hostelFilter = document.getElementById("userHostelFilter").value;
 
   const filteredUsers = allFetchedUsers.filter(user => {
+    // 1. Data Preparation
     const email = (user.email || '').toLowerCase();
     const uid = (user.uid || '').toLowerCase();
-    return email.includes(searchTerm) || uid.includes(searchTerm);
+    
+    // Combine first and last name for proper searching
+    const firstName = (user.firstName || '').toLowerCase();
+    const lastName = (user.lastName || '').toLowerCase();
+    const fullName = `${firstName} ${lastName}`;
+    
+    // Legacy support: check displayName if it exists
+    const displayName = (user.displayName || '').toLowerCase();
+
+    // 2. Search Logic
+    const matchesSearch = !searchTerm || 
+                          email.includes(searchTerm) || 
+                          uid.includes(searchTerm) || 
+                          firstName.includes(searchTerm) || 
+                          lastName.includes(searchTerm) ||
+                          fullName.includes(searchTerm) ||  
+                          displayName.includes(searchTerm);
+
+    // 3. Hostel Filter Logic
+    const matchesHostel = !hostelFilter || user.hostel === hostelFilter;
+
+    return matchesSearch && matchesHostel;
   });
 
+  // Render the filtered list
   renderUserList(filteredUsers);
-});
+  
+  // Update the Total User Count
+  const totalCountEl = document.getElementById('totalUsers');
+  if (totalCountEl) {
+    totalCountEl.textContent = filteredUsers.length;
+  }
+}
+
+// Attach the same function to both inputs
+document.getElementById("userSearchInput").addEventListener("input", filterUsers);
+document.getElementById("userHostelFilter").addEventListener("change", filterUsers);
 
 window.deactivateItem = async function(itemId) {
   if (!confirm('Deactivate this item? This will mark it as "flagged" and hide it.')) return;
@@ -484,6 +548,47 @@ window.makeUserAdmin = async function(uid) {
   } catch (e) {
     console.error(e);
     alert('Error making user admin');
+  }
+};
+
+// --- Search Listener ---
+document.getElementById('marketplaceSearchInput').addEventListener('input', (e) => {
+  const term = e.target.value.toLowerCase().trim();
+  
+  if (!term) {
+    renderMarketplaceList(allMarketplaceItems);
+    return;
+  }
+
+  const filtered = allMarketplaceItems.filter(item => {
+    const title = (item.title || '').toLowerCase();
+    const seller = (item.sellerId || '').toLowerCase();
+    const desc = (item.description || '').toLowerCase();
+    return title.includes(term) || seller.includes(term) || desc.includes(term);
+  });
+
+  renderMarketplaceList(filtered);
+});
+
+// --- Toggle Boost Function ---
+window.toggleAdminBoost = async function(itemId, currentStatus) {
+  const action = currentStatus ? "unboost" : "boost";
+  if (!confirm(`Are you sure you want to ${action} this post?`)) return;
+
+  try {
+    const itemRef = doc(db, 'items', itemId);
+    
+    // Toggle status and update timestamp
+    await updateDoc(itemRef, { 
+      isBoosted: !currentStatus,
+      updatedAt: serverTimestamp() 
+    });
+    
+    alert(`Post ${action}ed successfully!`);
+    loadMarketplacePosts(); // Reload list to see changes
+  } catch (e) {
+    console.error(`Error ${action}ing post:`, e);
+    alert(`Error: Could not ${action} post.`);
   }
 };
 

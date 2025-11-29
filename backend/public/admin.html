@@ -7,6 +7,21 @@
     <link rel="icon" type="image/svg" href="logoCart.png">
     <link rel="stylesheet" href="style.css" />
     <style>
+      /* --- FORCE DARK THEME FOR ADMIN PAGE --- */
+      body { 
+        background-color: #0a192f !important; 
+        color: #ffffff !important; 
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; 
+      }
+      
+      /* Fix for the dropdown menu options being unreadable */
+      select option {
+        background-color: #ffffff;
+        color: #000000;
+      }
+      
+      /* Ensure links/inputs don't get overridden */
+      .admin-container { color: #ffffff !important; }
       body { background-color: #0a192f; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; }
       .admin-container { max-width:1100px;margin:36px auto;padding:20px; color: #ffffff;}
       .item-row{display:flex;gap:12px;align-items:flex-start;padding:16px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);border-radius:8px;margin-bottom:12px}
@@ -132,6 +147,13 @@
 
         <div id="marketplaceSection" class="tab-content">
           <h2>All Marketplace Posts</h2>
+          
+          <input 
+            type="text" 
+            id="marketplaceSearchInput" 
+            placeholder="Search by title, seller ID, or description..." 
+            style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; color: #ffffff; font-size: 14px; margin-bottom: 20px;">
+
           <div id="marketplaceList"></div>
         </div>
 
@@ -143,11 +165,36 @@
             <div>Admins: <strong id="adminUsers">0</strong></div>
           </div>
 
-          <input 
-            type="text" 
-            id="userSearchInput" 
-            placeholder="Search by email or UID..." 
-            style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; color: #ffffff; font-size: 14px; margin-bottom: 20px;">
+          <!-- Search and Filter Controls -->
+          <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <input 
+              type="text" 
+              id="userSearchInput" 
+              placeholder="Search by email or UID..." 
+              style="flex: 1; padding: 8px 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; color: #ffffff; font-size: 14px;">
+            
+            <select id="userHostelFilter" style="width: 150px; padding: 8px 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; color: #ffffff; font-size: 14px;">
+              <option value="">All Hostels</option>
+              <option value="A">Hostel A</option>
+              <option value="B">Hostel B</option>
+              <option value="C">Hostel C</option>
+              <option value="D">Hostel D</option>
+              <option value="E">Hostel E</option>
+              <option value="G">Hostel G</option>
+              <option value="H">Hostel H</option>
+              <option value="I">Hostel I</option>
+              <option value="J">Hostel J</option>
+              <option value="K">Hostel K</option>
+              <option value="L">Hostel L</option>
+              <option value="M">Hostel M</option>
+              <option value="N">Hostel N</option>
+              <option value="O">Hostel O</option>
+              <option value="Q">Hostel Q</option>
+              <option value="HOTEL-PG">HOTEL-PG</option>
+              <option value="FRF">FRF</option>
+              <option value="FRG">FRG</option>
+            </select>
+          </div>
           <div id="usersList"></div>
         </div>
 

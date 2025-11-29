@@ -229,32 +229,32 @@ class UserSessionManager {
       );
 
       if (user) {
-        console.log("👤 User details:", {
-          uid: user.uid,
-          email: user.email,
-          displayName: user.displayName,
-        });
-
         this.currentUser = user;
+        
+        // --- PERFORMANCE FIX: Start the app IMMEDIATELY ---
+        // Don't await userData. Load it in the background.
+        
+        // 1. Reveal the App immediately
+        const loadingScreen = document.getElementById("loadingScreen");
+        if (loadingScreen) {
+          loadingScreen.style.animation = "fadeOut 0.5s ease-out forwards";
+          setTimeout(() => { loadingScreen.style.display = "none"; }, 500);
+        }
+        
+        const mainApp = document.getElementById("mainApp");
+        if (mainApp) mainApp.classList.remove("hidden");
+        
+        // 2. Initialize the app logic (marketplace, etc.)
+        if (!window.appInitialized) {
+            window.app.init();
+            window.appInitialized = true;
+        }
+
+        // 3. NOW fetch the user data in the background
+        // The UI will show "Loading..." or skeletons until this finishes
         await this.loadUserData();
         this.updateUI();
 
-          const loadingScreen = document.getElementById("loadingScreen");
-  if (loadingScreen) {
-    loadingScreen.style.animation = "fadeOut 1s ease-out forwards";
-    setTimeout(() => {
-      loadingScreen.style.display = "none";
-    }, 1000);
-  }
-
-  const mainApp = document.getElementById("mainApp");
-  if (mainApp) {
-    mainApp.classList.remove("hidden");
-  }
-
-  // Start the app (this was in app.js's hide() function)
-  window.app.init();
-  // --- END OF NEW BLOCK ---
       } else {
         console.log("👤 No user signed in");
         this.currentUser = null;
@@ -538,6 +538,7 @@ class UserSessionManager {
             font-weight: 500; 
             font-size: var(--font-size-sm);
             transition: all 0.2s ease;
+            margin-right: 1vw;
           ">
             🟡 ${this.userData.points || 0} CampusKoins
           </span>
