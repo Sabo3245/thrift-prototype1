@@ -6,6 +6,8 @@
     <title>CampusKart</title>
     <link rel="icon" type="image/svg" href="logoCart.png">
     <link rel="stylesheet" href="style.css" />
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6432553683279786"
+     crossorigin="anonymous"></script>
   </head>
   <body>
     <div id="loadingScreen" class="loading-screen">
@@ -368,7 +370,8 @@
             <option value="G">G</option>
             <option value="I">I</option>
             <option value="N">N</option>
-            <option value="HOTEL-PG">HOTEL-PG</option>
+            <option value="HOSTEL-PG">HOSTEL-PG</option>
+            <option value="Day Scholar">Day Scholar</option>
             <option value="Q">Q</option>
             <option value="FRF">FRF</option>
             <option value="FRG">FRG</option>
@@ -785,7 +788,8 @@
         <option value="G">G</option>
         <option value="I">I</option>
         <option value="N">N</option>
-        <option value="HOTEL-PG">HOTEL-PG</option>
+        <option value="HOSTEL-PG">HOSTEL-PG</option>
+        <option value="Day Scholar">Day Scholar</option>
         <option value="Q">Q</option>
         <option value="FRF">FRF</option>
         <option value="FRG">FRG</option>
@@ -986,7 +990,6 @@
       } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
       import { 
         getFirestore, 
-        initializeFirestore,
         enableIndexedDbPersistence,
         doc, 
         setDoc, 
@@ -1028,7 +1031,7 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         // Force long-polling to avoid WebChannel transport issues in restricted networks
-        const db = initializeFirestore(app, { experimentalForceLongPolling: true, useFetchStreams: false });
+        const db = getFirestore(app);
         // Enable offline persistence so writes succeed locally and sync later
         try { await enableIndexedDbPersistence(db); } catch (e) { console.warn('IndexedDB persistence disabled or failed:', e?.message || e); }
         const analytics = getAnalytics(app);
@@ -1075,5 +1078,6 @@
 
 
     <script src="theme.js" defer></script>
+    <audio id="notificationSound" src="https://assets.mixkit.co/active_storage/sfx/2346/2346-preview.mp3" preload="auto"></audio>
   </body>
 </html>

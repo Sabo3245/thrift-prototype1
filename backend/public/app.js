@@ -607,83 +607,87 @@ class Marketplace {
   }
 
   filterItems() {
-      AppState.filteredItems = AppState.originalItems.filter((item) => {
-      // Only show active (approved) items in the marketplace
+    AppState.filteredItems = AppState.originalItems.filter((item) => {
+      // 1. Basic Availability Checks
       const matchesActive = item.isActive !== false;
-      
-      // --- ADD THIS LINE ---
       const matchesStatus = item.status === 'available';
 
+      if (!matchesActive || !matchesStatus) return false;
+
+      // 2. Get User Data
+      const currentUser = window.userSession?.getCurrentUser?.();
+      const userData = window.userSession?.getUserData?.();
+      const userHostel = (currentUser && userData) ? userData.hostel : null;
+
+      // --- STRICT FOOD RULE (The Fix) ---
+      // If item is Food, it MUST belong to the user's hostel.
+      // If user is not logged in (no userHostel) OR hostels don't match, hide it.
+      if (item.category === 'Food') {
+        if (!userHostel || item.hostel !== userHostel) {
+          return false; // Immediately hide food from other hostels
+        }
+      }
+      // ----------------------------------
+
+      // 3. Standard Filters
       const { searchQuery, filters } = AppState;
+      
       const matchesSearch =
         !searchQuery ||
         item.title.toLowerCase().includes(searchQuery) ||
         item.description.toLowerCase().includes(searchQuery);
-      
-   
-      if (!matchesActive || !matchesStatus) return false;
 
       const matchesCategory =
-        !filters.category || item.category === filters.category; 
+        !filters.category || item.category === filters.category;
+        
       const matchesCondition =
         !filters.condition || item.condition === filters.condition;
-      let matchesHostel = true; // Default to true
-      
-      // --- NEW LOGIC START ---
-      // 1. If it's a Food item and the filter is "All Hostels" (empty), HIDE IT.
-      if (item.category === 'Food' && !filters.hostel) {
-        return false;
-      } 
-      // 2. Handle "My Hostel" filter                           
-       else if (filters.hostel === 'myHostel') {
-        // User selected "My Hostel", get their data
-        const currentUser = window.userSession?.getCurrentUser?.();
-        const userData = window.userSession?.getUserData?.();
-        const userHostel = (currentUser && userData) ? userData.hostel : null;
 
+      // 4. Hostel Filter Logic (Dropdown)
+      let matchesHostel = true; // Default to showing (since we handled Food above)
+
+      if (filters.hostel === 'myHostel') {
         if (userHostel) {
-          // Match if item is in the same hostel
           matchesHostel = item.hostel === userHostel;
         } else {
-          // User has no hostel data, show nothing for this filter
-          matchesHostel = false;
+          matchesHostel = false; // User not logged in, "My Hostel" shows nothing
         }
       }
-      // --- NEW LOGIC END ---
+      // Note: If filters.hostel is empty ("All Hostels"), matchesHostel remains true.
+      // Food items from other hostels were already removed by the Strict Rule above.
+
       return (
         matchesSearch && matchesCategory && matchesCondition && matchesHostel
       );
     });
 
-      
+    // --- SORTING LOGIC (Fixed ReferenceError) ---
     AppState.filteredItems.sort((a, b) => {
-const aIsBoosted = (categoryFilter !== "") && (a.isBoosted || false);
-    const bIsBoosted = (categoryFilter !== "") && (b.isBoosted || false);
-
+      // FIX: 'categoryFilter' was undefined. We check AppState.filters.category instead.
+      const isCategorySelected = !!AppState.filters.category;
       
+      // Only prioritize boosted items if a specific category is NOT selected
+      // (Or remove '&& !isCategorySelected' if you want boosted items always on top)
+      const aIsBoosted = a.isBoosted || false;
+      const bIsBoosted = b.isBoosted || false;
 
       // 1. One is boosted, one is not
-      if (aIsBoosted && !bIsBoosted) return -1; // a comes first
-      if (!aIsBoosted && bIsBoosted) return 1;  // b comes first
+      if (aIsBoosted && !bIsBoosted) return -1;
+      if (!aIsBoosted && bIsBoosted) return 1;
 
       // 2. Both are boosted: sort by updatedAt descending
       if (aIsBoosted && bIsBoosted) {
-        // We use 'updatedAt' because boosting updates this field
         const aTime = utils.getTimestamp(a.updatedAt);
         const bTime = utils.getTimestamp(b.updatedAt);
-        return bTime - aTime; // Higher (more recent) timestamp first
+        return bTime - aTime;
       }
 
       // 3. Neither is boosted: sort by createdAt descending
-      if (!aIsBoosted && !bIsBoosted) {
-        const aTime = utils.getTimestamp(a.createdAt);
-        const bTime = utils.getTimestamp(b.createdAt);
-        return bTime - aTime; // Higher (more recent) timestamp first
-      }
-      
-      return 0; // Should be unreachable
+      const aTime = utils.getTimestamp(a.createdAt);
+      const bTime = utils.getTimestamp(b.createdAt);
+      return bTime - aTime;
     });
-    
+
     this.renderItems();
   }
 
@@ -714,6 +718,8 @@ const aIsBoosted = (categoryFilter !== "") && (a.isBoosted || false);
     card.className = `item-card glass-card${showBoostEffect ? " boosted" : ""}`;
     card.style.animationDelay = `${index * 0.1}s`;
 
+    const loadingStrategy = index < 4 ? "eager" : "lazy";
+
     const isHearted = AppState.userProfile.heartedPosts.includes(item.id);
     const primaryImage =
       Array.isArray(item.images) && item.images.length > 0
@@ -723,8 +729,8 @@ const aIsBoosted = (categoryFilter !== "") && (a.isBoosted || false);
     card.innerHTML = `
       <div class="item-image">
           ${
-            primaryImage
-              ? `<img src="${primaryImage}" alt="${item.title}" class="item-img" style="width:100%;height:160px;object-fit: contain;border-radius:12px;" loading="lazy"/>`
+           primaryImage
+              ? `<img src="${primaryImage}" alt="${item.title}" class="item-img" loading="${loadingStrategy}"/>`
               : `<span class="item-emoji">${item.icon || "📦"}</span>`
           }
           <button class="heart-btn ${isHearted ? "hearted" : ""}" data-id="${
@@ -1128,17 +1134,35 @@ document.getElementById('quantity-minus')?.addEventListener('click', () => this.
     }
 
     const { ref, uploadBytes, getDownloadURL } = window.firebaseModules;
+    
     const uploadPromises = this.selectedFiles.map(async (file) => {
       if (!file.type.startsWith("image/")) return null;
 
-      const path = `items/${uid}/${Date.now()}_${file.name.replace(
+      // --- NEW COMPRESSION LOGIC ---
+      let fileToUpload = file;
+      try {
+        console.log(`Compressing ${file.name}...`);
+        
+        // Compress to 60% quality, max width 800px (faster loading)
+        const compressedBlob = await compressImage(file, 0.6, 800);
+        fileToUpload = compressedBlob;
+      } catch (err) {
+        console.warn("Compression failed, uploading original:", err);
+      }
+      // -----------------------------
+
+      // Note: We force the extension to .jpg because the compressor outputs JPEGs
+      const fileName = file.name.replace(/\.[^/.]+$/, "") + ".jpg";
+      const path = `items/${uid}/${Date.now()}_${fileName.replace(
         /[^a-zA-Z0-9._-]/g,
         "_"
       )}`;
+      
       const storageRef = ref(window.firebaseStorage, path);
 
       try {
-        const snap = await uploadBytes(storageRef, file);
+        // Upload the COMPRESSED file
+        const snap = await uploadBytes(storageRef, fileToUpload);
         return await getDownloadURL(snap.ref);
       } catch (error) {
         console.error("Error uploading file:", file.name, error);
@@ -1148,7 +1172,7 @@ document.getElementById('quantity-minus')?.addEventListener('click', () => this.
     });
 
     const urls = await Promise.all(uploadPromises);
-    return urls.filter((url) => url !== null); // Filter out failed uploads
+    return urls.filter((url) => url !== null);
   }
 
   async submitForm() {
@@ -1356,6 +1380,7 @@ class Chat {
   }
 
   // Subscribe to conversations for the current user
+  // Subscribe to conversations and handle NOTIFICATIONS
   subscribeConversations() {
     const conversationList = document.getElementById('conversationList');
     if (!conversationList || !this.db || !this.modules?.onSnapshot) return;
@@ -1369,18 +1394,82 @@ class Chat {
 
     if (this.unsubConversations) this.unsubConversations();
 
+    // Variable to track if this is the very first load
+    let isInitialLoad = true;
+
     this.unsubConversations = onSnapshot(q, (snapshot) => {
       const list = [];
+      
+      // 1. Process Changes for Notifications
+      if (!isInitialLoad) {
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'modified' || change.type === 'added') {
+            const data = change.doc.data();
+            
+            // Check if this update is a new message from someone else
+            // We check if the 'lastMessage' changed and I am NOT the sender (we can infer sender logic)
+            // A simpler check: Do I have unread messages now?
+            const myUnread = (data.unreadCounts && data.unreadCounts[user.uid]) || 0;
+            
+            // If I have unread messages AND I am not currently looking at this specific chat
+            if (myUnread > 0 && this.activeConversation?.id !== change.doc.id) {
+               this.triggerNotification(data);
+            }
+          }
+        });
+      }
+
+      // 2. Build the list as usual
       snapshot.forEach((doc) => list.push({ id: doc.id, ...doc.data() }));
-      // client-side sort by lastMessageAt desc
+      
       list.sort((a, b) => (b.lastMessageAt?.toMillis?.() || 0) - (a.lastMessageAt?.toMillis?.() || 0));
       this.conversations = list;
       this.renderConversationList();
-
       this.updateUnreadNavIndicator();
+      
+      isInitialLoad = false; // Initial load done, future updates are real-time
     }, (error) => {
       console.error('Failed to subscribe to conversations:', error);
     });
+  }
+
+  // --- NEW HELPER METHOD ---
+  triggerNotification(convoData) {
+    const user = this.auth?.currentUser;
+    const otherUid = (convoData.participants || []).find((p) => p !== user?.uid);
+    let senderName = 'Someone';
+    
+    if (otherUid) {
+        senderName = convoData.participantNames?.[otherUid] || 'New Message';
+    }
+
+    const text = `New message from ${senderName}`;
+    const body = convoData.lastMessage || 'Sent a photo';
+
+    // 1. Play Sound
+    const audio = document.getElementById("notificationSound");
+    if (audio) {
+        audio.play().catch(e => console.log("Audio play failed (interaction needed):", e));
+    }
+
+    // 2. In-App Toast
+    utils.showNotification(`💬 ${senderName}: ${body}`, 'info');
+
+    // 3. System Notification (Browser/Mobile Tray)
+    if (Notification.permission === "granted") {
+      const notif = new Notification("CampusKart: " + senderName, {
+        body: body,
+        icon: 'logoCart.png', // Make sure this path is correct
+        tag: convoData.id // Prevents spamming multiple notifs for same chat
+      });
+      
+      notif.onclick = function() {
+        window.focus(); // Focus the browser tab
+        window.app.navigateToSection('chat'); // Go to chat
+        window.chat.openChat(convoData.id); // Open specific chat (if you have the ID available)
+        this.close();
+      };
+    }
   }
 
 // Replace the existing renderConversationList function with this one
@@ -2090,6 +2179,7 @@ class Profile {
         // NEW LOGIC:
         window.notifications?.loadNotifications(); // Load data
         switchToSection("notifications"); // Switch view
+        window.notifications?.requestSystemPermission();
       });
     }
   }
@@ -2815,6 +2905,26 @@ async loadNotifications() {
     }
   }
 
+  // Add this inside the Notifications class
+  async requestSystemPermission() {
+    if (!("Notification" in window)) {
+      console.log("This browser does not support desktop notification");
+      return;
+    }
+
+    if (Notification.permission === "granted") {
+      return;
+    }
+
+    if (Notification.permission !== "denied") {
+      const permission = await Notification.requestPermission();
+      if (permission === "granted") {
+        utils.showNotification("Notifications enabled! 🔔", "success");
+      }
+    }
+  }
+
+
 // Inside Notifications class in app.js
 
   renderNotifications(notifications) {
@@ -2856,10 +2966,13 @@ async loadNotifications() {
     this.container.innerHTML = html;
   }
 
+
   escapeHtml(s) { 
     return String(s||'').replace(/[&<>"']/g, (c)=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"})[c]); 
   }
 }
+
+
 
 function initializeGlobalEventListeners() {
   document.body.addEventListener("click", async (e) => {
@@ -2898,6 +3011,19 @@ const backFromKoinsBtn = document.getElementById("backToMarketplaceFromKoins");
           console.error("Failed to report item:", err);
           utils.showNotification('Could not report item. Please try again.', 'error');
         }
+      }
+    }
+
+    // --- Special Handler for Terms Modal (to save acceptance) ---
+    if (target.id === "closeTermsModal") {
+      // 1. Save the version key to storage
+      const CURRENT_TERMS_VERSION = 'v1'; // MUST match the version in Step 1
+      localStorage.setItem(`campuskart_terms_${CURRENT_TERMS_VERSION}`, 'true');
+      
+      // 2. Close the modal
+      if (modal) {
+        modal.classList.add("hidden");
+        document.body.classList.remove('modal-open');
       }
     }
 
@@ -3007,7 +3133,7 @@ class App {
     this.navigation.init();
 
     // IMPORTANT: Wait for marketplace data to load before initializing other components
-    this.marketplace.init();
+    const dataLoadingPromise = this.marketplace.init();
 
     this.postItem.init();
     this.chat.init();
@@ -3020,7 +3146,7 @@ class App {
 
     initializeGlobalEventListeners();
 
-    this.handleUrlRouting(); // Check URL on initial load
+    this.handleUrlRouting(dataLoadingPromise); // Pass the promise to routing // Check URL on initial load
     this.setupPopstateListener(); // Handle browser back/forward buttons
 
     document.querySelectorAll(".btn").forEach((btn) => {
@@ -3028,6 +3154,23 @@ class App {
     });
 
     console.log("App initialized successfully");
+
+    // --- FORCE TERMS POP-UP LOGIC ---
+    // Change 'v1' to 'v2', 'v3', etc. whenever you want to force this again.
+    const CURRENT_TERMS_VERSION = 'v1'; 
+    
+    const hasAccepted = localStorage.getItem(`campuskart_terms_${CURRENT_TERMS_VERSION}`);
+    
+    if (!hasAccepted) {
+      const termsModal = document.getElementById("termsModal");
+      if (termsModal) {
+        // Show it after a short delay so the app loads first
+        setTimeout(() => {
+          termsModal.classList.remove("hidden");
+          document.body.classList.add("modal-open");
+        }, 1500);
+      }
+    }
   }
 
 
@@ -3052,14 +3195,21 @@ class App {
   }
 
 // This method checks the URL when the page first loads
-  handleUrlRouting() {
+  async handleUrlRouting(dataLoadingPromise) {
     const params = new URLSearchParams(window.location.search);
     const itemId = params.get('item');
-    const section = params.get('section'); // <-- NEW
+    const section = params.get('section');
     
     if (itemId) {
-      // Item logic takes priority
-      console.log(`URL routing: Found item ID ${itemId}`);
+      console.log(`URL routing: Found item ID ${itemId}. Waiting for data...`);
+      
+      // FIX: If we have a pending load, wait for it before checking the item
+      if (dataLoadingPromise) {
+        await dataLoadingPromise;
+      }
+
+      console.log(`Data loaded. Checking for item ${itemId}`);
+      // Now AppState.originalItems is populated
       const itemExists = AppState.originalItems.some(i => String(i.id) === String(itemId));
 
       if (itemExists) {
@@ -3070,7 +3220,7 @@ class App {
         switchToSection('marketplace');
       }
     } else if (section) {
-      // NEW: Handle section routing
+      // Handle section routing
       console.log(`URL routing: Found section ${section}`);
       switchToSection(section);
     } else {
@@ -3132,3 +3282,60 @@ style.textContent = `
     .notification-content { display: flex; align-items: center; gap: 8px; }
 `;
 document.head.appendChild(style);
+
+
+/**
+ * Compresses and resizes an image file.
+ * @param {File} file - The original image file.
+ * @param {number} quality - JPEG quality (0 to 1). Default 0.7.
+ * @param {number} maxWidth - Max width in pixels. Default 1024.
+ * @returns {Promise<Blob>} - The compressed blob.
+ */
+function compressImage(file, quality = 0.7, maxWidth = 1024) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      
+      img.onload = () => {
+        // 1. Calculate new dimensions
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        // 2. Create canvas
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        
+        // 3. Draw image to canvas
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // 4. Export as compressed JPEG
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error('Canvas to Blob failed'));
+            }
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+      
+      img.onerror = (err) => reject(err);
+    };
+    
+    reader.onerror = (err) => reject(err);
+  });
+}

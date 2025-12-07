@@ -1824,17 +1824,34 @@ body.modal-open {
 
 /* --- Image Container --- */
 .item-image {
-  height: 200px;
-  background: var(--color-secondary); /* Clean grey background */
+  height: 200px !important; /* Force fixed height */
+  width: 100%;
+  background: var(--color-secondary);
   position: relative;
-  flex-shrink: 0; /* Prevents image from shrinking */
+  flex-shrink: 0;
   border-bottom: 1px solid var(--color-border);
+  
+  /* Flex centering ensures image stays in middle */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
 .item-image .item-img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain; /* Shows the whole image without stretching */
+  /* 1. Reset width/height to auto so the browser preserves aspect ratio naturally */
+  width: auto !important;
+  height: auto !important;
+  
+  /* 2. Constrain the image so it never overflows the container */
+  max-width: 100% !important;
+  max-height: 100% !important;
+  
+  /* 3. Ensure it renders as a block for the flex container to center it */
+  display: block !important;
+  
+  /* 4. Keep object-fit as a backup, though the rules above mostly solve it */
+  object-fit: contain !important;
 }
 
 /* --- Card Content Wrapper --- */
@@ -3164,8 +3181,3 @@ body {
   }
 }
 
-@keyframes pulse {
-  0% { opacity: 0.6; }
-  50% { opacity: 0.3; }
-  100% { opacity: 0.6; }
-}

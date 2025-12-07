@@ -279,6 +279,9 @@ tabs.forEach((tab) => {
     } else if (targetTab === "notifications") {
       // <-- NEW LOGIC
       document.getElementById("notificationsSection").classList.add("active");
+    }else if (targetTab === "analytics") {
+      document.getElementById("analyticsSection").classList.add("active");
+      loadAnalytics(); // Load default view (week)
     }
   });
 });
@@ -593,3 +596,200 @@ window.toggleAdminBoost = async function(itemId, currentStatus) {
 };
 
 function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, (c)=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"})[c]); }
+
+// --- ANALYTICS DASHBOARD LOGIC ---
+
+let mainChartInstance = null;
+let categoryChartInstance = null;
+let hostelChartInstance = null;
+let cachedItemsData = null; // Store fetched items to avoid re-fetching on filter change
+
+// 1. Main Entry Point
+async function loadAnalytics(timeRange = 'week') {
+  console.log("Loading analytics for:", timeRange);
+  
+  // Only fetch from Firestore once, then cache
+  if (!cachedItemsData) {
+    try {
+      const itemsRef = collection(db, 'items');
+      // For a real dashboard, we fetch ALL items to calculate history
+      const snapshot = await getDocs(itemsRef);
+      cachedItemsData = [];
+      snapshot.forEach(doc => cachedItemsData.push({ id: doc.id, ...doc.data() }));
+    } catch (e) {
+      console.error("Error fetching analytics data:", e);
+      return;
+    }
+  }
+
+  processAndRenderAnalytics(cachedItemsData, timeRange);
+}
+
+// 2. Global Helper for Buttons
+window.updateAnalytics = function(range) {
+  // Update button visual state
+  document.querySelectorAll('.time-filter-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+  
+  // Reload data
+  loadAnalytics(range);
+};
+
+// 3. Process Data & Render
+function processAndRenderAnalytics(items, timeRange) {
+  const now = new Date();
+  let startTime;
+  let labels = [];
+  let dateFormat;
+
+  // Define Time Ranges
+  if (timeRange === 'week') {
+    startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+    // Generate last 7 days labels
+    for (let i=6; i>=0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      labels.push(d.toLocaleDateString('en-US', { weekday: 'short' }));
+    }
+  } else if (timeRange === 'month') {
+    startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30);
+    // Simplify labels for month (every 5 days approx or just index)
+    // For simplicity, we'll let Chart.js handle axis, just filter data
+  } else {
+    startTime = new Date(2023, 0, 1); // All time
+  }
+
+  // Filter items within range
+  const validItems = items.filter(i => {
+    const itemDate = i.createdAt?.toDate ? i.createdAt.toDate() : new Date(i.createdAt);
+    return itemDate >= startTime;
+  });
+
+  // --- A. CALCULATE SUMMARY STATS ---
+  let totalPosted = validItems.length;
+  let totalSold = validItems.filter(i => i.status === 'sold').length;
+  let totalDeleted = validItems.filter(i => i.status === 'removed' || i.flagged).length;
+  let totalVolume = validItems
+    .filter(i => i.status === 'sold')
+    .reduce((sum, i) => sum + (Number(i.price) || 0), 0);
+
+  document.getElementById('statPosted').textContent = totalPosted;
+  document.getElementById('statSold').textContent = totalSold;
+  document.getElementById('statDeleted').textContent = totalDeleted;
+  document.getElementById('statVolume').textContent = '₹' + totalVolume.toLocaleString();
+
+  // --- B. PREPARE CHART DATA (Main Line Chart) ---
+  // We need to bucket items by date
+  const postedCounts = new Array(labels.length).fill(0);
+  const soldCounts = new Array(labels.length).fill(0);
+
+  validItems.forEach(item => {
+    const itemDate = item.createdAt?.toDate ? item.createdAt.toDate() : new Date(item.createdAt);
+    
+    // Find which label index this date belongs to
+    // (This is a simplified bucket logic for the 'week' view)
+    if (timeRange === 'week') {
+      const dayDiff = Math.floor((now - itemDate) / (1000 * 60 * 60 * 24));
+      const index = 6 - dayDiff; // 6 is today, 0 is 7 days ago
+      if (index >= 0 && index <= 6) {
+        postedCounts[index]++;
+        if (item.status === 'sold') soldCounts[index]++;
+      }
+    }
+  });
+
+  // --- C. RENDER MAIN CHART ---
+  const ctx = document.getElementById('mainChart').getContext('2d');
+  
+  if (mainChartInstance) mainChartInstance.destroy(); // Destroy old chart to avoid overlap
+
+  mainChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Items Posted',
+          data: postedCounts,
+          borderColor: '#00e5ff',
+          backgroundColor: 'rgba(0, 229, 255, 0.1)',
+          tension: 0.4,
+          fill: true
+        },
+        {
+          label: 'Items Sold',
+          data: soldCounts,
+          borderColor: '#00ff88',
+          backgroundColor: 'rgba(0, 255, 136, 0.1)',
+          tension: 0.4,
+          fill: true
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: '#cbd5e1' } },
+        title: { display: true, text: 'Marketplace Activity', color: '#ffffff' }
+      },
+      scales: {
+        y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#8892b0' } },
+        x: { grid: { display: false }, ticks: { color: '#8892b0' } }
+      }
+    }
+  });
+
+  // --- D. RENDER CATEGORY PIE CHART ---
+  const categories = {};
+  validItems.forEach(i => {
+    const cat = i.category || 'Other';
+    categories[cat] = (categories[cat] || 0) + 1;
+  });
+
+  const catCtx = document.getElementById('categoryChart').getContext('2d');
+  if (categoryChartInstance) categoryChartInstance.destroy();
+
+  categoryChartInstance = new Chart(catCtx, {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(categories),
+      datasets: [{
+        data: Object.values(categories),
+        backgroundColor: ['#00e5ff', '#00ff88', '#ffa502', '#ff5459', '#a29bfe', '#fab1a0'],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      plugins: { legend: { position: 'right', labels: { color: '#cbd5e1' } } }
+    }
+  });
+  
+  // --- E. RENDER HOSTEL BAR CHART ---
+  const hostels = {};
+  validItems.forEach(i => {
+    const h = i.hostel || 'Unknown';
+    hostels[h] = (hostels[h] || 0) + 1;
+  });
+  
+  const hCtx = document.getElementById('hostelChart').getContext('2d');
+  if (hostelChartInstance) hostelChartInstance.destroy();
+  
+  hostelChartInstance = new Chart(hCtx, {
+    type: 'bar',
+    data: {
+      labels: Object.keys(hostels),
+      datasets: [{
+        label: 'Items by Hostel',
+        data: Object.values(hostels),
+        backgroundColor: '#a29bfe',
+        borderRadius: 4
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#8892b0' } },
+        x: { grid: { display: false }, ticks: { color: '#8892b0' } }
+      }
+    }
+  });
+}

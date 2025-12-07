@@ -17,22 +17,49 @@ class UserSessionManager {
 
   async waitForFirebase() {
     return new Promise((resolve) => {
+      let attempts = 0;
+      const maxAttempts = 50; // Wait max 5 seconds (50 * 100ms)
+
       const checkFirebase = () => {
-        if (
-          window.firebaseAuth &&
-          window.firebaseDb &&
-          window.firebaseModules
-        ) {
+        attempts++;
+        
+        // Success: Firebase is ready
+        if (window.firebaseAuth && window.firebaseDb && window.firebaseModules) {
           console.log("✅ Firebase detected, setting up session manager");
           this.auth = window.firebaseAuth;
           this.db = window.firebaseDb;
           this.modules = window.firebaseModules;
           this.setupAuthStateListener();
           resolve();
-        } else {
+        } 
+        // Failure: Timed out (Network too slow or offline)
+        else if (attempts >= maxAttempts) {
+          console.warn("⚠️ Firebase initialization timed out. Forcing app start in offline mode.");
+          
+          // 1. Force hide the loading screen
+          const loadingScreen = document.getElementById("loadingScreen");
+          if (loadingScreen) loadingScreen.style.display = "none";
+          
+          // 2. Show the main app
+          const mainApp = document.getElementById("mainApp");
+          if (mainApp) mainApp.classList.remove("hidden");
+          
+          // 3. Start the app logic
+          if (!window.appInitialized && window.app) {
+             window.app.init();
+             window.appInitialized = true;
+          }
+
+          // 4. Try to load cached data since we can't reach the server
+          this.handleOfflineMode();
+          resolve();
+        } 
+        // Keep waiting
+        else {
           setTimeout(checkFirebase, 100);
         }
       };
+      
       checkFirebase();
     });
   }
@@ -394,6 +421,11 @@ class UserSessionManager {
 
     // Update user-specific features
     this.updateUserFeatures();
+
+    // Force the marketplace to re-filter now that we have the user's hostel
+if (window.marketplace && typeof window.marketplace.filterItems === 'function') {
+  window.marketplace.filterItems();
+}
 
     // Update connectivity status
     this.updateConnectivityStatus();
